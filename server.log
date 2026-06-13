@@ -1,0 +1,759 @@
+INFO:     Started server process [4964]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8082 (Press CTRL+C to quit)
+[*] Detecting active StreamingCommunity domain suffix (verifying live API)...
+INFO:     127.0.0.1:52798 - "GET / HTTP/1.1" 200 OK
+[DoH] Patched streamingcommunity.care -> 103.224.212.206
+[DoH] Patched streamingcommunity.cfd -> 103.224.182.242
+[DoH] Patched streamingcommunity.co -> 172.67.219.187
+[DoH] Patched streamingcommunity.broker -> 188.114.97.7
+[DoH] Patched streamingcommunity.computer -> 103.224.182.253
+[DoH] Patched streamingcommunity.art -> 212.92.104.6
+[DoH] Patched streamingcommunity.live -> 76.223.54.146
+[DoH] Patched streamingcommunity.fun -> 157.90.33.74
+[DoH] Patched streamingcommunity.blog -> 172.239.193.161
+[DoH] Patched streamingcommunity.vip -> 103.224.212.203
+[DoH] Patched streamingcommunity.forum -> 172.236.114.191
+[DoH] Patched streamingcommunity.photos -> 103.224.212.205
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+[DoH] Patched streamingcommunity.buzz -> 104.247.81.99
+[DoH] Patched streamingcommunity.store -> 46.62.237.138
+[DoH] Patched streamingcommunity.one -> 208.115.249.237
+[DoH] Patched streamingcommunity.boats -> 66.45.249.126
+[DoH] Patched streamingcommunity.today -> 188.114.97.7
+[DoH] Patched streamingcommunity.site -> 103.224.182.253
+[DoH] Patched www.streamingcommunity.today -> 188.114.97.7
+[DoH] Patched ww1.streamingcommunity.one -> 208.91.196.145
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+[DoH] Patched resolution failed for streamingcommunity.cfd: timed out
+[DoH] Patched resolution failed for streamingcommunity.care: timed out
+[DoH] Patched resolution failed for streamingcommunity.computer: timed out
+[DoH] Patched resolution failed for streamingcommunity.vip: timed out
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+[DoH] Patched resolution failed for streamingcommunity.photos: timed out
+[DoH] Patched resolution failed for streamingcommunity.site: timed out
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+[!] No working StreamingCommunity domain found (all seized/parked). Paste a working title URL to set the domain manually.
+[!] Startup domain detection finished, using default settings.
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "GET /styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[*] Resolving clone site URL: https://streaming-community.watch/titles/24932-guarda-visualizza-game-of-thrones-il-trono-di-spade-5/watching.html...
+[*] Resolving vidxgo embed: https://v.vidxgo.co/0944947 ...
+[+] vidxgo series resolved -> 8 seasons
+INFO:     127.0.0.1:57405 - "POST /api/resolve-url HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49981 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/clone/episodes?tmdb_tv_id=1399&season=1&iframe_url=https%3A%2F%2Fv.vidxgo.co%2F0944947 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49981 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/clone/episodes?tmdb_tv_id=1399&season=4&iframe_url=https%3A%2F%2Fv.vidxgo.co%2F0944947 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57137 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "POST /api/clone/download HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57137 - "GET /api/download/status HTTP/1.1" 200 OK
+[*] Downloading 570 segments of video...
+INFO:     127.0.0.1:57405 - "POST /api/clone/download HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[*] Downloading 552 segments of video...
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 9 download attempt 1 failed: HTTP 503
+[-] Segment 27 download attempt 1 failed: HTTP 503
+[-] Segment 4 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 28 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 4 download attempt 2 failed: HTTP 503
+[-] Segment 57 download attempt 1 failed: HTTP 503
+[-] Segment 58 download attempt 1 failed: HTTP 503
+[-] Segment 59 download attempt 1 failed: HTTP 503
+[-] Segment 39 download attempt 1 failed: HTTP 503
+[-] Segment 62 download attempt 1 failed: HTTP 503
+[-] Segment 40 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 72 download attempt 1 failed: HTTP 503
+[-] Segment 73 download attempt 1 failed: HTTP 503
+[-] Segment 74 download attempt 1 failed: HTTP 503
+[-] Segment 75 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 58 download attempt 1 failed: HTTP 503
+[-] Segment 64 download attempt 1 failed: HTTP 503
+[-] Segment 66 download attempt 1 failed: HTTP 503
+[-] Segment 91 download attempt 1 failed: HTTP 503
+[-] Segment 68 download attempt 1 failed: HTTP 503
+[-] Segment 65 download attempt 1 failed: HTTP 503
+[-] Segment 69 download attempt 1 failed: HTTP 503
+[-] Segment 93 download attempt 1 failed: HTTP 503
+[-] Segment 94 download attempt 1 failed: HTTP 503
+[-] Segment 90 download attempt 1 failed: HTTP 503
+[-] Segment 95 download attempt 1 failed: HTTP 503
+[-] Segment 96 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 92 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 68 download attempt 2 failed: HTTP 503
+[-] Segment 104 download attempt 1 failed: HTTP 503
+[-] Segment 103 download attempt 1 failed: HTTP 503
+[-] Segment 106 download attempt 1 failed: HTTP 503
+[-] Segment 105 download attempt 1 failed: HTTP 503
+[-] Segment 107 download attempt 1 failed: HTTP 503
+[-] Segment 108 download attempt 1 failed: HTTP 503
+[-] Segment 77 download attempt 1 failed: HTTP 503
+[-] Segment 109 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 128 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 107 download attempt 2 failed: HTTP 503
+[-] Segment 109 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 139 download attempt 1 failed: HTTP 503
+[-] Segment 117 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] vidxgo token refresh failed: HTTPSConnectionPool(host='v.vidxgo.co', port=443): Read timed out. (read timeout=15)
+[-] Segment 129 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 137 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 139 download attempt 1 failed: HTTP 503
+[-] Segment 138 download attempt 1 failed: HTTP 503
+[-] Segment 140 download attempt 1 failed: HTTP 503
+[-] Segment 129 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 176 download attempt 1 failed: HTTP 503
+[-] Segment 137 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 180 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 182 download attempt 1 failed: HTTP 503
+[-] Segment 153 download attempt 1 failed: HTTP 503
+[-] Segment 183 download attempt 1 failed: HTTP 503
+[-] Segment 140 download attempt 2 failed: HTTP 503
+[-] Segment 176 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 167 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 215 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 215 download attempt 2 failed: HTTP 503
+[-] Segment 224 download attempt 1 failed: HTTP 503
+[-] Segment 225 download attempt 1 failed: HTTP 503
+[-] Segment 228 download attempt 1 failed: HTTP 503
+[-] Segment 229 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 223 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 206 download attempt 1 failed: HTTP 503
+[-] Segment 207 download attempt 1 failed: HTTP 503
+[-] Segment 208 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 237 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 223 download attempt 1 failed: HTTP 503
+[-] Segment 248 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 276 download attempt 1 failed: HTTP 503
+[-] Segment 249 download attempt 1 failed: HTTP 503
+[-] Segment 247 download attempt 1 failed: HTTP 503
+[-] Segment 248 download attempt 1 failed: HTTP 503
+[-] Segment 251 download attempt 1 failed: HTTP 503
+[-] Segment 253 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 286 download attempt 1 failed: HTTP 503
+[-] Segment 260 download attempt 1 failed: HTTP 503
+[-] Segment 287 download attempt 1 failed: HTTP 503
+[-] Segment 262 download attempt 1 failed: HTTP 503
+[-] Segment 263 download attempt 1 failed: HTTP 503
+[-] Segment 289 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 266 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 253 download attempt 2 failed: HTTP 503
+[-] Segment 276 download attempt 1 failed: HTTP 503
+[-] Segment 304 download attempt 1 failed: HTTP 503
+[-] Segment 260 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 333 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 301 download attempt 1 failed: HTTP 503
+[-] Segment 260 download attempt 3 failed: HTTP 503
+[-] Segment 304 download attempt 1 failed: HTTP 503
+[-] Segment 339 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 343 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 304 download attempt 2 failed: HTTP 503
+[-] Segment 326 download attempt 1 failed: HTTP 503
+[-] Segment 328 download attempt 1 failed: HTTP 503
+[-] Segment 359 download attempt 1 failed: HTTP 503
+[-] Segment 329 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 374 download attempt 1 failed: HTTP 503
+[-] Segment 375 download attempt 1 failed: HTTP 503
+[-] Segment 377 download attempt 1 failed: HTTP 503
+[-] Segment 378 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 385 download attempt 1 failed: HTTP 503
+[-] Segment 386 download attempt 1 failed: HTTP 503
+[-] Segment 353 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 387 download attempt 1 failed: HTTP 503
+[-] Segment 388 download attempt 1 failed: HTTP 503
+[-] Segment 354 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 395 download attempt 1 failed: HTTP 503
+[-] Segment 396 download attempt 1 failed: HTTP 503
+[-] Segment 370 download attempt 1 failed: HTTP 503
+[-] Segment 386 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 397 download attempt 1 failed: HTTP 503
+[-] Segment 373 download attempt 1 failed: HTTP 503
+[-] Segment 372 download attempt 1 failed: HTTP 503
+[-] Segment 387 download attempt 2 failed: HTTP 503
+[-] Segment 400 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 413 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 387 download attempt 1 failed: HTTP 503
+[-] Segment 415 download attempt 1 failed: HTTP 503
+[-] Segment 416 download attempt 1 failed: HTTP 503
+[-] Segment 417 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 432 download attempt 1 failed: HTTP 503
+[-] Segment 404 download attempt 1 failed: HTTP 503
+[-] Segment 405 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 440 download attempt 1 failed: HTTP 503
+[-] Segment 441 download attempt 1 failed: HTTP 503
+[-] Segment 442 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 438 download attempt 1 failed: HTTP 503
+[-] Segment 441 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 477 download attempt 1 failed: HTTP 503
+[-] Segment 479 download attempt 1 failed: HTTP 503
+[-] Segment 480 download attempt 1 failed: HTTP 503
+[-] Segment 481 download attempt 1 failed: HTTP 503
+[-] Segment 482 download attempt 1 failed: HTTP 503
+[-] Segment 483 download attempt 1 failed: HTTP 503
+[-] Segment 448 download attempt 1 failed: HTTP 503
+[-] Segment 484 download attempt 1 failed: HTTP 503
+[-] Segment 449 download attempt 1 failed: HTTP 503
+[-] Segment 485 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[*] Resolving clone site URL: https://streaming-community.watch/titles/24932-guarda-visualizza-game-of-thrones-il-trono-di-spade-5/watching.html...
+[*] Resolving vidxgo embed: https://v.vidxgo.co/0944947 ...
+INFO:     127.0.0.1:50260 - "GET /api/download/status HTTP/1.1" 200 OK
+[+] vidxgo series resolved -> 8 seasons
+INFO:     127.0.0.1:57405 - "POST /api/resolve-url HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50260 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/clone/episodes?tmdb_tv_id=1399&season=1&iframe_url=https%3A%2F%2Fv.vidxgo.co%2F0944947 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 479 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50943 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50943 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 518 download attempt 1 failed: HTTP 503
+[-] Segment 492 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/clone/episodes?tmdb_tv_id=1399&season=4&iframe_url=https%3A%2F%2Fv.vidxgo.co%2F0944947 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 500 download attempt 1 failed: HTTP 503
+[-] Segment 492 download attempt 2 failed: HTTP 503
+[-] Segment 518 download attempt 2 failed: HTTP 503
+[-] Segment 501 download attempt 1 failed: HTTP 503
+[-] Segment 529 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 532 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 542 download attempt 1 failed: HTTP 503
+[-] Segment 543 download attempt 1 failed: HTTP 503
+[-] Segment 509 download attempt 1 failed: HTTP 503
+[-] Segment 544 download attempt 1 failed: HTTP 503
+[-] Segment 510 download attempt 1 failed: HTTP 503
+[-] Segment 511 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 546 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+[*] Merging segments...
+[*] Merging segments...
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+[+] Download completed! Saved to downloads\Il Trono di Spade S04E04.mp4
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+[+] Download completed! Saved to downloads\Il Trono di Spade S04E03.mp4
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "POST /api/downloads/open-folder HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "POST /api/download/reveal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "POST /api/download/reveal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "POST /api/download/reveal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "POST /api/download/reveal HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57558 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58314 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52387 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54805 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63481 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64935 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51911 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52496 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64540 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57951 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61780 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55583 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54587 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55345 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56221 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62898 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61738 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55685 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52899 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57827 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62321 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64911 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55394 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53982 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53649 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56476 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51527 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61727 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55253 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55281 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61848 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49274 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62105 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57763 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51528 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61908 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65192 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61871 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62754 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55506 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61215 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61215 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61215 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:61215 - "GET /styles.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:63853 - "GET /app.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:63853 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63853 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59200 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58488 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49975 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49975 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49975 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64764 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58570 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52224 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63357 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60282 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:56405 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[*] Resolving clone site URL: https://streaming-community.watch/titles/25041-guarda-rick-e-morty-4-gratis-completo/watching.html...
+[*] Resolving vidxgo embed: https://v.vidxgo.co/2861424 ...
+[+] vidxgo series resolved -> 9 seasons
+INFO:     127.0.0.1:56405 - "POST /api/resolve-url HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/clone/episodes?tmdb_tv_id=60625&season=1&iframe_url=https%3A%2F%2Fv.vidxgo.co%2F2861424 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/clone/episodes?tmdb_tv_id=60625&season=9&iframe_url=https%3A%2F%2Fv.vidxgo.co%2F2861424 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "POST /api/clone/download HTTP/1.1" 200 OK
+[*] Downloading 223 segments of video...
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "POST /api/clone/download HTTP/1.1" 200 OK
+[*] Downloading 222 segments of video...
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 7 download attempt 1 failed: HTTP 503
+[-] Segment 0 download attempt 1 failed: HTTP 503
+[-] Segment 8 download attempt 1 failed: HTTP 503
+[-] Segment 28 download attempt 1 failed: HTTP 503
+[-] Segment 31 download attempt 1 failed: HTTP 503
+[-] Segment 34 download attempt 1 failed: HTTP 503
+[-] Segment 32 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "POST /api/clone/download HTTP/1.1" 200 OK
+[-] Segment 33 download attempt 1 failed: HTTP 503
+[-] Segment 35 download attempt 1 failed: HTTP 503
+[-] Segment 6 download attempt 1 failed: HTTP 503
+[-] Segment 10 download attempt 1 failed: HTTP 503
+[-] Segment 21 download attempt 1 failed: HTTP 503
+[-] Segment 37 download attempt 1 failed: HTTP 503
+[-] Segment 36 download attempt 1 failed: HTTP 503
+[-] Segment 16 download attempt 1 failed: HTTP 503
+[-] Segment 38 download attempt 1 failed: HTTP 503
+[-] Segment 24 download attempt 1 failed: HTTP 503
+[-] Segment 4 download attempt 1 failed: HTTP 503
+[*] Downloading 226 segments of video...
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 32 download attempt 2 failed: HTTP 503
+[-] Segment 40 download attempt 1 failed: HTTP 503
+[-] Segment 21 download attempt 2 failed: HTTP 503
+[-] Segment 10 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 16 download attempt 2 failed: HTTP 503
+[-] Segment 37 download attempt 1 failed: HTTP 503
+[-] Segment 33 download attempt 2 failed: HTTP 503
+[-] Segment 43 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 42 download attempt 1 failed: HTTP 503
+[-] Segment 56 download attempt 1 failed: HTTP 503
+[-] Segment 43 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 44 download attempt 1 failed: HTTP 503
+[-] Segment 47 download attempt 1 failed: HTTP 503
+[-] Segment 59 download attempt 1 failed: HTTP 503
+[-] Segment 40 download attempt 2 failed: HTTP 503
+[-] Segment 49 download attempt 1 failed: HTTP 503
+[-] Segment 61 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 66 download attempt 1 failed: HTTP 503
+[-] Segment 58 download attempt 1 failed: HTTP 503
+[-] Segment 47 download attempt 2 failed: HTTP 503
+[-] Segment 57 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 59 download attempt 1 failed: HTTP 503
+[-] Segment 60 download attempt 1 failed: HTTP 503
+[-] Segment 68 download attempt 1 failed: HTTP 503
+[-] Segment 70 download attempt 1 failed: HTTP 503
+[-] Segment 73 download attempt 1 failed: HTTP 503
+[-] Segment 74 download attempt 1 failed: HTTP 503
+[-] Segment 66 download attempt 2 failed: HTTP 503
+[-] Segment 78 download attempt 1 failed: HTTP 503
+[-] Segment 79 download attempt 1 failed: HTTP 503
+[-] Segment 75 download attempt 1 failed: HTTP 503
+[-] Segment 58 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 68 download attempt 2 failed: HTTP 503
+[-] Segment 81 download attempt 1 failed: HTTP 503
+[-] Segment 65 download attempt 1 failed: HTTP 503
+[-] Segment 74 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 69 download attempt 1 failed: HTTP 503
+[-] Segment 66 download attempt 3 failed: HTTP 503
+[-] Segment 82 download attempt 1 failed: HTTP 503
+[-] Segment 78 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 68 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 75 download attempt 1 failed: HTTP 503
+[-] Segment 77 download attempt 1 failed: HTTP 503
+[-] Segment 78 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 101 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 114 download attempt 1 failed: HTTP 503
+[-] Segment 113 download attempt 1 failed: HTTP 503
+[-] Segment 112 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 102 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 124 download attempt 1 failed: HTTP 503
+[-] vidxgo token refresh failed: HTTPSConnectionPool(host='v.vidxgo.co', port=443): Read timed out. (read timeout=15)
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 116 download attempt 1 failed: HTTP 503
+[-] Segment 117 download attempt 1 failed: HTTP 503
+[-] Segment 127 download attempt 1 failed: HTTP 503
+[-] Segment 119 download attempt 1 failed: HTTP 503
+[-] Segment 118 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 120 download attempt 1 failed: HTTP 503
+[-] Segment 114 download attempt 2 failed: HTTP 503
+[-] Segment 113 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 147 download attempt 1 failed: HTTP 503
+[-] Segment 148 download attempt 1 failed: HTTP 503
+[-] Segment 144 download attempt 1 failed: HTTP 503
+[-] Segment 146 download attempt 1 failed: HTTP 503
+[-] Segment 150 download attempt 1 failed: HTTP 503
+[-] Segment 147 download attempt 1 failed: HTTP 503
+[-] Segment 152 download attempt 1 failed: HTTP 503
+[-] Segment 153 download attempt 1 failed: HTTP 503
+[-] Segment 148 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 144 download attempt 2 failed: HTTP 503
+[-] Segment 148 download attempt 2 failed: HTTP 503
+[-] Segment 156 download attempt 1 failed: HTTP 503
+[-] Segment 150 download attempt 2 failed: HTTP 503
+[-] Segment 146 download attempt 2 failed: HTTP 503
+[-] Segment 151 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 153 download attempt 2 failed: HTTP 503
+[-] Segment 148 download attempt 2 failed: HTTP 503
+[-] Segment 149 download attempt 1 failed: HTTP 503
+[-] Segment 155 download attempt 1 failed: HTTP 503
+[-] Segment 157 download attempt 1 failed: HTTP 503
+[-] Segment 158 download attempt 1 failed: HTTP 503
+[-] Segment 146 download attempt 3 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 161 download attempt 1 failed: HTTP 503
+[-] Segment 160 download attempt 1 failed: HTTP 503
+[-] Segment 151 download attempt 2 failed: HTTP 503
+[-] Segment 150 download attempt 3 failed: HTTP 503
+[-] Segment 160 download attempt 1 failed: HTTP 503
+[-] Segment 162 download attempt 1 failed: HTTP 503
+[-] Segment 155 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 163 download attempt 1 failed: HTTP 503
+[-] Segment 166 download attempt 1 failed: HTTP 503
+[-] Segment 146 download attempt 4 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 172 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 178 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 172 download attempt 2 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 192 download attempt 1 failed: HTTP 503
+[-] Segment 190 download attempt 1 failed: HTTP 503
+[-] Segment 191 download attempt 1 failed: HTTP 503
+[-] Segment 197 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 195 download attempt 1 failed: HTTP 503
+[-] Segment 202 download attempt 1 failed: HTTP 503
+[-] Segment 204 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[-] Segment 210 download attempt 1 failed: HTTP 503
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[*] Merging segments...
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[*] Merging segments...
+[*] Merging segments...
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[+] Download completed! Saved to downloads\Rick and Morty S09E03.mp4
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK
+[+] Download completed! Saved to downloads\Rick and Morty S09E01.mp4
+[+] Download completed! Saved to downloads\Rick and Morty S09E02.mp4
+INFO:     127.0.0.1:56405 - "GET /api/download/status HTTP/1.1" 200 OK

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SC Portal — Scarica in locale</title>
+    <meta name="description" content="Portale web locale e privato per scaricare film ed episodi da un link, senza pubblicità né tracker.">
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- HLS.js for streaming -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="logo-container">
+            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 16.5V7.5L16 12L10 16.5Z" fill="currentColor"/>
+            </svg>
+            <h1 class="app-title">SC<span>Portal</span></h1>
+        </div>
+
+        <div class="settings-box" title="StreamingCommunity cambia spesso dominio: qui imposti quello attivo (per i link nativi). Per i link clone non serve.">
+            <span class="settings-label">streamingcommunity.</span>
+            <input type="text" id="domain-input" placeholder="computer">
+            <button id="save-settings-btn" class="icon-btn" title="Salva dominio">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            </button>
+        </div>
+
+        <div class="settings-box" title="Alcuni episodi sono ospitati su nodi CDN bloccati dal provider (Piracy Shield/AGCOM): l'IP è vivo nel mondo ma cade dalla tua rete, quindi il download va in timeout. Imposta qui un proxy/VPN (es. socks5://127.0.0.1:1080) per instradare quel traffico fuori dal blocco. Vuoto = connessione diretta.">
+            <span class="settings-label">proxy</span>
+            <input type="text" id="proxy-input" placeholder="socks5://127.0.0.1:1080 (opzionale)">
+            <button id="save-proxy-btn" class="icon-btn" title="Salva proxy">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Hero: paste link -->
+        <section class="hero">
+            <div class="hero-heading">
+                <h2>Incolla un link, scaricalo in locale</h2>
+                <p>Privato e senza pubblicità. Film ed episodi salvati direttamente sul tuo computer.</p>
+            </div>
+
+            <div class="card glass url-card">
+                <div class="input-group">
+                    <span class="input-icon">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    </span>
+                    <input type="text" id="url-input" placeholder="Incolla qui il link del film o della serie…" autocomplete="off" spellcheck="false">
+                    <button id="load-url-btn" class="secondary-btn" title="Apri la scheda nel portale">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                        <span>Apri</span>
+                    </button>
+                    <button id="convert-url-btn" class="primary-btn" title="Scarica subito">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <span>Scarica</span>
+                    </button>
+                </div>
+                <div class="hero-steps">
+                    <span class="step"><b>Film</b> → si scarica subito</span>
+                    <span class="step-sep">•</span>
+                    <span class="step"><b>Serie</b> → scegli stagione ed episodio</span>
+                    <span class="step-sep">•</span>
+                    <span class="step">Supporta anche flussi <b>.m3u8 / .mp4</b></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stream Player Area -->
+        <section id="player-section" class="player-section hidden">
+            <div class="card glass player-card">
+                <div class="player-header">
+                    <h2 id="playing-title">Riproduzione video</h2>
+                    <button id="close-player-btn" class="close-btn">&times;</button>
+                </div>
+                <div class="video-container">
+                    <video id="video-player" controls></video>
+                    <iframe id="iframe-player" src="" frameborder="0" allowfullscreen class="hidden" style="width:100%; height:100%; display:block;"></iframe>
+                </div>
+                <div class="player-controls-bar">
+                    <label for="quality-select">Qualità:</label>
+                    <select id="quality-select" class="custom-select"></select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Downloads Management Section -->
+        <section class="downloads-section card glass">
+            <div class="downloads-header">
+                <h2>I tuoi download</h2>
+                <button id="open-folder-btn" class="secondary-btn small-btn" title="Apri la cartella dei download">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    <span>Cartella</span>
+                </button>
+            </div>
+            <div id="downloads-list" class="downloads-list">
+                <div class="no-downloads">Nessun download ancora. Incolla un link qui sopra per iniziare.</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Details Modal -->
+    <div id="details-modal" class="modal hidden">
+        <div class="modal-content glass">
+            <button id="close-modal-btn" class="modal-close-btn">&times;</button>
+            <div class="modal-body">
+                <div class="modal-cover">
+                    <img id="detail-cover" src="" alt="Copertina">
+                </div>
+                <div class="modal-details">
+                    <h2 id="detail-title">Titolo del Film/Serie</h2>
+                    <div class="meta-tags">
+                        <span id="detail-year" class="tag">Anno</span>
+                        <span id="detail-score" class="tag score-tag">★ 0.0</span>
+                        <span id="detail-runtime" class="tag">Durata</span>
+                    </div>
+                    <p id="detail-plot">Trama del contenuto...</p>
+                    <div id="detail-genres" class="genres-container"></div>
+
+                    <!-- Content actions (Movies) -->
+                    <div id="movie-actions" class="actions-group hidden">
+                        <button id="stream-movie-btn" class="primary-btn">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Riproduci
+                        </button>
+                        <button id="download-movie-btn" class="secondary-btn">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Scarica
+                        </button>
+                    </div>
+
+                    <!-- Seasons dropdown for Series -->
+                    <div id="series-container" class="series-container hidden">
+                        <div class="season-selector-group">
+                            <label for="season-select">Stagione:</label>
+                            <select id="season-select" class="custom-select"></select>
+                        </div>
+                        <div id="episodes-list" class="episodes-list">
+                            <!-- Episodes dynamically loaded -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

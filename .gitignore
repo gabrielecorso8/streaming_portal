@@ -1,0 +1,15 @@
+# Virtual environment
+venv/
+
+# Local cache and temporary files
+__pycache__/
+*.pyc
+tmp/
+
+# Downloaded files and settings
+downloads/
+settings.json
+
+# Local binaries (ffmpeg)
+bin/ffmpeg.exe
+bin/ffmpeg.zip

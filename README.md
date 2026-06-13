@@ -1,6 +1,16 @@
-# Unofficial Portal
+# SC Portal
 
 Un portale web locale, privato e sicuro per cercare, riprodurre in-browser e scaricare contenuti da StreamingCommunity senza popup pubblicitari o script di tracciamento fastidiosi.
+
+## Guida Rapida
+
+1. Scarica repo
+2. Avvia pyhton start.py
+3. Scarica Cloudflare One Client (per connessione privata)
+4. Scarica LocalSend sia su PC che su dispositivo smartphone/tablet (per invio rapido)
+5. Copia link del film o di una puntata qualsiasi su SC Portal
+6. Scarica ciò che vuoi/vorrai vedere
+7. Enjoy
 
 ## Funzionalità
 

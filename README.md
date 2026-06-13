@@ -1,4 +1,4 @@
-# StreamingCommunity Unofficial Portal
+# Unofficial Portal
 
 Un portale web locale, privato e sicuro per cercare, riprodurre in-browser e scaricare contenuti da StreamingCommunity senza popup pubblicitari o script di tracciamento fastidiosi.
 

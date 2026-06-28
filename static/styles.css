@@ -864,3 +864,113 @@ video {
 .hidden {
     display: none !important;
 }
+
+/* --- Library (saved & recent titles) ------------------------------------ */
+.library-hint { font-size: .8rem; opacity: .6; }
+.library-list { display: flex; flex-direction: column; gap: 8px; }
+.library-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 10px; border-radius: 12px; cursor: pointer;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.06);
+    transition: background .15s ease, border-color .15s ease, transform .05s ease;
+}
+.library-item:hover { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.15); }
+.library-item:active { transform: scale(.997); }
+.library-item.is-fav { border-color: rgba(255,196,0,.35); }
+.library-cover {
+    width: 42px; height: 60px; object-fit: cover; border-radius: 6px; flex: 0 0 auto;
+    background: rgba(255,255,255,.07);
+}
+.library-cover.placeholder { display: block; }
+.library-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.library-name {
+    font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.library-sub { font-size: .78rem; opacity: .6; }
+.library-actions { display: flex; gap: 4px; flex: 0 0 auto; }
+.library-actions .icon-btn { font-size: 1rem; line-height: 1; padding: 6px 8px; }
+.library-item.is-fav .fav-btn { color: #ffc400; }
+
+/* --- Saved domains ------------------------------------------------------- */
+.domains-list { display: flex; flex-direction: column; gap: 6px; }
+.domain-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px; border-radius: 10px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.06);
+}
+.domain-item.is-current { border-color: rgba(120,200,120,.4); background: rgba(120,200,120,.08); }
+.domain-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; background: #888; }
+.domain-dot.on { background: #46c46a; box-shadow: 0 0 6px rgba(70,196,106,.7); }
+.domain-dot.off { background: #e35; }
+.domain-dot.unknown { background: #888; }
+.domain-name { flex: 1 1 auto; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.domain-tag { font-size: .76rem; opacity: .6; flex: 0 0 auto; }
+.domain-actions { display: flex; gap: 4px; flex: 0 0 auto; }
+.domain-actions .icon-btn { font-size: .95rem; line-height: 1; padding: 5px 8px; }
+
+/* --- Favourite button inside the title modal ---------------------------- */
+.fav-modal-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin: 4px 0 10px; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+    font: inherit; font-size: .85rem; font-weight: 600;
+    color: var(--text, #eee);
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.15);
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.fav-modal-btn:hover { background: rgba(255,255,255,.12); }
+.fav-modal-btn.active {
+    color: #1a1a1a; background: #ffc400; border-color: #ffc400;
+}
+
+/* --- Domain folders ----------------------------------------------------- */
+.create-folder-btn { margin-bottom: 10px; }
+.domains-subtitle { margin: 12px 0 6px; font-size: .8rem; font-weight: 700; opacity: .55; text-transform: uppercase; letter-spacing: .04em; }
+.folder-card { border: 1px solid rgba(255,255,255,.08); border-radius: 12px; margin-bottom: 8px; overflow: hidden; background: rgba(255,255,255,.03); }
+.folder-head { display: flex; align-items: center; gap: 12px; padding: 8px 10px; cursor: pointer; }
+.folder-head:hover { background: rgba(255,255,255,.05); }
+.folder-cover { width: 54px; height: 76px; border-radius: 8px; flex: 0 0 auto; background-size: cover; background-position: center; background-color: rgba(255,255,255,.08); }
+.folder-cover.placeholder { display: flex; align-items: center; justify-content: center; }
+.folder-cover.placeholder::after { content: "🎬"; font-size: 1.4rem; opacity: .5; }
+.folder-meta { flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.folder-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.folder-count { font-size: .78rem; opacity: .6; }
+.folder-actions { display: flex; gap: 4px; flex: 0 0 auto; }
+.folder-actions .icon-btn { font-size: .95rem; line-height: 1; padding: 5px 7px; cursor: pointer; }
+.folder-domains { padding: 4px 10px 10px 10px; display: flex; flex-direction: column; gap: 6px; }
+.folder-domains.hidden { display: none; }
+.folder-move { font-size: .78rem; padding: 3px 6px; max-width: 150px; }
+.domain-item .folder-move { flex: 0 0 auto; }
+
+/* --- Drag & drop dei domini nelle cartelle ------------------------------ */
+.domain-item[draggable="true"] { cursor: grab; }
+.domain-item.dragging { opacity: .45; }
+.folder-card.drop-target { outline: 2px dashed #46c46a; outline-offset: -2px; background: rgba(70,196,106,.08); }
+.unassigned-zone { border-radius: 12px; padding: 2px; transition: background .12s ease; }
+.unassigned-zone.drop-target { outline: 2px dashed #8ab4ff; outline-offset: -2px; background: rgba(138,180,255,.08); }
+
+/* --- Folder domain picker ---------------------------------------------- */
+.picker-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.picker-panel { width: min(440px, 92vw); max-height: 80vh; display: flex; flex-direction: column; padding: 18px; border-radius: 14px; background: #1c1c22; border: 1px solid rgba(255,255,255,.12); }
+.picker-panel h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.picker-hint { margin: 0 0 10px; font-size: .82rem; opacity: .6; }
+.picker-list { overflow-y: auto; display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; }
+.picker-row { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 8px; cursor: pointer; }
+.picker-row:hover { background: rgba(255,255,255,.06); }
+.picker-row input { width: 16px; height: 16px; flex: 0 0 auto; }
+.picker-note { font-size: .76rem; opacity: .55; }
+.picker-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+/* --- Cartelle più visibili (override) ----------------------------------- */
+.folder-head { padding: 12px 14px; gap: 16px; }
+.folder-cover { width: 84px; height: 120px; border-radius: 10px; }
+.folder-cover.placeholder::after { font-size: 2rem; }
+.folder-name { font-size: 1.15rem; font-weight: 800; letter-spacing: .01em; }
+.folder-count { font-size: .85rem; opacity: .7; }
+.folder-card { border-color: rgba(255,255,255,.12); }
+.folder-card:hover { border-color: rgba(255,255,255,.22); }
+
+/* --- Sezione Preferiti -------------------------------------------------- */
+.fav-subtitle { color: #ffc400; opacity: .9; }

@@ -1,7 +1,10 @@
 import os
 import re
 import sys
+import json
 import time
+import uuid
+import queue
 import shutil
 import urllib.parse
 import subprocess
@@ -19,6 +22,10 @@ import vidxgo
 active_downloads = {}
 # Maps download_id -> absolute path of the finished file (used to open/reveal it)
 download_paths = {}
+
+# On-disk registry so the download queue + history survive a server restart.
+STATE_FILE = os.path.join("tmp", "downloads_state.json")
+_state_lock = threading.Lock()
 
 class Decryptor:
     def __init__(self, key_bytes, iv_hex):
@@ -65,6 +72,19 @@ class DownloadTask:
         self.status = "pending"
         self.error_msg = None
         self.output_path = None  # absolute path of the finished .mp4
+
+        # Snapshot of the construction parameters, persisted to disk so the
+        # download can be reconstructed and resumed after a server restart.
+        self.params = {
+            "title": title,
+            "m3u8_video_url": m3u8_video_url,
+            "m3u8_audio_url": m3u8_audio_url,
+            "key_info": key_info,
+            "output_dir": output_dir,
+            "extra_headers": extra_headers,
+            "vidxgo_meta": vidxgo_meta,
+            "proxies": proxies,
+        }
 
         active_downloads[download_id] = self.get_status()
 
@@ -123,12 +143,17 @@ class DownloadTask:
         return st
 
     def update_status(self, status, progress=None, error_msg=None):
+        prev_status = self.status
         self.status = status
         if progress is not None:
             self.progress = progress
         if error_msg is not None:
             self.error_msg = error_msg
         active_downloads[self.download_id] = self.get_status()
+        # Persist on status transitions only (not on every progress tick, which
+        # fires once per segment) to keep disk writes cheap.
+        if status != prev_status:
+            _persist_state()
 
     def fetch_key(self):
         if not self.key_info:
@@ -212,6 +237,18 @@ class DownloadTask:
             nonlocal completed_segments
             base_seg_url = urllib.parse.urljoin(stream_url, seg_uri)
 
+            # Resume support: a segment already saved on disk (non-empty) is
+            # reused instead of being re-downloaded. This makes interrupted
+            # downloads resumable and lets the targeted-retry pass below only
+            # re-fetch the segments that are actually missing.
+            seg_path = os.path.join(target_dir, f"{idx:05d}.ts")
+            if os.path.exists(seg_path) and os.path.getsize(seg_path) > 0:
+                with lock:
+                    completed_segments += 1
+                    current_progress = progress_offset + (completed_segments / total_segments) * 100 * weight
+                    self.update_status(self.status, current_progress)
+                return
+
             # Simple retry mechanism (extra attempts for token-refresh streams)
             attempts = 5 if self.vidxgo_meta else 3
             for retry in range(attempts):
@@ -245,11 +282,49 @@ class DownloadTask:
                     time.sleep(1)
             raise Exception(f"Failed to download segment {idx} after retries")
 
-        # Use ThreadPoolExecutor for downloading segments concurrently
+        # Use ThreadPoolExecutor for downloading segments concurrently.
+        # We do NOT abort on the first failed segment: transient errors are
+        # collected and resolved by the targeted-retry pass below, so a single
+        # flaky segment can't waste the whole download.
         with ThreadPoolExecutor(max_workers=30) as executor:
             futures = [executor.submit(download_segment, i, seg.uri) for i, seg in enumerate(segments)]
             for future in as_completed(futures):
-                future.result()  # Will raise exceptions if any segment download failed
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f"[-] Segment task error (will retry): {e}")
+
+        # Completeness check: every segment 0..N-1 must exist and be non-empty.
+        def _missing_segments():
+            miss = []
+            for i in range(total_segments):
+                p = os.path.join(target_dir, f"{i:05d}.ts")
+                if not os.path.exists(p) or os.path.getsize(p) == 0:
+                    miss.append(i)
+            return miss
+
+        missing = _missing_segments()
+        for attempt in range(3):
+            if not missing:
+                break
+            preview = missing[:10]
+            print(f"[!] {len(missing)} {stream_type} segment(s) missing "
+                  f"(retry {attempt + 1}/3): {preview}{'...' if len(missing) > 10 else ''}")
+            if self.vidxgo_meta:
+                self._refresh_sig(force=True)
+            for idx in missing:
+                try:
+                    download_segment(idx, segments[idx].uri)
+                except Exception as e:
+                    print(f"[-] Targeted retry of segment {idx} failed: {e}")
+            missing = _missing_segments()
+
+        if missing:
+            raise Exception(
+                f"{len(missing)} segmenti '{stream_type}' mancanti dopo i retry "
+                f"(es. {missing[:5]}). Download incompleto: i .ts scaricati restano "
+                f"in {target_dir} e il download può essere ripreso."
+            )
 
     def download_direct_file(self, url, output_path):
         headers = {
@@ -361,37 +436,220 @@ class DownloadTask:
         except Exception as e:
             print(f"[-] Download failed: {e}")
             self.update_status("failed", error_msg=str(e))
-            # Clean up temp folder on failure
-            shutil.rmtree(self.temp_dir, ignore_errors=True)
+            # NOTE: we deliberately KEEP self.temp_dir on failure. The already
+            # downloaded .ts segments let the download be resumed later (the
+            # segment-skip logic in download_stream reuses them) instead of
+            # restarting from zero. Temp files are only removed on success.
 
     def concat_segments(self, segments_dir, output_mp4):
-        """Merges all TS files in segments_dir into a single MP4 file."""
+        """Merges all TS segments in segments_dir into a single MP4 file.
+
+        HLS .ts segments are byte-concatenable and already carry globally
+        continuous PTS/DTS timestamps. We therefore join the raw bytes into
+        one contiguous TS stream and remux it in a single pass.
+
+        This deliberately AVOIDS the ffmpeg `concat` demuxer (-f concat), which
+        re-bases each input file's timestamps to zero and then stacks them by
+        their measured duration. Because consecutive HLS segments overlap by a
+        few frames and the per-segment audio/video durations differ slightly,
+        the demuxer inserts a small timestamp discontinuity at every join,
+        producing a visible ~0.1-0.2s micro-freeze between each part (which
+        accumulates over hundreds of segments). Byte-concatenation preserves
+        the original continuous timing, so playback stays fluid.
+        """
         ts_files = sorted([f for f in os.listdir(segments_dir) if f.endswith(".ts")])
-        
-        file_list_path = os.path.join(segments_dir, "file_list.txt")
-        with open(file_list_path, "w", encoding="utf-8") as f:
+        if not ts_files:
+            raise Exception(f"No .ts segments found in {segments_dir}")
+
+        # 1. Concatenate raw TS bytes into one continuous stream.
+        joined_ts = os.path.join(segments_dir, "_joined.ts")
+        with open(joined_ts, "wb") as out:
             for ts_file in ts_files:
-                # Use absolute path and escape single quotes for ffmpeg format
-                abs_path = os.path.abspath(os.path.join(segments_dir, ts_file))
-                escaped_path = abs_path.replace("'", "'\\''")
-                f.write(f"file '{escaped_path}'\n")
-                
+                with open(os.path.join(segments_dir, ts_file), "rb") as src:
+                    shutil.copyfileobj(src, out, length=1024 * 1024)
+
+        # 2. Remux to MP4 in a single pass, keeping the original timestamps.
+        #    +genpts fills any missing PTS; +faststart moves the moov atom to
+        #    the front for smooth streaming/seeking.
         cmd = [
             "ffmpeg",
-            "-f", "concat",
-            "-safe", "0",
-            "-i", file_list_path,
+            "-fflags", "+genpts",
+            "-i", joined_ts,
             "-c", "copy",
+            "-movflags", "+faststart",
             "-y",
             output_mp4
         ]
-        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        finally:
+            # Always drop the large intermediate file.
+            if os.path.exists(joined_ts):
+                os.remove(joined_ts)
+
+# --------------------------------------------------------------------------- #
+#  Persistence + download queue
+# --------------------------------------------------------------------------- #
+
+# Statuses considered "in flight" — these are re-queued on restart so an
+# interrupted download resumes instead of being lost.
+_RESUMABLE_STATES = ("pending", "queued", "downloading", "merging")
+
+
+def _persist_state():
+    """Atomically write the whole download registry to STATE_FILE.
+
+    Stores, per download: current status/progress and the construction params
+    needed to rebuild and resume the task after a restart. Already-downloaded
+    .ts segments live in tmp/ and are reused on resume.
+    """
+    manager = _MANAGER
+    if manager is None:
+        return
+    try:
+        with _state_lock:
+            data = {}
+            for did, task in list(manager.tasks.items()):
+                data[did] = {
+                    "title": task.title,
+                    "status": task.status,
+                    "progress": round(task.progress, 1),
+                    "error": task.error_msg,
+                    "output_path": task.output_path,
+                    "params": task.params,
+                }
+            os.makedirs(os.path.dirname(STATE_FILE) or ".", exist_ok=True)
+            tmp_path = STATE_FILE + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(data, f)
+            os.replace(tmp_path, STATE_FILE)
+    except Exception as e:
+        print(f"[-] Failed to persist download state: {e}")
+
+
+class DownloadManager:
+    """Runs downloads through a bounded worker pool (a real queue) and keeps the
+    registry persisted so the queue and history survive restarts."""
+
+    def __init__(self, max_concurrent=2):
+        self.tasks = {}                      # download_id -> DownloadTask
+        self.max_concurrent = max(1, int(max_concurrent))
+        self._queue = queue.Queue()
+        self._workers = []
+        self._started = False
+        self._lock = threading.Lock()
+
+    def set_concurrency(self, n):
+        """Set how many downloads may run at once. Takes effect before the
+        worker pool is started (i.e. before the first enqueue)."""
+        self.max_concurrent = max(1, int(n))
+
+    def start(self):
+        with self._lock:
+            if self._started:
+                return
+            self._started = True
+            for _ in range(self.max_concurrent):
+                t = threading.Thread(target=self._worker, daemon=True)
+                t.start()
+                self._workers.append(t)
+
+    def _worker(self):
+        while True:
+            download_id = self._queue.get()
+            try:
+                task = self.tasks.get(download_id)
+                if task and task.status in _RESUMABLE_STATES:
+                    task.run()
+            except Exception as e:
+                print(f"[-] Download worker error: {e}")
+            finally:
+                self._queue.task_done()
+
+    def enqueue(self, params):
+        """Create a task from params and put it on the queue. Returns the task."""
+        self.start()
+        download_id = params.pop("download_id", None) or str(uuid.uuid4())
+        task = DownloadTask(download_id=download_id, **params)
+        self.tasks[download_id] = task
+        task.update_status("queued")
+        self._queue.put(download_id)
+        return task
+
+    def load_persisted(self):
+        """Restore the registry from disk. Finished downloads become history;
+        unfinished ones are re-queued and resume from their existing segments."""
+        if not os.path.exists(STATE_FILE):
+            return
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            print(f"[-] Could not read persisted download state: {e}")
+            return
+
+        requeued = 0
+        for did, rec in data.items():
+            params = rec.get("params") or {}
+            if not params:
+                continue
+            try:
+                task = DownloadTask(download_id=did, **params)
+            except Exception as e:
+                print(f"[-] Skipping unreconstructable download {did}: {e}")
+                continue
+            self.tasks[did] = task
+            status = rec.get("status")
+            task.output_path = rec.get("output_path")
+
+            if status == "completed" and task.output_path and os.path.exists(task.output_path):
+                task.status = "completed"
+                task.progress = 100.0
+                download_paths[did] = task.output_path
+                active_downloads[did] = task.get_status()
+            elif status == "failed":
+                # Keep failed entries as history (their temp segments are kept,
+                # so the user could retry); do not auto-run.
+                task.status = "failed"
+                task.error_msg = rec.get("error")
+                task.progress = rec.get("progress", 0.0)
+                active_downloads[did] = task.get_status()
+            else:
+                # Anything that was in flight resumes.
+                self.start()
+                task.update_status("queued", rec.get("progress", 0.0))
+                self._queue.put(did)
+                requeued += 1
+
+        if requeued:
+            print(f"[+] Resumed {requeued} interrupted download(s) from previous session.")
+        _persist_state()
+
+
+# Single shared manager instance.
+_MANAGER = DownloadManager()
+
 
 def start_download_task(download_id, title, m3u8_video, m3u8_audio=None, key_info=None,
                         extra_headers=None, vidxgo_meta=None, proxies=None):
-    task = DownloadTask(download_id, title, m3u8_video, m3u8_audio, key_info,
-                        extra_headers=extra_headers, vidxgo_meta=vidxgo_meta, proxies=proxies)
-    thread = threading.Thread(target=task.run)
-    thread.daemon = True
-    thread.start()
-    return task
+    """Public API (unchanged signature): enqueue a download onto the manager."""
+    return _MANAGER.enqueue({
+        "download_id": download_id,
+        "title": title,
+        "m3u8_video_url": m3u8_video,
+        "m3u8_audio_url": m3u8_audio,
+        "key_info": key_info,
+        "extra_headers": extra_headers,
+        "vidxgo_meta": vidxgo_meta,
+        "proxies": proxies,
+    })
+
+
+def load_persisted_state():
+    """Entry point for the API to restore the queue/history on startup."""
+    _MANAGER.load_persisted()
+
+
+def set_max_concurrent(n):
+    """Entry point for the API to configure queue concurrency on startup."""
+    _MANAGER.set_concurrency(n)

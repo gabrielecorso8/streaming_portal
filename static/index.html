@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- HLS.js for streaming -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
     <header class="app-header">
@@ -27,6 +27,9 @@
             <input type="text" id="domain-input" placeholder="computer">
             <button id="save-settings-btn" class="icon-btn" title="Salva dominio">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            </button>
+            <button id="refresh-domain-btn" class="icon-btn" title="Cerca automaticamente il dominio attivo">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
             </button>
         </div>
 
@@ -90,6 +93,31 @@
             </div>
         </section>
 
+        <!-- Saved domains (remembered across sessions, tested at startup) -->
+        <section class="downloads-section card glass" id="domains-section">
+            <div class="downloads-header">
+                <h2>Domini salvati</h2>
+                <button id="test-domains-btn" class="secondary-btn small-btn" title="Verifica ora quali domini sono attivi">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>Testa ora</span>
+                </button>
+            </div>
+            <div id="domains-list" class="domains-list">
+                <div class="no-downloads">Nessun dominio salvato. Inseriscine uno nel campo in alto.</div>
+            </div>
+        </section>
+
+        <!-- Library: saved & recent titles -->
+        <section class="downloads-section card glass" id="library-section">
+            <div class="downloads-header">
+                <h2>Libreria</h2>
+                <span class="library-hint">I titoli che apri restano qui · clicca per riaprirli · ★ per i preferiti</span>
+            </div>
+            <div id="library-list" class="library-list">
+                <div class="no-downloads">Nessun titolo salvato. Apri un link: comparirà qui come collegamento.</div>
+            </div>
+        </section>
+
         <!-- Downloads Management Section -->
         <section class="downloads-section card glass">
             <div class="downloads-header">
@@ -115,6 +143,7 @@
                 </div>
                 <div class="modal-details">
                     <h2 id="detail-title">Titolo del Film/Serie</h2>
+                    <button id="fav-modal-btn" class="fav-modal-btn" title="Salva questo titolo nei preferiti della libreria">☆ Salva nei preferiti</button>
                     <div class="meta-tags">
                         <span id="detail-year" class="tag">Anno</span>
                         <span id="detail-score" class="tag score-tag">★ 0.0</span>
@@ -151,6 +180,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=3"></script>
 </body>
 </html>

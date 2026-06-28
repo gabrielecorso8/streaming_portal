@@ -20,7 +20,7 @@ Un portale web locale, privato e sicuro per cercare, riprodurre in-browser e sca
 - **Download HLS parallelo**: Scarica film o episodi in background tramite un downloader multithread ottimizzato, con decrittografia automatica AES-128 e fusione via FFmpeg.
 - **Riproduzione fluida (no micro-stop)**: I segmenti `.ts` vengono uniti a livello di byte e rimuxati in un solo passaggio, preservando i timestamp originali. Questo elimina i micro-blocchi che il classico `concat` di FFmpeg introduce a ogni giunzione. `+faststart` rende anche seek/streaming più reattivi.
 - **Download robusti e ripristinabili**: I segmenti già scaricati vengono riutilizzati (resume), i segmenti mancanti vengono ri-scaricati in modo mirato prima della fusione e, se restano buchi, il download fallisce con un messaggio chiaro invece di produrre un file con salti.
-- **Coda di download persistente**: Più download in coda con concorrenza limitata; lo stato sopravvive al riavvio e i download interrotti riprendono automaticamente.
+- **Coda di download**: Più download in coda con concorrenza limitata; ogni download può essere **interrotto** in qualsiasi momento. La lista dei download non viene ricordata tra le sessioni: la piattaforma conserva solo la libreria e i preferiti.
 - **Setup automatico**: Lo script di avvio configura l'ambiente virtuale Python (`venv`), scarica l'eseguibile di FFmpeg localmente e installa le dipendenze in un solo click.
 
 ## Libreria e organizzazione

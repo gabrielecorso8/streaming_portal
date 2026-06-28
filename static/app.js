@@ -3,6 +3,9 @@ let activeHls = null;    // Stores active HLS.js instance
 let lastTitleContext = ""; // Name of the title being opened (for domain-error messages)
 let currentLibKey = "";    // Library key of the title currently shown in the modal
 let libraryCache = [];     // Last known library list (to read favourite state)
+let openFolders = new Set(); // Folder ids currently expanded (kept across re-renders)
+let librarySearch = "";    // current library search query
+let lastLibraryData = null; // last folders payload (to re-render without refetch)
 
 // Helper for UI elements
 const el = {
@@ -14,6 +17,11 @@ const el = {
     urlInput: document.getElementById("url-input"),
     loadUrlBtn: document.getElementById("load-url-btn"),
     convertUrlBtn: document.getElementById("convert-url-btn"),
+    searchResultsSection: document.getElementById("search-results-section"),
+    searchResultsTitle: document.getElementById("search-results-title"),
+    searchResults: document.getElementById("search-results"),
+    searchSort: document.getElementById("search-sort"),
+    searchGenre: document.getElementById("search-genre"),
     openFolderBtn: document.getElementById("open-folder-btn"),
 
     // Details Modal
@@ -49,6 +57,8 @@ const el = {
 
     // Library
     libraryList: document.getElementById("library-list"),
+    librarySearch: document.getElementById("library-search"),
+    saveLibraryBtn: document.getElementById("save-library-btn"),
 
     // Downloads
     downloadsList: document.getElementById("downloads-list"),
@@ -86,11 +96,11 @@ async function init() {
     el.proxyInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") updateProxy();
     });
-    el.loadUrlBtn.addEventListener("click", resolveDirectUrl);
+    el.loadUrlBtn.addEventListener("click", handleMainInput);
     el.convertUrlBtn.addEventListener("click", convertDirectUrl);
     el.openFolderBtn.addEventListener("click", openDownloadsFolder);
     el.urlInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") resolveDirectUrl();
+        if (e.key === "Enter") handleMainInput();
     });
     el.closeModalBtn.addEventListener("click", closeModal);
     if (el.favModalBtn) el.favModalBtn.addEventListener("click", toggleModalFavorite);
@@ -102,6 +112,13 @@ async function init() {
     el.seasonSelect.addEventListener("change", loadSeasonEpisodes);
     
     if (el.testDomainsBtn) el.testDomainsBtn.addEventListener("click", testDomains);
+    if (el.librarySearch) el.librarySearch.addEventListener("input", () => {
+        librarySearch = el.librarySearch.value;
+        if (lastLibraryData) renderLibrary(lastLibraryData);
+    });
+    if (el.saveLibraryBtn) el.saveLibraryBtn.addEventListener("click", saveAll);
+    if (el.searchSort) el.searchSort.addEventListener("change", rerunSearchIfAny);
+    if (el.searchGenre) el.searchGenre.addEventListener("change", rerunSearchIfAny);
 
     // Start polling downloads
     startDownloadsPolling();
@@ -191,7 +208,7 @@ async function runDomainRefresh(retryHint) {
         if (data.found) {
             if (el.domainInput) el.domainInput.value = data.domain;
             fetchDomains();
-            showToast(`Dominio aggiornato: streamingcommunity.${data.domain}.` +
+            showToast(`Dominio aggiornato: ${data.domain}.` +
                 (retryHint ? " Riprova l'operazione." : ""), 5000);
         } else {
             showToast("Nessun dominio attivo trovato. Incolla un link funzionante per impostarlo manualmente.", 7000);
@@ -199,6 +216,87 @@ async function runDomainRefresh(retryHint) {
     } catch (e) {
         showToast("Errore durante l'aggiornamento del dominio.");
     }
+}
+
+function looksLikeUrl(value) {
+    return /^https?:\/\//i.test(value) || /^(www\.|streamingcommunity|v\.vidxgo|[^@\s]+\.(m3u8|mp4|ts)(\?|$))/i.test(value);
+}
+
+async function handleMainInput() {
+    const value = el.urlInput.value.trim();
+    if (!value) return;
+    if (looksLikeUrl(value)) {
+        await resolveDirectUrl(value);
+    } else {
+        await searchCatalog(value);
+    }
+}
+
+async function searchCatalog(query) {
+    showToast("Ricerca in corso...");
+    if (el.searchResultsSection) el.searchResultsSection.classList.remove("hidden");
+    if (el.searchResultsTitle) el.searchResultsTitle.textContent = `Risultati per "${query}"`;
+    if (el.searchResults) {
+        el.searchResults.innerHTML = '<div class="empty-state">Ricerca nel catalogo...</div>';
+    }
+    try {
+        const params = new URLSearchParams({ q: query });
+        if (el.searchSort && el.searchSort.value) params.set("sort", el.searchSort.value);
+        if (el.searchGenre && el.searchGenre.value) params.set("genre", el.searchGenre.value);
+        const resp = await fetch(`/api/search?${params.toString()}`);
+        if (!resp.ok) {
+            if (await checkDomainError(resp)) return;
+            showToast("Nessun risultato o ricerca non disponibile");
+            if (el.searchResults) el.searchResults.innerHTML = '<div class="empty-state">Nessun risultato trovato.</div>';
+            return;
+        }
+        const results = await resp.json();
+        renderSearchResults(results, query);
+    } catch (e) {
+        showToast("Errore durante la ricerca");
+        if (el.searchResults) el.searchResults.innerHTML = '<div class="empty-state">Errore durante la ricerca.</div>';
+    }
+}
+
+function rerunSearchIfAny() {
+    const value = el.urlInput.value.trim();
+    if (value && !looksLikeUrl(value)) searchCatalog(value);
+}
+
+function renderSearchResults(results, query) {
+    if (!el.searchResults) return;
+    el.searchResults.innerHTML = "";
+    if (!results || results.length === 0) {
+        el.searchResults.innerHTML = '<div class="empty-state">Nessun risultato trovato.</div>';
+        return;
+    }
+    results.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "media-card";
+        const type = item.type === "tv" ? "Serie" : (item.type === "movie" ? "Film" : "Titolo");
+        const cover = item.cover
+            ? `<img class="media-cover" src="${escapeHtml(item.cover)}" alt="" loading="lazy">`
+            : `<div class="media-cover"></div>`;
+        const score = item.score ? ` · ${escapeHtml(item.score)}` : "";
+        const date = item.release_date ? ` · ${escapeHtml(item.release_date)}` : "";
+        card.innerHTML = `
+            ${cover}
+            <div class="media-info">
+                <span class="media-type">${type}${score}${date}</span>
+                <span class="media-title">${escapeHtml(item.name || "Senza titolo")}</span>
+            </div>`;
+        card.addEventListener("click", () => openSearchResult(item));
+        el.searchResults.appendChild(card);
+    });
+}
+
+function openSearchResult(item) {
+    if (!item || !item.id_and_slug) {
+        showToast("Risultato non apribile");
+        return;
+    }
+    lastTitleContext = item.name || "";
+    loadDetails(item.id_and_slug, item.url || "");
 }
 
 // 2. Resolve Direct URL
@@ -240,6 +338,10 @@ async function resolveDirectUrl(urlArg, titleName) {
 async function convertDirectUrl() {
     const url = el.urlInput.value.trim();
     if (!url) return;
+    if (!looksLikeUrl(url)) {
+        await searchCatalog(url);
+        return;
+    }
     
     showToast("Analisi URL per download immediato...");
     try {
@@ -764,13 +866,37 @@ async function triggerDownload(label, titleId, episodeId = null) {
             return;
         }
         const data = await streamResp.json();
+        const finalTitle = label || data.title || "Video";
+
+        if (data.download && data.download.video_url) {
+            const payload = {
+                title: finalTitle,
+                m3u8_video: data.download.video_url,
+                m3u8_audio: data.download.audio_url || null,
+                key_info: null,
+                stream_headers: data.download.headers || null
+            };
+            const dlResp = await fetch("/api/download", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            if (dlResp.ok) {
+                showToast("Download avviato in background!");
+            } else {
+                showToast("Errore nell'avviare il download");
+            }
+            return;
+        }
         
-        // Select best quality available
+        // Legacy fallback for old Vixcloud embeds that still expose per-quality tokens.
         const bestQuality = data.qualities[0] || "720p";
         const tokenQualityKey = `token${bestQuality}`;
         const renderToken = data.params[tokenQualityKey];
-        
-        const finalTitle = label || data.title || "Video";
+        if (!renderToken) {
+            showToast("Impossibile preparare la playlist video: token non disponibile");
+            return;
+        }
         
         const payload = {
             title: finalTitle,
@@ -842,8 +968,10 @@ function renderDownloads(downloads) {
         else if (dl.status === "merging") statusText = "Unione tracce (FFmpeg)…";
         else if (dl.status === "completed") statusText = dl.size ? `Completato · ${formatBytes(dl.size)}` : "Completato";
         else if (dl.status === "failed") statusText = `Fallito: ${dl.error || "errore sconosciuto"}`;
+        else if (dl.status === "cancelled") statusText = "Annullato";
 
-        const showBar = dl.status !== "completed" && dl.status !== "failed";
+        const isActive = ["pending", "queued", "downloading", "merging"].includes(dl.status);
+        const showBar = isActive;
 
         const actions = dl.status === "completed"
             ? `<div class="download-actions">
@@ -853,6 +981,10 @@ function renderDownloads(downloads) {
                    <button class="secondary-btn small-btn reveal-file-btn">
                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Cartella
                    </button>
+               </div>`
+            : isActive
+            ? `<div class="download-actions">
+                   <button class="secondary-btn small-btn cancel-dl-btn" title="Interrompi il download">✕ Annulla</button>
                </div>`
             : "";
 
@@ -868,10 +1000,24 @@ function renderDownloads(downloads) {
         if (dl.status === "completed") {
             item.querySelector(".open-file-btn").addEventListener("click", () => openDownloadFile(dl.id));
             item.querySelector(".reveal-file-btn").addEventListener("click", () => revealDownloadFile(dl.id));
+        } else if (isActive) {
+            item.querySelector(".cancel-dl-btn").addEventListener("click", () => cancelDownload(dl.id));
         }
 
         el.downloadsList.appendChild(item);
     });
+}
+
+async function cancelDownload(id) {
+    if (!confirm("Interrompere questo download? I file parziali verranno eliminati.")) return;
+    try {
+        const r = await fetch("/api/download/cancel", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id })
+        });
+        if (r.ok) showToast("Download annullato");
+        else showToast("Impossibile annullare il download");
+    } catch (e) { showToast("Errore durante l'annullamento"); }
 }
 
 async function openDownloadFile(id) {
@@ -915,6 +1061,25 @@ function escapeHtml(s) {
         c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+async function saveAll() {
+    if (el.saveLibraryBtn) el.saveLibraryBtn.disabled = true;
+    showToast("Salvataggio in corso…", 4000);
+    try {
+        const r = await fetch("/api/save", { method: "POST" });
+        if (r.ok) {
+            const d = await r.json();
+            showToast(`Salvato \u2713  ${d.titles} titoli · ${d.folders} cartelle · ${d.favorites} preferiti`, 4000);
+        } else {
+            const e = await r.json().catch(() => ({}));
+            showToast(e.detail || "Errore durante il salvataggio", 6000);
+        }
+    } catch (e) {
+        showToast("Errore di connessione durante il salvataggio", 6000);
+    } finally {
+        if (el.saveLibraryBtn) el.saveLibraryBtn.disabled = false;
+    }
+}
+
 async function fetchLibrary() {
     try {
         const r = await fetch("/api/folders");
@@ -938,7 +1103,7 @@ async function addToLibrary(url, data) {
     } catch (e) { /* non-fatal */ }
 }
 
-function titleRow(item) {
+function titleRow(item, ctx) {
     const row = document.createElement("div");
     row.className = "library-item" + (item.favorite ? " is-fav" : "");
     const typeBadge = item.type === "tv" ? "Serie" : (item.type === "movie" ? "Film" : "");
@@ -946,33 +1111,179 @@ function titleRow(item) {
         ? `<img class="library-cover" src="${item.cover}" alt="" loading="lazy">`
         : `<div class="library-cover placeholder"></div>`;
     const name = item.name && item.name.trim() ? item.name : "Senza titolo";
+    // Up/down reorder controls only inside a folder (ctx provided).
+    const moveBtns = ctx ? `
+            <button class="icon-btn moveup-btn" title="Sposta su"${ctx.index === 0 ? " disabled" : ""}>⬆</button>
+            <button class="icon-btn movedown-btn" title="Sposta giù"${ctx.index === ctx.keys.length - 1 ? " disabled" : ""}>⬇</button>` : "";
     row.innerHTML = `
         ${cover}
         <div class="library-meta">
             <span class="library-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
             <span class="library-sub">${typeBadge}${item.is_clone ? " · clone" : ""}</span>
         </div>
-        <div class="library-actions">
+        <div class="library-actions">${moveBtns}
+            <button class="icon-btn tofolder-btn" title="Metti in cartelle">📂</button>
             <label class="icon-btn" title="Cambia locandina">🖼️<input type="file" accept="image/*" class="libcover-input" hidden></label>
             <button class="icon-btn ren-title-btn" title="Rinomina titolo">✎</button>
             <button class="icon-btn fav-btn" title="${item.favorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}">${item.favorite ? "★" : "☆"}</button>
             <button class="icon-btn del-btn" title="Rimuovi dalla libreria">✕</button>
         </div>`;
     row.addEventListener("click", (e) => { if (e.target.closest(".library-actions")) return; openFromLibrary(item); });
+    row.querySelector(".tofolder-btn").addEventListener("click", (e) => { e.stopPropagation(); openTitleFolderPicker(item); });
     row.querySelector(".libcover-input").addEventListener("change", (e) => { e.stopPropagation(); uploadTitleCover(item.key, e.target); });
     row.querySelector(".ren-title-btn").addEventListener("click", (e) => { e.stopPropagation(); renameTitle(item.key, item.name); });
     row.querySelector(".fav-btn").addEventListener("click", (e) => { e.stopPropagation(); toggleFavorite(item.key); });
     row.querySelector(".del-btn").addEventListener("click", (e) => { e.stopPropagation(); removeFromLibrary(item.key, item.name); });
+    if (ctx) {
+        const up = row.querySelector(".moveup-btn");
+        const dn = row.querySelector(".movedown-btn");
+        if (up && !up.disabled) up.addEventListener("click", (e) => { e.stopPropagation(); moveInFolder(ctx.folderId, ctx.keys, ctx.index, -1); });
+        if (dn && !dn.disabled) dn.addEventListener("click", (e) => { e.stopPropagation(); moveInFolder(ctx.folderId, ctx.keys, ctx.index, 1); });
+    }
     return row;
+}
+
+async function moveInFolder(folderId, keys, index, delta) {
+    const j = index + delta;
+    if (j < 0 || j >= keys.length) return;
+    const arr = keys.slice();
+    [arr[index], arr[j]] = [arr[j], arr[index]];
+    try {
+        const r = await fetch("/api/folders/set", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: folderId, items: arr })
+        });
+        if (r.ok) renderLibrary(await r.json());
+    } catch (e) { showToast("Errore riordino titoli"); }
 }
 
 function renderLibrary(data) {
     if (!el.libraryList) return;
+    lastLibraryData = data;
+    const scrollY = window.scrollY;  // keep the user's place across the rebuild
     const folders = (data && data.folders) || [];
     const unassigned = (data && data.unassigned) || [];
-    libraryCache = [].concat(unassigned, ...folders.map(f => f.items || []));
+    // de-duplicated list of every title (for search + favourites + modal star)
+    const allTitles = [];
+    const seen = new Set();
+    [].concat(unassigned, ...folders.map(f => f.items || [])).forEach(it => {
+        if (it && it.key && !seen.has(it.key)) { seen.add(it.key); allTitles.push(it); }
+    });
+    libraryCache = allTitles;
 
     el.libraryList.innerHTML = "";
+
+    const allFolders = folders;
+    const buildFolderCard = (f, recurse = true) => {
+        const card = document.createElement("div");
+        card.className = "folder-card";
+        const coverStyle = f.cover ? `style="background-image:url('${f.cover}')"` : "";
+        const childFolders = allFolders.filter(c => (c.parent || "") === f.id);
+        const subCount = childFolders.length;
+        const countTxt = `${(f.items || []).length} titoli${subCount ? ` \u00b7 ${subCount} sottocartelle` : ""}`;
+        const parentOpts = ['<option value="">\u2014 in radice \u2014</option>'].concat(
+            allFolders.filter(o => o.id !== f.id)
+                      .map(o => `<option value="${o.id}"${(f.parent || "") === o.id ? " selected" : ""}>${escapeHtml(o.name)}</option>`)
+        ).join("");
+        card.innerHTML = `
+            <div class="folder-head">
+                <div class="folder-cover ${f.cover ? "" : "placeholder"}" ${coverStyle}></div>
+                <div class="folder-meta">
+                    <span class="folder-name">${escapeHtml(f.name)}${f.kind ? ` <span class="folder-kind-badge">${escapeHtml(f.kind)}</span>` : ""}</span>
+                    <span class="folder-count">${countTxt}</span>
+                </div>
+                <div class="folder-actions">
+                    <select class="folder-parent-select custom-select" title="Sposta in un'altra cartella">${parentOpts}</select>
+                    <select class="folder-kind-select custom-select" title="Tipologia cartella">
+                        <option value="">tipo…</option>
+                        <option value="genere">Genere</option>
+                        <option value="regista">Regista</option>
+                        <option value="saga">Saga</option>
+                    </select>
+                    <button class="icon-btn subf-btn" title="Nuova sottocartella">📁+</button>
+                    <button class="icon-btn adddom-btn" title="Aggiungi titoli dalla libreria">➕</button>
+                    <label class="icon-btn" title="Imposta/Cambia locandina">🖼️<input type="file" accept="image/*" class="cover-input" hidden></label>
+                    <button class="icon-btn ren-btn" title="Rinomina">✎</button>
+                    <button class="icon-btn delf-btn" title="Elimina cartella">✕</button>
+                    <button class="icon-btn toggle-btn" title="Mostra/Nascondi">▾</button>
+                </div>
+            </div>
+            <div class="folder-domains${openFolders.has(f.id) ? "" : " hidden"}"></div>`;
+        const body = card.querySelector(".folder-domains");
+        const toggleFolder = () => {
+            body.classList.toggle("hidden");
+            if (body.classList.contains("hidden")) openFolders.delete(f.id);
+            else openFolders.add(f.id);
+        };
+        if (recurse) childFolders.forEach(c => body.appendChild(buildFolderCard(c, true)));
+        if ((f.items || []).length === 0) {
+            if (!subCount || !recurse) {
+                const empty = document.createElement("div");
+                empty.className = "no-downloads";
+                empty.textContent = "Cartella vuota. Usa \u2795 per i titoli o \uD83D\uDCC1+ per una sottocartella.";
+                body.appendChild(empty);
+            }
+        } else {
+            const keys = f.items.map(i => i.key);
+            f.items.forEach((it, idx) => body.appendChild(titleRow(it, { folderId: f.id, keys, index: idx })));
+        }
+        card.querySelector(".folder-head").addEventListener("click", (e) => {
+            if (e.target.closest(".folder-actions")) return;
+            toggleFolder();
+        });
+        card.querySelector(".subf-btn").addEventListener("click", (e) => { e.stopPropagation(); createSubfolder(f.id); });
+        card.querySelector(".adddom-btn").addEventListener("click", (e) => { e.stopPropagation(); openFolderPicker(f.id); });
+        card.querySelector(".cover-input").addEventListener("change", (e) => uploadFolderCover(f.id, e.target));
+        card.querySelector(".ren-btn").addEventListener("click", (e) => { e.stopPropagation(); renameFolder(f.id, f.name); });
+        card.querySelector(".delf-btn").addEventListener("click", (e) => { e.stopPropagation(); removeFolder(f.id, f.name); });
+        card.querySelector(".toggle-btn").addEventListener("click", (e) => { e.stopPropagation(); toggleFolder(); });
+        const kindSel = card.querySelector(".folder-kind-select");
+        kindSel.value = f.kind || "";
+        kindSel.addEventListener("click", (e) => e.stopPropagation());
+        kindSel.addEventListener("change", (e) => { e.stopPropagation(); setFolderKind(f.id, e.target.value); });
+        const parSel = card.querySelector(".folder-parent-select");
+        parSel.addEventListener("click", (e) => e.stopPropagation());
+        parSel.addEventListener("change", (e) => { e.stopPropagation(); moveFolderParent(f.id, e.target.value); });
+        return card;
+    };
+
+    // Search mode: flat list of matching titles, folder structure hidden.
+    const q = (librarySearch || "").trim().toLowerCase();
+    if (q) {
+        const titleResults = allTitles.filter(it => (it.name || "").toLowerCase().includes(q));
+        const folderResults = folders.filter(f =>
+            (f.name || "").toLowerCase().includes(q) || (f.kind || "").toLowerCase().includes(q));
+
+        if (folderResults.length) {
+            const ft = document.createElement("div");
+            ft.className = "domains-subtitle";
+            ft.textContent = `Cartelle (${folderResults.length})`;
+            el.libraryList.appendChild(ft);
+            folderResults.forEach(f => el.libraryList.appendChild(buildFolderCard(f, false)));
+        }
+
+        const tt = document.createElement("div");
+        tt.className = "domains-subtitle";
+        tt.textContent = `Titoli (${titleResults.length})`;
+        el.libraryList.appendChild(tt);
+        if (!titleResults.length) {
+            const none = document.createElement("div");
+            none.className = "no-downloads";
+            none.textContent = "Nessun titolo trovato.";
+            el.libraryList.appendChild(none);
+        } else {
+            titleResults.forEach(it => el.libraryList.appendChild(titleRow(it)));
+        }
+
+        if (!folderResults.length && !titleResults.length) {
+            const none = document.createElement("div");
+            none.className = "no-downloads";
+            none.textContent = "Nessun risultato.";
+            el.libraryList.appendChild(none);
+        }
+        window.scrollTo({ top: scrollY });
+        return;
+    }
 
     const createBtn = document.createElement("button");
     createBtn.className = "secondary-btn small-btn create-folder-btn";
@@ -990,46 +1301,7 @@ function renderLibrary(data) {
         favs.forEach(it => el.libraryList.appendChild(titleRow(it)));
     }
 
-    folders.forEach(f => {
-        const card = document.createElement("div");
-        card.className = "folder-card";
-        const coverStyle = f.cover ? `style="background-image:url('${f.cover}')"` : "";
-        card.innerHTML = `
-            <div class="folder-head">
-                <div class="folder-cover ${f.cover ? "" : "placeholder"}" ${coverStyle}></div>
-                <div class="folder-meta">
-                    <span class="folder-name">${escapeHtml(f.name)}</span>
-                    <span class="folder-count">${(f.items || []).length} titoli</span>
-                </div>
-                <div class="folder-actions">
-                    <button class="icon-btn adddom-btn" title="Aggiungi titoli dalla libreria">➕</button>
-                    <label class="icon-btn" title="Imposta/Cambia locandina">🖼️<input type="file" accept="image/*" class="cover-input" hidden></label>
-                    <button class="icon-btn ren-btn" title="Rinomina">✎</button>
-                    <button class="icon-btn delf-btn" title="Elimina cartella">✕</button>
-                    <button class="icon-btn toggle-btn" title="Mostra/Nascondi">▾</button>
-                </div>
-            </div>
-            <div class="folder-domains hidden"></div>`;
-        const body = card.querySelector(".folder-domains");
-        if ((f.items || []).length === 0) {
-            const empty = document.createElement("div");
-            empty.className = "no-downloads";
-            empty.textContent = "Cartella vuota. Usa ➕ per aggiungere titoli.";
-            body.appendChild(empty);
-        } else {
-            f.items.forEach(it => body.appendChild(titleRow(it)));
-        }
-        card.querySelector(".folder-head").addEventListener("click", (e) => {
-            if (e.target.closest(".folder-actions")) return;
-            body.classList.toggle("hidden");
-        });
-        card.querySelector(".adddom-btn").addEventListener("click", (e) => { e.stopPropagation(); openFolderPicker(f.id); });
-        card.querySelector(".cover-input").addEventListener("change", (e) => uploadFolderCover(f.id, e.target));
-        card.querySelector(".ren-btn").addEventListener("click", (e) => { e.stopPropagation(); renameFolder(f.id, f.name); });
-        card.querySelector(".delf-btn").addEventListener("click", (e) => { e.stopPropagation(); removeFolder(f.id, f.name); });
-        card.querySelector(".toggle-btn").addEventListener("click", (e) => { e.stopPropagation(); body.classList.toggle("hidden"); });
-        el.libraryList.appendChild(card);
-    });
+    folders.filter(f => !(f.parent || "")).forEach(f => el.libraryList.appendChild(buildFolderCard(f)));
 
     const unTitle = document.createElement("div");
     unTitle.className = "domains-subtitle";
@@ -1043,6 +1315,9 @@ function renderLibrary(data) {
     } else {
         unassigned.forEach(it => el.libraryList.appendChild(titleRow(it)));
     }
+
+    // Restore the scroll position so actions don't feel like a page reload.
+    window.scrollTo({ top: scrollY });
 }
 
 function openFromLibrary(item) {
@@ -1098,6 +1373,23 @@ async function createFolder() {
     } catch (e) { showToast("Errore creazione cartella"); }
 }
 
+async function createSubfolder(parentId) {
+    const name = prompt("Nome della nuova sottocartella:");
+    if (name === null) return;
+    try {
+        const r = await fetch("/api/folders/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, parent: parentId }) });
+        if (r.ok) { openFolders.add(parentId); renderLibrary(await r.json()); }
+    } catch (e) { showToast("Errore creazione sottocartella"); }
+}
+
+async function moveFolderParent(id, parent) {
+    try {
+        const r = await fetch("/api/folders/parent", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, parent }) });
+        if (r.ok) { if (parent) openFolders.add(parent); renderLibrary(await r.json()); }
+        else { const e = await r.json().catch(() => ({})); showToast(e.detail || "Spostamento non valido"); if (lastLibraryData) renderLibrary(lastLibraryData); }
+    } catch (e) { showToast("Errore spostamento cartella"); }
+}
+
 async function renameFolder(id, current) {
     const name = prompt("Nuovo nome della cartella:", current || "");
     if (name === null) return;
@@ -1115,6 +1407,13 @@ async function removeFolder(id, name) {
     } catch (e) { showToast("Errore eliminazione cartella"); }
 }
 
+async function setFolderKind(id, kind) {
+    try {
+        const r = await fetch("/api/folders/kind", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, kind }) });
+        if (r.ok) renderLibrary(await r.json());
+    } catch (e) { showToast("Errore tipologia cartella"); }
+}
+
 function uploadFolderCover(id, input) {
     const file = input.files && input.files[0];
     if (!file) return;
@@ -1128,6 +1427,56 @@ function uploadFolderCover(id, input) {
         } catch (e) { showToast("Errore caricamento immagine"); }
     };
     reader.readAsDataURL(file);
+}
+
+async function openTitleFolderPicker(item) {
+    let data;
+    try { data = await (await fetch("/api/folders")).json(); }
+    catch (e) { showToast("Errore caricamento cartelle"); return; }
+    let folders = data.folders || [];
+    const overlay = document.createElement("div");
+    overlay.className = "picker-overlay";
+    const rows = folders.map(f => {
+        const inIt = (f.items || []).some(it => it.key === item.key);
+        const kindB = f.kind ? ` <span class="picker-note">${escapeHtml(f.kind)}</span>` : "";
+        return `<label class="picker-row">
+            <input type="checkbox" data-fid="${f.id}" ${inIt ? "checked" : ""}>
+            <span>${escapeHtml(f.name || "Cartella")}</span>${kindB}
+        </label>`;
+    }).join("");
+    overlay.innerHTML = `
+        <div class="picker-panel glass">
+            <h3>Metti "${escapeHtml(item.name || "titolo")}" nelle cartelle</h3>
+            <p class="picker-hint">Spunta le cartelle in cui mettere il titolo (può stare in più cartelle).</p>
+            <input type="text" class="picker-search" placeholder="Cerca una cartella…" autocomplete="off" spellcheck="false">
+            <div class="picker-list">${rows || '<div class="no-downloads">Nessuna cartella. Creane una con \"+ Nuova cartella\".</div>'}</div>
+            <div class="picker-actions"><button class="secondary-btn picker-close">Chiudi</button></div>
+        </div>`;
+    document.body.appendChild(overlay);
+    let changed = false;
+    const close = () => { overlay.remove(); if (changed) fetchLibrary(); };
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    overlay.querySelector(".picker-close").addEventListener("click", close);
+    overlay.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener("change", async () => {
+            changed = true;
+            try {
+                const r = await fetch("/api/folders/toggle", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: cb.dataset.fid, key: item.key })
+                });
+                if (r.ok) { const d = await r.json(); folders = d.folders || folders; }
+                else { showToast("Errore aggiornamento cartella"); cb.checked = !cb.checked; }
+            } catch (e) { showToast("Errore"); cb.checked = !cb.checked; }
+        });
+    });
+    const ps = overlay.querySelector(".picker-search");
+    if (ps) ps.addEventListener("input", () => {
+        const qq = ps.value.trim().toLowerCase();
+        overlay.querySelectorAll(".picker-row").forEach(r => {
+            r.style.display = r.textContent.toLowerCase().includes(qq) ? "" : "none";
+        });
+    });
 }
 
 async function openFolderPicker(folderId) {
@@ -1158,6 +1507,7 @@ async function openFolderPicker(folderId) {
         <div class="picker-panel glass">
             <h3>Aggiungi titoli a "${escapeHtml(folder.name)}"</h3>
             <p class="picker-hint">Spunta i titoli della libreria da mettere nella cartella, poi conferma.</p>
+            <input type="text" class="picker-search" placeholder="Cerca un titolo…" autocomplete="off" spellcheck="false">
             <div class="picker-list">${rows || '<div class="no-downloads">Nessun titolo in libreria. Apri prima qualche contenuto.</div>'}</div>
             <div class="picker-actions">
                 <button class="secondary-btn picker-cancel">Annulla</button>
@@ -1168,6 +1518,13 @@ async function openFolderPicker(folderId) {
     const close = () => overlay.remove();
     overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
     overlay.querySelector(".picker-cancel").addEventListener("click", close);
+    const psearch = overlay.querySelector(".picker-search");
+    if (psearch) psearch.addEventListener("input", () => {
+        const qq = psearch.value.trim().toLowerCase();
+        overlay.querySelectorAll(".picker-row").forEach(r => {
+            r.style.display = r.textContent.toLowerCase().includes(qq) ? "" : "none";
+        });
+    });
     overlay.querySelector(".picker-confirm").addEventListener("click", async () => {
         const sel = Array.from(overlay.querySelectorAll('input[type="checkbox"]:checked')).map(c => c.value);
         try {
@@ -1205,7 +1562,7 @@ function renderDomains(data) {
         row.className = "domain-item" + (isCurrent ? " is-current" : "");
         row.innerHTML = `
             <span class="domain-dot ${state}" title="${stateLabel}"></span>
-            <span class="domain-name">streamingcommunity.${escapeHtml(d.domain)}</span>
+            <span class="domain-name">${escapeHtml(d.domain)}</span>
             <span class="domain-tag">${isCurrent ? "in uso" : stateLabel}</span>
             <div class="domain-actions">
                 ${(!isCurrent && d.active === true) ? '<button class="icon-btn use-btn" title="Usa questo dominio">✓</button>' : ""}
@@ -1254,7 +1611,6 @@ function updateModalStar() {
     el.favModalBtn.classList.toggle("active", fav);
     el.favModalBtn.innerHTML = fav ? "\u2605 Nei preferiti" : "\u2606 Salva nei preferiti";
 }
-
 async function toggleModalFavorite() {
     if (!currentLibKey) { showToast("Apri prima un titolo"); return; }
     try {
@@ -1263,7 +1619,6 @@ async function toggleModalFavorite() {
             method: "POST", headers: { "Content-Type": "application/json" }, body
         });
         if (r.status === 404) {
-            // The title isn't saved yet (e.g. just opened): create it, then retry.
             await addToLibrary(currentLibKey, {
                 key: currentLibKey,
                 name: (currentTitle && currentTitle.name) || "",

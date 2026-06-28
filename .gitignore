@@ -6,17 +6,13 @@ __pycache__/
 *.pyc
 tmp/
 
-# Downloaded files and settings
+# Downloaded media + runtime download state (not shared)
 downloads/
-settings.json
-
-# Runtime log and personal library/queue data
 server.log
-library.json
 downloads_state.json
 
-# Local binaries (ffmpeg)
+# Local binaries (ffmpeg) — too large for the repo
 bin/
 
-# Uploaded folder cover images
-covers/
+# NOTE: library.json, settings.json and covers/ are intentionally TRACKED
+# so the curated collection (titles, folders, cover images) ships with the repo.

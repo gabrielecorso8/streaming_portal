@@ -11,6 +11,7 @@ import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
+from requests.adapters import HTTPAdapter
 from bs4 import BeautifulSoup
 import m3u8
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -26,6 +27,11 @@ download_paths = {}
 # On-disk registry so the download queue + history survive a server restart.
 STATE_FILE = os.path.join("tmp", "downloads_state.json")
 _state_lock = threading.Lock()
+
+
+class DownloadCancelled(Exception):
+    """Raised inside a task when the user cancels the download."""
+    pass
 
 class Decryptor:
     def __init__(self, key_bytes, iv_hex):
@@ -56,6 +62,13 @@ class DownloadTask:
         # Optional proxy for playlist/segment fetches. Needed when the CDN node
         # serving this asset is IP-blocked by the ISP (see vidxgo.set_proxies).
         self.proxies = proxies or None
+        # Shared HTTP session: keep-alive + large connection pool so the segment
+        # workers REUSE TCP/TLS connections instead of re-handshaking for every
+        # .ts (this is the main download-speed fix).
+        self.session = requests.Session()
+        _adapter = HTTPAdapter(pool_connections=64, pool_maxsize=64, max_retries=0)
+        self.session.mount("https://", _adapter)
+        self.session.mount("http://", _adapter)
         # vidxgo token-refresh metadata: {id, mode, season, episode, iframe_url}.
         # When present, every segment URL's ?t=&e= signature is kept fresh by
         # re-minting through vidxgo /t, because those tokens expire in ~180s.
@@ -72,6 +85,7 @@ class DownloadTask:
         self.status = "pending"
         self.error_msg = None
         self.output_path = None  # absolute path of the finished .mp4
+        self.cancel_flag = False  # set by request_cancel() to stop the download
 
         # Snapshot of the construction parameters, persisted to disk so the
         # download can be reconstructed and resumed after a server restart.
@@ -142,6 +156,10 @@ class DownloadTask:
                 pass
         return st
 
+    def request_cancel(self):
+        """Signal the running download to stop as soon as possible."""
+        self.cancel_flag = True
+
     def update_status(self, status, progress=None, error_msg=None):
         prev_status = self.status
         self.status = status
@@ -171,7 +189,7 @@ class DownloadTask:
         }
         
         print(f"[*] Fetching decryption key from {key_url} with Referer {referer}")
-        resp = requests.get(key_url, headers=headers, timeout=10, proxies=self.proxies)
+        resp = self.session.get(key_url, headers=headers, timeout=10, proxies=self.proxies)
         if resp.status_code == 200:
             return resp.content
         else:
@@ -191,7 +209,7 @@ class DownloadTask:
             self._sig = {"t": t, "e": e}
 
         # 1. Fetch playlist
-        resp = requests.get(stream_url, headers=headers, timeout=10, proxies=self.proxies)
+        resp = self.session.get(stream_url, headers=headers, timeout=10, proxies=self.proxies)
         if resp.status_code != 200:
             raise Exception(f"Failed to fetch {stream_type} playlist. Status code: {resp.status_code}")
             
@@ -213,7 +231,7 @@ class DownloadTask:
                     key_headers = headers.copy()
                     if self.key_info and self.key_info.get("referer"):
                         key_headers["Referer"] = self.key_info.get("referer")
-                    key_resp = requests.get(absolute_key_url, headers=key_headers, timeout=10, proxies=self.proxies)
+                    key_resp = self.session.get(absolute_key_url, headers=key_headers, timeout=10, proxies=self.proxies)
                     if key_resp.status_code == 200:
                         key_bytes = key_resp.content
                         print("[+] Automatically fetched AES key successfully.")
@@ -235,6 +253,9 @@ class DownloadTask:
         
         def download_segment(idx, seg_uri):
             nonlocal completed_segments
+            # Stop quickly if the user cancelled the download.
+            if self.cancel_flag:
+                return
             base_seg_url = urllib.parse.urljoin(stream_url, seg_uri)
 
             # Resume support: a segment already saved on disk (non-empty) is
@@ -254,7 +275,7 @@ class DownloadTask:
             for retry in range(attempts):
                 try:
                     seg_url = self._seg_url(base_seg_url)
-                    seg_resp = requests.get(seg_url, headers=headers, timeout=15, proxies=self.proxies)
+                    seg_resp = self.session.get(seg_url, headers=headers, timeout=15, proxies=self.proxies)
                     if seg_resp.status_code == 200:
                         content = seg_resp.content
                         if decryptor:
@@ -293,6 +314,11 @@ class DownloadTask:
                     future.result()
                 except Exception as e:
                     print(f"[-] Segment task error (will retry): {e}")
+                if self.cancel_flag:
+                    raise DownloadCancelled()
+
+        if self.cancel_flag:
+            raise DownloadCancelled()
 
         # Completeness check: every segment 0..N-1 must exist and be non-empty.
         def _missing_segments():
@@ -305,6 +331,8 @@ class DownloadTask:
 
         missing = _missing_segments()
         for attempt in range(3):
+            if self.cancel_flag:
+                raise DownloadCancelled()
             if not missing:
                 break
             preview = missing[:10]
@@ -331,7 +359,7 @@ class DownloadTask:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
         # Disable SSL verification for safety since the user runs in verify=False mode
-        resp = requests.get(url, headers=headers, stream=True, timeout=15, verify=False, proxies=self.proxies)
+        resp = self.session.get(url, headers=headers, stream=True, timeout=15, verify=False, proxies=self.proxies)
         if resp.status_code != 200:
             raise Exception(f"Failed to download file. Status code: {resp.status_code}")
             
@@ -349,6 +377,8 @@ class DownloadTask:
 
     def run(self):
         try:
+            if self.cancel_flag:
+                raise DownloadCancelled()
             self.update_status("downloading", 0.0)
             
             # Create download output path
@@ -432,7 +462,12 @@ class DownloadTask:
             download_paths[self.download_id] = self.output_path
             self.update_status("completed", 100.0)
             print(f"[+] Download completed! Saved to {final_output_path}")
-            
+
+        except DownloadCancelled:
+            print(f"[*] Download cancelled by user: {self.title}")
+            self.update_status("cancelled")
+            # Drop partial files so a cancelled download leaves nothing behind.
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
         except Exception as e:
             print(f"[-] Download failed: {e}")
             self.update_status("failed", error_msg=str(e))
@@ -625,6 +660,30 @@ class DownloadManager:
             print(f"[+] Resumed {requeued} interrupted download(s) from previous session.")
         _persist_state()
 
+    def cancel(self, download_id):
+        """Request cancellation of a queued or running download."""
+        task = self.tasks.get(download_id)
+        if not task:
+            return False
+        task.request_cancel()
+        # If it hadn't started yet, reflect the cancellation immediately so the
+        # worker skips it when it reaches the front of the queue.
+        if task.status in ("queued", "pending"):
+            task.update_status("cancelled")
+        return True
+
+    def clear(self):
+        """Forget every download (used at startup so a new session starts with an
+        empty download list — only favourites are remembered, in library.json)."""
+        self.tasks.clear()
+        active_downloads.clear()
+        download_paths.clear()
+        try:
+            if os.path.exists(STATE_FILE):
+                os.remove(STATE_FILE)
+        except OSError:
+            pass
+
 
 # Single shared manager instance.
 _MANAGER = DownloadManager()
@@ -648,6 +707,16 @@ def start_download_task(download_id, title, m3u8_video, m3u8_audio=None, key_inf
 def load_persisted_state():
     """Entry point for the API to restore the queue/history on startup."""
     _MANAGER.load_persisted()
+
+
+def clear_downloads():
+    """Forget all downloads (the list starts empty every session)."""
+    _MANAGER.clear()
+
+
+def cancel_download(download_id):
+    """Cancel a queued or running download. Returns True if it existed."""
+    return _MANAGER.cancel(download_id)
 
 
 def set_max_concurrent(n):

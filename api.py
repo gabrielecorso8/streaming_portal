@@ -9,6 +9,7 @@ import urllib.parse
 import uuid
 import requests
 import urllib3
+import m3u8
 from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Query
 from fastapi.responses import Response, FileResponse
@@ -49,13 +50,21 @@ def resolve_doh(host):
         pass
     return None
 
+# Cache host -> IP so DoH is resolved ONCE per host, not on every new socket
+# (the downloader opens many connections; repeated DoH lookups were a big drag).
+_DOH_CACHE = {}
+
 def patched_create_connection(address, *args, **kwargs):
     host, port = address
     if "streamingcommunity" in host or "vixcloud" in host:
         try:
-            resolved_ip = resolve_doh(host)
+            resolved_ip = _DOH_CACHE.get(host)
+            if resolved_ip is None:
+                resolved_ip = resolve_doh(host)
+                if resolved_ip:
+                    _DOH_CACHE[host] = resolved_ip
+                    print(f"[DoH] Resolved {host} -> {resolved_ip} (cached)")
             if resolved_ip:
-                print(f"[DoH] Patched {host} -> {resolved_ip}")
                 return connection.real_create_connection((resolved_ip, port), *args, **kwargs)
         except Exception as e:
             print(f"[DoH] Patched resolution failed for {host}: {e}")
@@ -68,7 +77,7 @@ if not hasattr(connection, 'real_create_connection'):
 
 from downloader import (
     start_download_task, active_downloads, download_paths,
-    load_persisted_state, set_max_concurrent,
+    clear_downloads, cancel_download, set_max_concurrent,
 )
 import vidxgo
 import subprocess
@@ -108,6 +117,30 @@ session = requests.Session()
 session.verify = False
 
 # Load Settings
+def normalize_domain(value):
+    """Accept a suffix, a full host or a pasted URL and return a canonical host.
+
+    Old settings stored values like "computer"; newer rotating domains may be
+    full hosts such as "streamingcommunityz.tech". Keeping a single canonical
+    shape lets the rest of the app switch domains without user cleanup.
+    """
+    value = (value or "").strip()
+    if not value:
+        return ""
+    if "://" not in value:
+        value = "https://" + value
+    parsed = urllib.parse.urlparse(value)
+    host = (parsed.netloc or parsed.path).split("/")[0].lower()
+    if "@" in host:
+        host = host.rsplit("@", 1)[1]
+    if ":" in host:
+        host = host.split(":", 1)[0]
+    host = host.strip().strip(".")
+    if host.startswith("www."):
+        host = host[4:]
+    return host if "." in host else f"streamingcommunity.{host}"
+
+
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -117,24 +150,31 @@ def load_settings():
             data = {}
     else:
         data = {}
-    data.setdefault("domain", "computer")
+    raw_domains = list(data.get("domains") or [])
+    data["domain"] = normalize_domain(data.get("domain") or "streamingcommunityz.tech")
     # Persistent list of domains the user has used. Remembered across sessions
     # and health-checked at every startup so the user never has to re-enter the
     # same domain twice.
-    data.setdefault("domains", [])
+    data["domains"] = []
+    for d in raw_domains:
+        nd = normalize_domain(d)
+        if nd and nd not in data["domains"]:
+            data["domains"].append(nd)
     # Make sure the current domain is part of the remembered list.
     if data["domain"] and data["domain"] not in data["domains"]:
         data["domains"].append(data["domain"])
     return data
 
 def save_settings(settings):
-    with open(SETTINGS_FILE, "w") as f:
+    tmp = SETTINGS_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(settings, f, indent=4)
+    os.replace(tmp, SETTINGS_FILE)
 
 
 def remember_domain(domain):
     """Add a domain to the persistent remembered list (deduplicated)."""
-    domain = (domain or "").strip().strip(".")
+    domain = normalize_domain(domain)
     if not domain:
         return
     lst = SETTINGS.setdefault("domains", [])
@@ -152,8 +192,7 @@ BLOCK_MARKERS = ("avviso", "agcom", "sequestro", "guardia di finanza",
 
 
 def _domain_to_base(domain):
-    domain = (domain or "").strip().strip(".")
-    return domain if "." in domain else f"streamingcommunity.{domain}"
+    return normalize_domain(domain)
 
 
 def test_domain_alive(domain):
@@ -164,22 +203,28 @@ def test_domain_alive(domain):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     try:
-        resp = requests.get(f"https://{base}/api/search?q=a", headers=headers,
+        resp = requests.get(f"https://{base}/it/search?q=a", headers=headers,
                             timeout=6, verify=False)
         if resp.status_code != 200:
             return False
         if any(m in resp.text.lower() for m in BLOCK_MARKERS):
             return False
-        data = resp.json()
-        return isinstance(data, dict) and "data" in data
+        if "data-page" in resp.text:
+            return True
+        try:
+            data = resp.json()
+            return isinstance(data, dict) and ("data" in data or "titles" in data)
+        except ValueError:
+            return False
     except Exception:
         return False
 
 
-def health_check_domains():
+def health_check_domains(auto_discover=False):
     """Test every remembered domain, update DOMAIN_STATUS, and select the first
     active one as the current domain. Does NOT invent new domains — if none of
     the remembered ones is alive the user is asked to update the domain."""
+    _DOH_CACHE.clear()  # always re-resolve hosts fresh when (re)checking domains
     domains = list(SETTINGS.get("domains") or [])
     statuses = {}
     active = None
@@ -194,6 +239,17 @@ def health_check_domains():
         SETTINGS["domain"] = active
         save_settings(SETTINGS)
         print(f"[+] Remembered domain attivo: {active}")
+    elif auto_discover:
+        discovered = detect_active_domain()
+        if discovered:
+            active = discovered
+            remember_domain(discovered)
+            DOMAIN_STATUS[discovered] = True
+            SETTINGS["domain"] = discovered
+            save_settings(SETTINGS)
+            print(f"[+] Dominio auto-rilevato: {discovered}")
+        else:
+            print("[!] Nessun dominio attivo trovato automaticamente.")
     else:
         print("[!] Nessun dominio ricordato è attivo: l'utente deve aggiornarlo.")
     return active
@@ -210,15 +266,36 @@ _library_lock = threading.Lock()
 
 
 def load_library():
-    if os.path.exists(LIBRARY_FILE):
+    if not os.path.exists(LIBRARY_FILE):
+        return []
+    try:
+        with open(LIBRARY_FILE, "r", encoding="utf-8") as f:
+            txt = f.read()
+    except Exception:
+        return []
+    try:
+        data = json.loads(txt)
+        if isinstance(data, list):
+            return data
+    except Exception:
+        pass
+    # Salvage: if the file is truncated/corrupted, recover as many complete
+    # title objects as possible instead of losing the whole library.
+    salvaged = []
+    dec = json.JSONDecoder()
+    i = txt.find("{")
+    while i != -1 and i < len(txt):
         try:
-            with open(LIBRARY_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if isinstance(data, list):
-                    return data
+            obj, end = dec.raw_decode(txt, i)
+            if isinstance(obj, dict) and obj.get("key"):
+                salvaged.append(obj)
+            nxt = txt.find("{", end)
+            i = nxt
         except Exception:
-            pass
-    return []
+            i = txt.find("{", i + 1)
+    if salvaged:
+        print(f"[!] library.json corrotto: recuperati {len(salvaged)} titoli (salvage).")
+    return salvaged
 
 
 def save_library(entries):
@@ -240,15 +317,32 @@ def _sorted_library(entries):
 LIBRARY = load_library()
 
 def detect_active_domain():
-    # StreamingCommunity rotates its TLD frequently and individual domains get
-    # seized (AGCOM / Piracy Shield) or parked. We probe a broad list of known
-    # suffixes and only accept one that actually serves the working JSON API.
+    # StreamingCommunity now rotates both TLDs and hostnames (for example
+    # streamingcommunityz.tech). Probe remembered hosts first, then likely
+    # current patterns, and only accept one that serves the working JSON API.
     suffixes = [
-        "computer", "broker", "vet", "fun", "rocks", "care", "vip", "cfd", "co",
-        "ink", "party", "club", "watch", "live", "blog", "art", "best", "one",
-        "forum", "store", "photos", "buzz", "bar", "boats", "build", "cab",
-        "cyou", "icu", "wiki", "world", "today", "site", "online", "space",
+        "tech", "computer", "broker", "vet", "fun", "rocks", "care", "vip",
+        "cfd", "co", "ink", "party", "club", "watch", "live", "blog", "art",
+        "best", "one", "forum", "store", "photos", "buzz", "bar", "boats",
+        "build", "cab", "cyou", "icu", "wiki", "world", "today", "site",
+        "online", "space",
     ]
+    candidate_hosts = []
+
+    def add_candidate(value):
+        host = normalize_domain(value)
+        if host and host not in candidate_hosts:
+            candidate_hosts.append(host)
+
+    for d in [SETTINGS.get("domain")] + list(SETTINGS.get("domains") or []):
+        add_candidate(d)
+    add_candidate("streamingcommunityz.tech")
+    for ch in "zyxwvutsrqponmlkjihgfedcba":
+        add_candidate(f"streamingcommunity{ch}.tech")
+    for suffix in suffixes:
+        add_candidate(f"streamingcommunity.{suffix}")
+        add_candidate(f"streamingcommunityz.{suffix}")
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
@@ -257,37 +351,39 @@ def detect_active_domain():
     block_markers = ("avviso", "agcom", "sequestro", "guardia di finanza",
                      "polizia", "redirect_link", "fingerprintjs", "expireddomains")
 
-    def test_suffix(suffix):
-        domain = f"streamingcommunity.{suffix}"
-        base = f"https://{domain}"
+    def test_host(host):
+        base = f"https://{host}"
         try:
             # The definitive test: does the real Inertia API answer with JSON?
-            resp = requests.get(f"{base}/api/search?q=a", headers=headers,
+            resp = requests.get(f"{base}/it/search?q=a", headers=headers,
                                 timeout=6, verify=False)
             if resp.status_code != 200:
                 return None
             text_low = resp.text.lower()
             if any(m in text_low for m in block_markers):
                 return None
+            if "data-page" in resp.text:
+                return host
             data = resp.json()  # raises if the page is HTML (block/park page)
-            if isinstance(data, dict) and "data" in data:
-                return suffix
+            if isinstance(data, dict) and ("data" in data or "titles" in data):
+                return host
         except Exception:
             pass
         return None
 
-    print("[*] Detecting active StreamingCommunity domain suffix (verifying live API)...")
+    _DOH_CACHE.clear()
+    print("[*] Detecting active StreamingCommunity domain (verifying live API)...")
     found = []
-    with ThreadPoolExecutor(max_workers=min(16, len(suffixes))) as executor:
-        futures = {executor.submit(test_suffix, s): s for s in suffixes}
+    with ThreadPoolExecutor(max_workers=min(20, len(candidate_hosts))) as executor:
+        futures = {executor.submit(test_host, h): h for h in candidate_hosts}
         for future in as_completed(futures):
             res = future.result()
             if res:
-                print(f"[+] Verified working domain suffix: .{res}")
+                print(f"[+] Verified working domain: {res}")
                 found.append(res)
     if found:
-        # Prefer the suffix that currently holds the live API.
-        return found[0]
+        found_set = set(found)
+        return next((h for h in candidate_hosts if h in found_set), found[0])
     print("[!] No working StreamingCommunity domain found (all seized/parked). "
           "Paste a working title URL to set the domain manually.")
     return None
@@ -305,7 +401,9 @@ def startup_event():
         set_max_concurrent(int(SETTINGS.get("max_concurrent", 2)))
     except (TypeError, ValueError):
         set_max_concurrent(2)
-    load_persisted_state()
+    # The download list is NOT remembered across sessions: each session starts
+    # empty. Only the library/favourites persist (library.json).
+    clear_downloads()
 
     # Health-check the user's REMEMBERED domains at every startup (in a thread
     # so booting stays instant). We do NOT auto-switch to a random freshly
@@ -313,17 +411,13 @@ def startup_event():
     # updates it explicitly (button / per-title prompt).
     def run_startup_check():
         print("[*] Testing remembered domains…")
-        health_check_domains()
+        health_check_domains(auto_discover=True)
 
     thread = threading.Thread(target=run_startup_check, daemon=True)
     thread.start()
 
 def get_base_url():
-    domain = SETTINGS["domain"]
-    if "." in domain:
-        return f"https://{domain}"
-    else:
-        return f"https://streamingcommunity.{domain}"
+    return f"https://{normalize_domain(SETTINGS['domain'])}"
 
 def get_proxies():
     """Optional proxy for vidxgo/CDN traffic. Read from settings.json ("proxy")
@@ -348,6 +442,43 @@ def get_headers():
     }
 
 
+def get_cdn_url(page_data=None):
+    if page_data:
+        cdn = (page_data.get("props", {}) or {}).get("cdn_url")
+        if cdn:
+            return cdn.rstrip("/")
+    host = normalize_domain(SETTINGS.get("domain"))
+    if host.startswith("streamingcommunity"):
+        return f"https://cdn.{host}"
+    return get_base_url()
+
+
+def image_url(images, preferred=("poster", "cover"), cdn_url=None):
+    """Extract an image URL from both old dict and new list image shapes."""
+    if not images:
+        return ""
+    if isinstance(images, dict):
+        return images.get("poster") or images.get("cover") or images.get("url") or ""
+    if not isinstance(images, list):
+        return ""
+    selected = None
+    for wanted in preferred:
+        selected = next((img for img in images if isinstance(img, dict) and img.get("type") == wanted), None)
+        if selected:
+            break
+    if not selected:
+        selected = next((img for img in images if isinstance(img, dict)), None)
+    if not selected:
+        return ""
+    direct = selected.get("url") or selected.get("original_url") or selected.get("original_url_field")
+    if direct:
+        return direct
+    filename = selected.get("filename")
+    if filename:
+        return f"{(cdn_url or get_cdn_url()).rstrip('/')}/images/{filename}"
+    return ""
+
+
 def _domain_error(extra=""):
     """Structured 503 the frontend recognises (detail.domain_error == True) to
     offer the user a one-click domain refresh / prompt to paste a fresh URL."""
@@ -365,10 +496,45 @@ def sc_get(url, headers=None, timeout=10):
     """GET against the active StreamingCommunity domain. Connection-level
     failures (DNS, refused, timeout) mean the domain is dead/blocked, so they
     are surfaced as a domain_error 503 instead of a generic 500."""
+    def retry_with_discovered_domain():
+        if not health_check_domains(auto_discover=True):
+            return None
+        old_host = urllib.parse.urlparse(url).netloc
+        new_host = normalize_domain(SETTINGS["domain"])
+        new_url = url.replace(old_host, new_host, 1)
+        retry_headers = dict(headers or get_headers())
+        if retry_headers.get("Referer"):
+            retry_headers["Referer"] = retry_headers["Referer"].replace(old_host, new_host, 1)
+        return session.get(new_url, headers=retry_headers, timeout=timeout)
+
     try:
-        return session.get(url, headers=headers or get_headers(), timeout=timeout)
+        resp = session.get(url, headers=headers or get_headers(), timeout=timeout)
+        if resp.status_code in (403, 410, 451, 502, 503, 504):
+            retry = retry_with_discovered_domain()
+            if retry is not None:
+                return retry
+        return resp
     except requests.exceptions.RequestException as e:
+        try:
+            retry = retry_with_discovered_domain()
+            if retry is not None:
+                return retry
+        except requests.exceptions.RequestException:
+            pass
         raise _domain_error(f"({type(e).__name__})")
+
+
+def sc_get_first(paths, headers=None, timeout=10):
+    """Try StreamingCommunity paths in order and return the first useful page."""
+    base_url = get_base_url()
+    last_resp = None
+    for path in paths:
+        url = f"{base_url}{path}"
+        resp = sc_get(url, headers=headers or get_headers(), timeout=timeout)
+        last_resp = resp
+        if resp.status_code == 200:
+            return resp, url
+    return last_resp, f"{base_url}{paths[-1]}"
 
 # JS Object parser helper
 def clean_js_to_json(js_str):
@@ -431,10 +597,39 @@ class DownloadRequest(BaseModel):
 def get_settings():
     return SETTINGS
 
+@app.post("/api/save")
+def save_all():
+    """Force a VERIFIED persist of the current library + settings (folders,
+    domains, types). Re-reads each file afterwards to confirm it is intact, so
+    the user gets a real confirmation that everything is saved."""
+    errors = []
+    try:
+        save_library(LIBRARY)
+        with open(LIBRARY_FILE, "r", encoding="utf-8") as f:
+            json.load(f)
+    except Exception as e:
+        errors.append(f"libreria ({e})")
+    try:
+        save_settings(SETTINGS)
+        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+            json.load(f)
+    except Exception as e:
+        errors.append(f"impostazioni ({e})")
+    if errors:
+        raise HTTPException(status_code=500,
+                            detail="Salvataggio non verificato: " + "; ".join(errors))
+    return {
+        "ok": True,
+        "titles": len(LIBRARY),
+        "folders": len(SETTINGS.get("folders", [])),
+        "favorites": sum(1 for e in LIBRARY if e.get("favorite")),
+    }
+
+
 @app.post("/api/settings")
 def update_settings(payload: SettingsUpdate):
     if payload.domain is not None and payload.domain.strip():
-        d = payload.domain.strip().strip(".")
+        d = normalize_domain(payload.domain)
         SETTINGS["domain"] = d
         remember_domain(d)
         DOMAIN_STATUS[d] = test_domain_alive(d)
@@ -462,13 +657,13 @@ def list_domains():
 @app.post("/api/domains/test")
 def test_domains():
     """Re-test every remembered domain now and select the first active one."""
-    health_check_domains()
+    health_check_domains(auto_discover=True)
     return list_domains()
 
 
 @app.post("/api/domains/add")
 def add_domain(payload: DomainPayload):
-    d = (payload.domain or "").strip().strip(".")
+    d = normalize_domain(payload.domain)
     if not d:
         raise HTTPException(status_code=400, detail="Dominio vuoto")
     remember_domain(d)
@@ -482,7 +677,7 @@ def add_domain(payload: DomainPayload):
 
 @app.post("/api/domains/remove")
 def remove_domain(payload: DomainPayload):
-    d = (payload.domain or "").strip().strip(".")
+    d = normalize_domain(payload.domain)
     SETTINGS["domains"] = [x for x in SETTINGS.get("domains", []) if x != d]
     DOMAIN_STATUS.pop(d, None)
     # If we removed the current domain, fall back to the first remaining active one.
@@ -500,13 +695,13 @@ def refresh_domain():
     adopt it. Used when none of the remembered domains is alive anymore. The
     found domain is added to the remembered list."""
     global SETTINGS
-    suffix = detect_active_domain()
-    if suffix:
-        SETTINGS["domain"] = suffix
-        remember_domain(suffix)
-        DOMAIN_STATUS[suffix] = True
+    domain = detect_active_domain()
+    if domain:
+        SETTINGS["domain"] = domain
+        remember_domain(domain)
+        DOMAIN_STATUS[domain] = True
         save_settings(SETTINGS)
-        return {"found": True, "domain": suffix}
+        return {"found": True, "domain": domain}
     return {"found": False, "domain": SETTINGS.get("domain")}
 
 # --------------------------------------------------------------------------- #
@@ -514,6 +709,8 @@ def refresh_domain():
 # --------------------------------------------------------------------------- #
 class FolderCreate(BaseModel):
     name: str
+    kind: Optional[str] = ""
+    parent: Optional[str] = ""
 
 
 class FolderRename(BaseModel):
@@ -550,13 +747,17 @@ def _library_map():
 
 
 def _title_view(e):
+    url = e.get("url", "")
+    key = e.get("key") or ""
+    if re.match(r"^\d+-[\w-]+$", key):
+        url = f"{get_base_url()}/it/titles/{key}"
     return {
         "key": e.get("key"),
         "name": e.get("name") or "Senza titolo",
         "cover": e.get("cover", ""),
         "type": e.get("type", ""),
         "is_clone": bool(e.get("is_clone", False)),
-        "url": e.get("url", ""),
+        "url": url,
         "favorite": bool(e.get("favorite", False)),
     }
 
@@ -575,7 +776,7 @@ def _folders_payload():
                 assigned.add(k)
         folders_out.append({
             "id": f["id"], "name": f.get("name", ""), "cover": f.get("cover", ""),
-            "items": items,
+            "kind": f.get("kind", ""), "parent": f.get("parent", ""), "items": items,
         })
     unassigned = [_title_view(e) for e in _sorted_library(LIBRARY)
                   if e.get("key") and e["key"] not in assigned]
@@ -590,7 +791,14 @@ def get_folders():
 @app.post("/api/folders/create")
 def create_folder(payload: FolderCreate):
     name = (payload.name or "").strip() or "Nuova cartella"
-    _folders().append({"id": uuid.uuid4().hex[:8], "name": name, "cover": "", "items": []})
+    kind = (payload.kind or "").strip().lower()
+    if kind not in ("", "genere", "regista", "saga"):
+        kind = ""
+    parent = (payload.parent or "").strip()
+    if parent and not any(x["id"] == parent for x in _folders()):
+        parent = ""
+    _folders().append({"id": uuid.uuid4().hex[:8], "name": name, "kind": kind,
+                       "parent": parent, "cover": "", "items": []})
     save_settings(SETTINGS)
     return _folders_payload()
 
@@ -615,6 +823,11 @@ def remove_folder(payload: FolderId):
                 os.remove(os.path.join(COVERS_DIR, os.path.basename(cover)))
             except OSError:
                 pass
+        # re-parent any subfolders to the removed folder's parent (don't orphan)
+        gp = f.get("parent", "")
+        for child in _folders():
+            if child.get("parent") == f["id"]:
+                child["parent"] = gp
     SETTINGS["folders"] = [x for x in _folders() if x["id"] != payload.id]
     save_settings(SETTINGS)
     return _folders_payload()
@@ -623,32 +836,95 @@ def remove_folder(payload: FolderId):
 @app.post("/api/folders/assign")
 def assign_title(payload: FolderAssign):
     k = payload.key
-    for f in _folders():            # remove from any folder first
-        if k in f.get("items", []):
-            f["items"].remove(k)
     if payload.id:
+        # Add to this folder, keeping the title in any other folder (multi-membership)
         f = next((x for x in _folders() if x["id"] == payload.id), None)
         if not f:
             raise HTTPException(status_code=404, detail="Cartella non trovata")
         if k not in f.setdefault("items", []):
             f["items"].append(k)
+    else:
+        # empty id => remove the title from every folder
+        for f in _folders():
+            if k in f.get("items", []):
+                f["items"].remove(k)
     save_settings(SETTINGS)
     return _folders_payload()
 
 
+@app.post("/api/folders/toggle")
+def toggle_title_in_folder(payload: FolderAssign):
+    """Add the title to the folder if absent, remove it if present (used by the
+    per-title 'add to folders' control). Multi-membership: other folders are
+    left untouched."""
+    f = next((x for x in _folders() if x["id"] == payload.id), None)
+    if not f:
+        raise HTTPException(status_code=404, detail="Cartella non trovata")
+    items = f.setdefault("items", [])
+    if payload.key in items:
+        items.remove(payload.key)
+        present = False
+    else:
+        items.append(payload.key)
+        present = True
+    save_settings(SETTINGS)
+    return {"present": present, **_folders_payload()}
+
+
 @app.post("/api/folders/set")
 def set_folder_items(payload: FolderSet):
-    """Set exactly which library titles belong to a folder (multi-select from
-    the picker). The chosen titles are removed from any other folder first."""
+    """Set exactly which library titles belong to THIS folder (multi-select from
+    the picker). Titles may belong to several folders at once, so other folders
+    are left untouched."""
     f = next((x for x in _folders() if x["id"] == payload.id), None)
     if not f:
         raise HTTPException(status_code=404, detail="Cartella non trovata")
     libkeys = set(_library_map().keys())
-    sel = [k for k in payload.items if k in libkeys]
-    for other in _folders():
-        if other["id"] != f["id"]:
-            other["items"] = [k for k in other.get("items", []) if k not in sel]
-    f["items"] = sel
+    f["items"] = [k for k in payload.items if k in libkeys]
+    save_settings(SETTINGS)
+    return _folders_payload()
+
+
+class FolderParent(BaseModel):
+    id: str
+    parent: Optional[str] = ""
+
+
+@app.post("/api/folders/parent")
+def set_folder_parent(payload: FolderParent):
+    f = next((x for x in _folders() if x["id"] == payload.id), None)
+    if not f:
+        raise HTTPException(status_code=404, detail="Cartella non trovata")
+    parent = (payload.parent or "").strip()
+    if parent:
+        by_id = {x["id"]: x for x in _folders()}
+        if parent not in by_id:
+            raise HTTPException(status_code=404, detail="Cartella genitore non trovata")
+        # prevent cycles: walking up from `parent` must never reach this folder
+        cur = parent
+        while cur:
+            if cur == payload.id:
+                raise HTTPException(status_code=400, detail="Spostamento non valido (ciclo)")
+            cur = by_id.get(cur, {}).get("parent", "")
+    f["parent"] = parent
+    save_settings(SETTINGS)
+    return _folders_payload()
+
+
+class FolderKind(BaseModel):
+    id: str
+    kind: str  # "" | "genere" | "regista" | "saga"
+
+
+@app.post("/api/folders/kind")
+def set_folder_kind(payload: FolderKind):
+    f = next((x for x in _folders() if x["id"] == payload.id), None)
+    if not f:
+        raise HTTPException(status_code=404, detail="Cartella non trovata")
+    kind = (payload.kind or "").strip().lower()
+    if kind not in ("", "genere", "regista", "saga"):
+        raise HTTPException(status_code=400, detail="Tipologia non valida")
+    f["kind"] = kind
     save_settings(SETTINGS)
     return _folders_payload()
 
@@ -687,8 +963,8 @@ def set_folder_cover(payload: FolderCover):
 
 
 
-@app.get("/api/search")
-def search(q: str):
+@app.get("/api/search-legacy")
+def search_legacy(q: str):
     base_url = get_base_url()
     url = f"{base_url}/api/search?q={urllib.parse.quote(q)}"
     try:
@@ -707,11 +983,86 @@ def search(q: str):
                     "name": item.get("name"),
                     "slug": item.get("slug"),
                     "type": item.get("type"),
-                    "cover": item.get("images", {}).get("poster") or item.get("images", {}).get("cover")
+                    "cover": image_url(item.get("images"))
                 })
             return results
         else:
             raise HTTPException(status_code=resp.status_code, detail="Failed search request")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/search")
+def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None):
+    base_url = get_base_url()
+    query = urllib.parse.quote(q)
+    try:
+        resp, url = sc_get_first(
+            [f"/it/search?q={query}", f"/search?q={query}", f"/api/search?q={query}"],
+            headers=get_headers(),
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail="Failed search request")
+
+        content_type = resp.headers.get("content-type", "")
+        if "application/json" in content_type:
+            try:
+                data = resp.json().get("data", [])
+            except ValueError:
+                raise _domain_error("La risposta non e valida.")
+            cdn_url = None
+        else:
+            soup = BeautifulSoup(resp.text, "lxml")
+            app_div = soup.find("div", {"id": "app"})
+            if not app_div:
+                raise HTTPException(status_code=500, detail="Unable to extract search results")
+            page_data = json.loads(app_div.get("data-page"))
+            data = page_data.get("props", {}).get("titles", [])
+            cdn_url = get_cdn_url(page_data)
+
+        results = []
+        for item in data[:30]:
+            if not isinstance(item, dict):
+                continue
+            title_id = item.get("id")
+            slug = item.get("slug")
+            id_and_slug = f"{title_id}-{slug}" if title_id and slug else ""
+            results.append({
+                "id": title_id,
+                "name": item.get("name") or item.get("title") or "Senza titolo",
+                "slug": slug,
+                "id_and_slug": id_and_slug,
+                "type": item.get("type") or "",
+                "score": item.get("score"),
+                "release_date": item.get("last_air_date_it") or item.get("last_air_date") or item.get("release_date"),
+                "genres": [],
+                "cover": image_url(item.get("images"), cdn_url=cdn_url),
+                "url": f"{base_url}/it/titles/{id_and_slug}" if id_and_slug else "",
+            })
+
+        wanted_genre = (genre or "").strip().lower()
+        if wanted_genre:
+            filtered = []
+            for item in results:
+                if not item.get("id_and_slug"):
+                    continue
+                try:
+                    details = get_details(item["id_and_slug"])
+                    item["genres"] = details.get("genres", [])
+                    if any(wanted_genre in (g or "").lower() for g in item["genres"]):
+                        filtered.append(item)
+                except Exception:
+                    pass
+            results = filtered
+
+        if sort == "score":
+            results.sort(key=lambda x: float(x.get("score") or 0), reverse=True)
+        elif sort == "recent":
+            results.sort(key=lambda x: x.get("release_date") or "", reverse=True)
+        return results
     except HTTPException:
         raise
     except Exception as e:
@@ -723,10 +1074,12 @@ def get_details(id_and_slug: str):
         # For clone contents, details are loaded directly during URL resolution
         raise HTTPException(status_code=400, detail="Cannot load details directly for clone titles")
 
-    base_url = get_base_url()
-    url = f"{base_url}/titles/{id_and_slug}"
     try:
-        resp = sc_get(url, headers=get_headers(), timeout=10)
+        resp, url = sc_get_first(
+            [f"/it/titles/{id_and_slug}", f"/titles/{id_and_slug}"],
+            headers=get_headers(),
+            timeout=10,
+        )
         if resp.status_code != 200:
             raise HTTPException(status_code=resp.status_code, detail="Content not found")
         
@@ -737,6 +1090,7 @@ def get_details(id_and_slug: str):
             
         page_data = json.loads(app_div.get("data-page"))
         title_info = page_data.get("props", {}).get("title", {})
+        cdn_url = get_cdn_url(page_data)
         
         # Format general metadata
         details = {
@@ -749,7 +1103,7 @@ def get_details(id_and_slug: str):
             "release_date": title_info.get("release_date"),
             "runtime": title_info.get("runtime"),
             "genres": [g.get("name") for g in title_info.get("genres", [])],
-            "cover": title_info.get("images", {}).get("poster") or title_info.get("images", {}).get("cover"),
+            "cover": image_url(title_info.get("images"), cdn_url=cdn_url),
             "seasons": [],
             "version": page_data.get("version")
         }
@@ -768,9 +1122,6 @@ def get_details(id_and_slug: str):
 
 @app.get("/api/details/{id_and_slug}/season/{season_number}")
 def get_season_episodes(id_and_slug: str, season_number: int, version: str):
-    base_url = get_base_url()
-    url = f"{base_url}/titles/{id_and_slug}/stagione-{season_number}"
-
     headers = get_headers()
     headers.update({
         'X-Inertia': 'true',
@@ -778,7 +1129,16 @@ def get_season_episodes(id_and_slug: str, season_number: int, version: str):
     })
     
     try:
-        resp = sc_get(url, headers=headers, timeout=10)
+        resp, url = sc_get_first(
+            [
+                f"/it/titles/{id_and_slug}/season-{season_number}",
+                f"/it/titles/{id_and_slug}/stagione-{season_number}",
+                f"/titles/{id_and_slug}/season-{season_number}",
+                f"/titles/{id_and_slug}/stagione-{season_number}",
+            ],
+            headers=headers,
+            timeout=10,
+        )
         if resp.status_code != 200:
             raise HTTPException(status_code=resp.status_code, detail="Season not found")
 
@@ -786,6 +1146,7 @@ def get_season_episodes(id_and_slug: str, season_number: int, version: str):
             data = resp.json()
         except ValueError:
             raise _domain_error("La risposta della stagione non è valida (dominio non più attivo).")
+        cdn_url = get_cdn_url(data)
         episodes = data.get("props", {}).get("loadedSeason", {}).get("episodes", [])
 
         results = []
@@ -796,7 +1157,7 @@ def get_season_episodes(id_and_slug: str, season_number: int, version: str):
                 "name": ep.get("name"),
                 "plot": ep.get("plot"),
                 "duration": ep.get("duration"),
-                "cover": ep.get("images", {}).get("poster") or ep.get("images", {}).get("cover")
+                "cover": image_url(ep.get("images"), cdn_url=cdn_url)
             })
         return results
     except HTTPException:
@@ -1056,16 +1417,17 @@ def resolve_url(payload: ResolveUrlRequest):
             raise HTTPException(status_code=500, detail="Errore nell'analisi del sito clone")
             
     # Automatically update settings domain if user pastes a different active domain!
-    if netloc != get_base_url().replace("https://", ""):
-        SETTINGS["domain"] = netloc
-        remember_domain(netloc)
-        DOMAIN_STATUS[netloc] = True  # we just reached it successfully
+    pasted_domain = normalize_domain(netloc)
+    if pasted_domain != normalize_domain(SETTINGS["domain"]):
+        SETTINGS["domain"] = pasted_domain
+        remember_domain(pasted_domain)
+        DOMAIN_STATUS[pasted_domain] = True  # we just reached it successfully
         save_settings(SETTINGS)
-        print(f"[+] Automatically updated active domain to: {netloc}")
+        print(f"[+] Automatically updated active domain to: {pasted_domain}")
         
     # Match: /titles/24932-guarda-visualizza...
     # We want to match: /titles/(\d+)-([^/]+)
-    titles_match = re.search(r"/titles/(\d+)-([^/]+)", path)
+    titles_match = re.search(r"(?:/[a-z]{2})?/titles/(\d+)-([^/]+)", path)
     if titles_match:
         slug_part = titles_match.group(2)
         slug_part = slug_part.split("/")[0] # remove trailing parts if any (e.g. /watching.html)
@@ -1076,7 +1438,7 @@ def resolve_url(payload: ResolveUrlRequest):
         return res
         
     # Match: /watch/(\d+)
-    watch_match = re.search(r"/watch/(\d+)", path)
+    watch_match = re.search(r"(?:/[a-z]{2})?/watch/(\d+)", path)
     if watch_match:
         title_id = int(watch_match.group(1))
         # Fetch the watch page to extract the title details
@@ -1105,17 +1467,21 @@ def get_stream_details(id: int, episode_id: Optional[int] = None):
     base_url = get_base_url()
     
     # 1. Fetch iframe url from streamingcommunity
+    iframe_paths = []
     if episode_id:
-        url = f"{base_url}/iframe/{id}?episode_id={episode_id}&next_episode=1"
+        iframe_paths = [
+            f"/it/iframe/{id}?episode_id={episode_id}&next_episode=1",
+            f"/iframe/{id}?episode_id={episode_id}&next_episode=1",
+        ]
     else:
-        url = f"{base_url}/iframe/{id}"
+        iframe_paths = [f"/it/iframe/{id}", f"/iframe/{id}"]
         
     try:
         headers = get_headers()
         if episode_id:
-            headers['Referer'] = f"{base_url}/watch/{id}?e={episode_id}"
+            headers['Referer'] = f"{base_url}/it/watch/{id}?e={episode_id}"
             
-        resp = sc_get(url, headers=headers, timeout=10)
+        resp, url = sc_get_first(iframe_paths, headers=headers, timeout=10)
         if resp.status_code != 200:
             raise HTTPException(status_code=resp.status_code, detail="Failed to fetch iframe page")
 
@@ -1161,16 +1527,71 @@ def get_stream_details(id: int, episode_id: Optional[int] = None):
         video_id = video_json.get("id")
         token = params_json.get("token")
         expires = params_json.get("expires")
+
+        # New Vixcloud embeds expose the playable master URL in window.streams
+        # (usually /playlist/{id}?ub=1). The old direct playlist URL without
+        # ub/h/scz/lang now returns 403, so mirror the official player setup.
+        stream_base_url = f"https://vixcloud.co/playlist/{video_id}"
+        streams_match = re.search(r"window\.streams\s*=\s*(\[.*?\]);", html_content, re.S)
+        if streams_match:
+            try:
+                streams = json.loads(streams_match.group(1).replace("\\/", "/"))
+                active_stream = next((s for s in streams if s.get("active")), streams[0] if streams else None)
+                if active_stream and active_stream.get("url"):
+                    stream_base_url = active_stream["url"]
+            except Exception:
+                pass
+
+        master_parts = urllib.parse.urlparse(stream_base_url)
+        master_qs = urllib.parse.parse_qs(master_parts.query)
+        for k, v in params_json.items():
+            if v:
+                master_qs[k] = [str(v)]
+        embed_qs = urllib.parse.parse_qs(urllib.parse.urlparse(vix_embed_url).query)
+        if embed_qs.get("canPlayFHD") or "window.canPlayFHD = true" in html_content:
+            master_qs["h"] = ["1"]
+        if embed_qs.get("scz"):
+            master_qs["scz"] = [embed_qs["scz"][0]]
+        if embed_qs.get("lang"):
+            master_qs["lang"] = [embed_qs["lang"][0]]
+        real_master_url = urllib.parse.urlunparse(master_parts._replace(query=urllib.parse.urlencode(master_qs, doseq=True)))
+
+        download_info = {}
+        try:
+            master_resp = requests.get(real_master_url, headers=get_headers(), timeout=10, verify=False, proxies=get_proxies())
+            if master_resp.status_code == 200:
+                master = m3u8.loads(master_resp.text)
+                if master.playlists:
+                    best = max(master.playlists, key=lambda p: p.stream_info.bandwidth or 0)
+                    qualities = []
+                    for p in sorted(master.playlists, key=lambda p: p.stream_info.bandwidth or 0, reverse=True):
+                        res = p.stream_info.resolution
+                        if res and len(res) > 1:
+                            q = f"{res[1]}p"
+                            if q not in qualities:
+                                qualities.append(q)
+                    audio = next((m for m in master.media if m.type == "AUDIO" and m.default == "YES" and m.uri), None)
+                    if not audio:
+                        audio = next((m for m in master.media if m.type == "AUDIO" and m.uri), None)
+                    download_info = {
+                        "master_url": real_master_url,
+                        "video_url": best.absolute_uri or urllib.parse.urljoin(real_master_url, best.uri),
+                        "audio_url": (audio.absolute_uri or urllib.parse.urljoin(real_master_url, audio.uri)) if audio else None,
+                        "headers": get_headers(),
+                    }
+        except Exception as e:
+            print(f"[-] Could not pre-resolve Vixcloud download playlists: {e}")
         
         # Build master playlist proxy URL
-        master_proxy_url = f"/api/stream/master.m3u8?video_id={video_id}&token={token}&expires={expires}"
+        master_proxy_url = f"/api/stream/master.m3u8?url={urllib.parse.quote(real_master_url, safe='')}"
         
         return {
             "video_id": video_id,
             "title": video_json.get("name") or "video",
             "qualities": qualities,
             "master_url": master_proxy_url,
-            "params": params_json
+            "params": params_json,
+            "download": download_info,
         }
 
     except HTTPException:
@@ -1179,12 +1600,19 @@ def get_stream_details(id: int, episode_id: Optional[int] = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/stream/master.m3u8")
-def get_master_playlist(video_id: int, token: str, expires: str):
-    # Wixcloud Master playlist url
-    url = f"https://vixcloud.co/playlist/{video_id}?token={token}&expires={expires}"
+def get_master_playlist(url: Optional[str] = None, video_id: Optional[int] = None,
+                        token: Optional[str] = None, expires: Optional[str] = None):
+    if not url:
+        if not video_id or not token or not expires:
+            raise HTTPException(status_code=400, detail="Playlist URL mancante")
+        url = f"https://vixcloud.co/playlist/{video_id}?token={token}&expires={expires}"
+    if not video_id:
+        m = re.search(r"/playlist/(\d+)", url)
+        if m:
+            video_id = int(m.group(1))
     
     try:
-        resp = requests.get(url, headers=get_headers(), timeout=10)
+        resp = requests.get(url, headers=get_headers(), timeout=10, verify=False, proxies=get_proxies())
         if resp.status_code != 200:
             return Response(status_code=resp.status_code, content="Master playlist request failed")
             
@@ -1196,16 +1624,16 @@ def get_master_playlist(video_id: int, token: str, expires: str):
             line = line.strip()
             if line.startswith("https://"):
                 # Rewrite sub-playlist URL to point to our proxy
-                encoded_url = urllib.parse.quote(line)
-                rewritten_url = f"/api/stream/subplaylist.m3u8?url={encoded_url}&video_id={video_id}"
+                encoded_url = urllib.parse.quote(line, safe="")
+                rewritten_url = f"/api/stream/subplaylist.m3u8?url={encoded_url}&video_id={video_id or 0}"
                 rewritten_lines.append(rewritten_url)
             elif "URI=\"" in line and "https://" in line:
                 # Rewrite subtitles/audio playlists in EXT-X-MEDIA if absolute URLs are present
                 uri_match = re.search(r'URI="([^"]+)"', line)
                 if uri_match:
                     abs_uri = uri_match.group(1)
-                    encoded_url = urllib.parse.quote(abs_uri)
-                    rewritten_uri = f"/api/stream/subplaylist.m3u8?url={encoded_url}&video_id={video_id}"
+                    encoded_url = urllib.parse.quote(abs_uri, safe="")
+                    rewritten_uri = f"/api/stream/subplaylist.m3u8?url={encoded_url}&video_id={video_id or 0}"
                     line = line.replace(abs_uri, rewritten_uri)
                 rewritten_lines.append(line)
             else:
@@ -1218,7 +1646,7 @@ def get_master_playlist(video_id: int, token: str, expires: str):
 @app.get("/api/stream/subplaylist.m3u8")
 def get_sub_playlist(url: str, video_id: int):
     try:
-        resp = requests.get(url, headers=get_headers(), timeout=10)
+        resp = requests.get(url, headers=get_headers(), timeout=10, verify=False, proxies=get_proxies())
         if resp.status_code != 200:
             return Response(status_code=resp.status_code, content="Sub-playlist request failed")
             
@@ -1243,8 +1671,8 @@ def get_sub_playlist(url: str, video_id: int):
                     
                     # Create referer header payload for key proxy
                     referer = f"https://vixcloud.co/embed/{video_id}?token={token_render}&referer=1&expires={expires}"
-                    encoded_key_url = urllib.parse.quote(orig_key_url)
-                    encoded_referer = urllib.parse.quote(referer)
+                    encoded_key_url = urllib.parse.quote(orig_key_url, safe="")
+                    encoded_referer = urllib.parse.quote(referer, safe="")
                     
                     local_key_url = f"/api/stream/key?url={encoded_key_url}&referer={encoded_referer}"
                     line = line.replace(orig_key_url, local_key_url)
@@ -1252,11 +1680,30 @@ def get_sub_playlist(url: str, video_id: int):
             elif line.startswith("#") or not line:
                 rewritten_lines.append(line)
             else:
-                # Segment TS files URL. If relative, make absolute relative to the playlist URL
+                # Segment files are proxied locally too. This avoids browser CORS
+                # failures and keeps the same referer/proxy behaviour as keys.
                 absolute_ts_url = urllib.parse.urljoin(url, line)
-                rewritten_lines.append(absolute_ts_url)
+                referer = f"https://vixcloud.co/embed/{video_id}?token={token_render}&referer=1&expires={expires}"
+                encoded_seg_url = urllib.parse.quote(absolute_ts_url, safe="")
+                encoded_referer = urllib.parse.quote(referer, safe="")
+                rewritten_lines.append(f"/api/stream/segment?url={encoded_seg_url}&referer={encoded_referer}")
                 
         return Response(content="\n".join(rewritten_lines), media_type="application/vnd.apple.mpegurl")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/stream/segment")
+def get_stream_segment(url: str, referer: str):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": referer,
+    }
+    try:
+        resp = requests.get(url, headers=headers, timeout=20, verify=False, proxies=get_proxies())
+        if resp.status_code != 200:
+            return Response(status_code=resp.status_code, content="Segment request failed")
+        content_type = resp.headers.get("content-type") or "video/mp2t"
+        return Response(content=resp.content, media_type=content_type)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1267,7 +1714,7 @@ def get_stream_key(url: str, referer: str):
         "Referer": referer
     }
     try:
-        resp = requests.get(url, headers=headers, timeout=10)
+        resp = requests.get(url, headers=headers, timeout=10, verify=False, proxies=get_proxies())
         if resp.status_code == 200:
             return Response(content=resp.content, media_type="application/octet-stream")
         else:
@@ -1295,6 +1742,15 @@ def download_media(payload: DownloadRequest):
 @app.get("/api/download/status")
 def get_download_status():
     return list(active_downloads.values())
+
+
+@app.post("/api/download/cancel")
+def cancel_download_endpoint(payload: dict):
+    """Stop a queued or in-progress download and drop its partial files."""
+    download_id = payload.get("id", "")
+    if not cancel_download(download_id):
+        raise HTTPException(status_code=404, detail="Download non trovato")
+    return {"ok": True}
 
 
 # --------------------------------------------------------------------------- #

@@ -1,17 +1,17 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SC Portal — Scarica in locale</title>
-    <meta name="description" content="Portale web locale e privato per scaricare film ed episodi da un link, senza pubblicità né tracker.">
+    <title>SC Portal â€” Scarica in locale</title>
+    <meta name="description" content="Portale web locale e privato per scaricare film ed episodi da un link, senza pubblicitÃ  nÃ© tracker.">
     <!-- Google Fonts: Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- HLS.js for streaming -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
     <header class="app-header">
@@ -22,9 +22,9 @@
             <h1 class="app-title">SC<span>Portal</span></h1>
         </div>
 
-        <div class="settings-box" title="StreamingCommunity cambia spesso dominio: qui imposti quello attivo (per i link nativi). Per i link clone non serve.">
-            <span class="settings-label">streamingcommunity.</span>
-            <input type="text" id="domain-input" placeholder="computer">
+        <div class="settings-box" title="StreamingCommunity cambia spesso dominio: qui imposti quello attivo (puoi incollare anche l'URL completo). Per i link clone non serve.">
+            <span class="settings-label">dominio</span>
+            <input type="text" id="domain-input" placeholder="streamingcommunityz.tech">
             <button id="save-settings-btn" class="icon-btn" title="Salva dominio">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
             </button>
@@ -33,7 +33,7 @@
             </button>
         </div>
 
-        <div class="settings-box" title="Alcuni episodi sono ospitati su nodi CDN bloccati dal provider (Piracy Shield/AGCOM): l'IP è vivo nel mondo ma cade dalla tua rete, quindi il download va in timeout. Imposta qui un proxy/VPN (es. socks5://127.0.0.1:1080) per instradare quel traffico fuori dal blocco. Vuoto = connessione diretta.">
+        <div class="settings-box" title="Alcuni episodi sono ospitati su nodi CDN bloccati dal provider (Piracy Shield/AGCOM): l'IP Ã¨ vivo nel mondo ma cade dalla tua rete, quindi il download va in timeout. Imposta qui un proxy/VPN (es. socks5://127.0.0.1:1080) per instradare quel traffico fuori dal blocco. Vuoto = connessione diretta.">
             <span class="settings-label">proxy</span>
             <input type="text" id="proxy-input" placeholder="socks5://127.0.0.1:1080 (opzionale)">
             <button id="save-proxy-btn" class="icon-btn" title="Salva proxy">
@@ -47,7 +47,7 @@
         <section class="hero">
             <div class="hero-heading">
                 <h2>Incolla un link, scaricalo in locale</h2>
-                <p>Privato e senza pubblicità. Film ed episodi salvati direttamente sul tuo computer.</p>
+                <p>Privato e senza pubblicitÃ . Film ed episodi salvati direttamente sul tuo computer.</p>
             </div>
 
             <div class="card glass url-card">
@@ -55,10 +55,10 @@
                     <span class="input-icon">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
                     </span>
-                    <input type="text" id="url-input" placeholder="Incolla qui il link del film o della serie…" autocomplete="off" spellcheck="false">
+                    <input type="text" id="url-input" placeholder="Cerca titolo, regista oppure incolla un linkâ€¦" autocomplete="off" spellcheck="false">
                     <button id="load-url-btn" class="secondary-btn" title="Apri la scheda nel portale">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                        <span>Apri</span>
+                        <span>Cerca</span>
                     </button>
                     <button id="convert-url-btn" class="primary-btn" title="Scarica subito">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -66,13 +66,39 @@
                     </button>
                 </div>
                 <div class="hero-steps">
-                    <span class="step"><b>Film</b> → si scarica subito</span>
-                    <span class="step-sep">•</span>
-                    <span class="step"><b>Serie</b> → scegli stagione ed episodio</span>
-                    <span class="step-sep">•</span>
+                    <span class="step"><b>Film</b> â†’ si scarica subito</span>
+                    <span class="step-sep">â€¢</span>
+                    <span class="step"><b>Serie</b> â†’ scegli stagione ed episodio</span>
+                    <span class="step-sep">â€¢</span>
                     <span class="step">Supporta anche flussi <b>.m3u8 / .mp4</b></span>
                 </div>
+                <div class="search-filters">
+                    <select id="search-sort" class="custom-select">
+                        <option value="">Rilevanza</option>
+                        <option value="recent">Uscita recente</option>
+                        <option value="score">Voto</option>
+                    </select>
+                    <select id="search-genre" class="custom-select">
+                        <option value="">Tutti i generi</option>
+                        <option value="Azione">Azione</option>
+                        <option value="Animazione">Animazione</option>
+                        <option value="Avventura">Avventura</option>
+                        <option value="Commedia">Commedia</option>
+                        <option value="Crime">Crime</option>
+                        <option value="Dramma">Dramma</option>
+                        <option value="Fantascienza">Fantascienza</option>
+                        <option value="Fantasy">Fantasy</option>
+                        <option value="Horror">Horror</option>
+                        <option value="Romance">Romance</option>
+                        <option value="Thriller">Thriller</option>
+                    </select>
+                </div>
             </div>
+        </section>
+
+        <section id="search-results-section" class="results-section hidden">
+            <h2 id="search-results-title" class="section-title">Risultati</h2>
+            <div id="search-results" class="results-grid"></div>
         </section>
 
         <!-- Stream Player Area -->
@@ -87,7 +113,7 @@
                     <iframe id="iframe-player" src="" frameborder="0" allowfullscreen class="hidden" style="width:100%; height:100%; display:block;"></iframe>
                 </div>
                 <div class="player-controls-bar">
-                    <label for="quality-select">Qualità:</label>
+                    <label for="quality-select">QualitÃ :</label>
                     <select id="quality-select" class="custom-select"></select>
                 </div>
             </div>
@@ -111,10 +137,15 @@
         <section class="downloads-section card glass" id="library-section">
             <div class="downloads-header">
                 <h2>Libreria</h2>
-                <span class="library-hint">I titoli che apri restano qui · clicca per riaprirli · ★ per i preferiti</span>
+                <button id="save-library-btn" class="primary-btn small-btn" title="Salva libreria, cartelle e locandine su disco (con verifica)">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    <span>Salva</span>
+                </button>
             </div>
+            <span class="library-hint">I titoli che apri restano qui Â· clicca per riaprirli Â· â˜… per i preferiti</span>
+            <input type="text" id="library-search" class="lib-search" placeholder="Cerca un titolo nella libreriaâ€¦" autocomplete="off" spellcheck="false">
             <div id="library-list" class="library-list">
-                <div class="no-downloads">Nessun titolo salvato. Apri un link: comparirà qui come collegamento.</div>
+                <div class="no-downloads">Nessun titolo salvato. Apri un link: comparirÃ  qui come collegamento.</div>
             </div>
         </section>
 
@@ -143,10 +174,10 @@
                 </div>
                 <div class="modal-details">
                     <h2 id="detail-title">Titolo del Film/Serie</h2>
-                    <button id="fav-modal-btn" class="fav-modal-btn" title="Salva questo titolo nei preferiti della libreria">☆ Salva nei preferiti</button>
+                    <button id="fav-modal-btn" class="fav-modal-btn" title="Salva questo titolo nei preferiti della libreria">â˜† Salva nei preferiti</button>
                     <div class="meta-tags">
                         <span id="detail-year" class="tag">Anno</span>
-                        <span id="detail-score" class="tag score-tag">★ 0.0</span>
+                        <span id="detail-score" class="tag score-tag">â˜… 0.0</span>
                         <span id="detail-runtime" class="tag">Durata</span>
                     </div>
                     <p id="detail-plot">Trama del contenuto...</p>
@@ -180,6 +211,8 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=4"></script>
 </body>
 </html>
+
+

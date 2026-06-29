@@ -136,15 +136,56 @@ def normalize_domain(value):
     return host if "." in host else f"streamingcommunity.{host}"
 
 
+def _salvage_settings(txt):
+    """Recover domain/domains/folders from a truncated/corrupted settings.json
+    instead of losing them all (the folders array can be large and is the most
+    painful thing to lose)."""
+    out = {}
+    m = re.search(r'"domain"\s*:\s*"([^"]*)"', txt)
+    if m:
+        out["domain"] = m.group(1)
+    md = re.search(r'"domains"\s*:\s*(\[.*?\])', txt, re.S)
+    if md:
+        try:
+            out["domains"] = [x for x in json.loads(md.group(1)) if isinstance(x, str)]
+        except Exception:
+            pass
+    folders = []
+    dec = json.JSONDecoder()
+    fi = txt.find('"folders"')
+    if fi != -1:
+        i = txt.find("{", fi)
+        while i != -1 and i < len(txt):
+            try:
+                obj, end = dec.raw_decode(txt, i)
+                if isinstance(obj, dict) and "id" in obj and "name" in obj:
+                    obj.setdefault("items", [])
+                    obj.setdefault("kind", obj.get("kind", ""))
+                    obj.setdefault("parent", obj.get("parent", ""))
+                    obj.setdefault("cover", obj.get("cover", ""))
+                    folders.append(obj)
+                i = txt.find("{", end)
+            except Exception:
+                i = txt.find("{", i + 1)
+    if folders:
+        out["folders"] = folders
+    return out
+
+
 def load_settings():
+    data = {}
     if os.path.exists(SETTINGS_FILE):
         try:
-            with open(SETTINGS_FILE, "r") as f:
-                data = json.load(f)
+            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+                txt = f.read()
         except Exception:
-            data = {}
-    else:
-        data = {}
+            txt = ""
+        try:
+            data = json.loads(txt)
+        except Exception:
+            data = _salvage_settings(txt)
+            if data.get("folders"):
+                print(f"[!] settings.json corrotto: recuperate {len(data['folders'])} cartelle (salvage).")
     raw_domains = list(data.get("domains") or [])
     data["domain"] = normalize_domain(data.get("domain") or "streamingcommunityz.tech")
     # Persistent list of domains the user has used. Remembered across sessions

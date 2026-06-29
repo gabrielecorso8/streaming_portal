@@ -849,6 +849,27 @@ def assign_title(payload: FolderAssign):
     return _folders_payload()
 
 
+class FolderItems(BaseModel):
+    id: str
+    keys: List[str] = []
+
+
+@app.post("/api/folders/add-items")
+def add_items_to_folder(payload: FolderItems):
+    """Add several library titles to a folder at once (multi-select). Existing
+    membership in other folders is left untouched (multi-membership)."""
+    f = next((x for x in _folders() if x["id"] == payload.id), None)
+    if not f:
+        raise HTTPException(status_code=404, detail="Cartella non trovata")
+    libkeys = set(_library_map().keys())
+    items = f.setdefault("items", [])
+    for k in payload.keys:
+        if k in libkeys and k not in items:
+            items.append(k)
+    save_settings(SETTINGS)
+    return _folders_payload()
+
+
 @app.post("/api/folders/toggle")
 def toggle_title_in_folder(payload: FolderAssign):
     """Add the title to the folder if absent, remove it if present (used by the

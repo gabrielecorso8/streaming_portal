@@ -6,6 +6,7 @@ let libraryCache = [];     // Last known library list (to read favourite state)
 let openFolders = new Set(); // Folder ids currently expanded (kept across re-renders)
 let librarySearch = "";    // current library search query
 let lastLibraryData = null; // last folders payload (to re-render without refetch)
+let searchSelection = new Map(); // multi-select of search results (key -> item)
 
 // Helper for UI elements
 const el = {
@@ -281,6 +282,7 @@ function renderSearchResults(results, query) {
         const date = item.release_date ? ` · ${escapeHtml(item.release_date)}` : "";
         card.innerHTML = `
             ${cover}
+            <input type="checkbox" class="media-select" title="Seleziona per inserimento multiplo">
             <div class="media-actions">
                 <button class="icon-btn fav-q-btn" title="Salva nei preferiti">☆</button>
                 <button class="icon-btn folder-q-btn" title="Metti in una cartella">📂</button>
@@ -290,11 +292,108 @@ function renderSearchResults(results, query) {
                 <span class="media-type">${type}${score}${date}</span>
                 <span class="media-title">${escapeHtml(item.name || "Senza titolo")}</span>
             </div>`;
-        card.addEventListener("click", (e) => { if (e.target.closest(".media-actions")) return; openSearchResult(item); });
+        card.addEventListener("click", (e) => { if (e.target.closest(".media-actions") || e.target.closest(".media-select")) return; openSearchResult(item); });
+        const selCb = card.querySelector(".media-select");
+        selCb.checked = searchSelection.has(item.id_and_slug);
+        if (selCb.checked) card.classList.add("selected");
+        selCb.addEventListener("click", (e) => e.stopPropagation());
+        selCb.addEventListener("change", () => {
+            if (selCb.checked) { searchSelection.set(item.id_and_slug, item); card.classList.add("selected"); }
+            else { searchSelection.delete(item.id_and_slug); card.classList.remove("selected"); }
+            updateSearchSelectionBar();
+        });
         card.querySelector(".fav-q-btn").addEventListener("click", (e) => { e.stopPropagation(); quickFavoriteSearch(item); });
         card.querySelector(".folder-q-btn").addEventListener("click", (e) => { e.stopPropagation(); quickFolderSearch(item); });
         card.querySelector(".newfolder-q-btn").addEventListener("click", (e) => { e.stopPropagation(); quickNewFolderSearch(item); });
         el.searchResults.appendChild(card);
+    });
+    updateSearchSelectionBar();
+}
+
+function updateSearchSelectionBar() {
+    let bar = document.getElementById("search-sel-bar");
+    const n = searchSelection.size;
+    if (n === 0) { if (bar) bar.remove(); return; }
+    if (!bar) {
+        bar = document.createElement("div");
+        bar.id = "search-sel-bar";
+        bar.className = "sel-bar";
+        el.searchResults.parentNode.insertBefore(bar, el.searchResults);
+    }
+    bar.innerHTML = `<span class="sel-count">${n} selezionati</span>
+        <button class="primary-btn small-btn sel-add">Aggiungi a cartella</button>
+        <button class="secondary-btn small-btn sel-clear">Deseleziona</button>`;
+    bar.querySelector(".sel-add").addEventListener("click", () => openBulkAddToFolder([...searchSelection.values()]));
+    bar.querySelector(".sel-clear").addEventListener("click", () => {
+        searchSelection.clear();
+        document.querySelectorAll(".media-select").forEach(c => { c.checked = false; c.closest(".media-card").classList.remove("selected"); });
+        updateSearchSelectionBar();
+    });
+}
+
+async function addItemsToFolder(folderId, items) {
+    const keys = items.map(i => i.id_and_slug).filter(Boolean);
+    try {
+        const r = await fetch("/api/folders/add-items", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: folderId, keys })
+        });
+        if (r.ok) {
+            openFolders.add(folderId);
+            renderLibrary(await r.json());
+            searchSelection.clear();
+            document.querySelectorAll(".media-select").forEach(c => { c.checked = false; c.closest(".media-card").classList.remove("selected"); });
+            updateSearchSelectionBar();
+            showToast(`${keys.length} titoli aggiunti alla cartella`);
+        } else { showToast("Errore aggiunta alla cartella"); }
+    } catch (e) { showToast("Errore aggiunta alla cartella"); }
+}
+
+async function openBulkAddToFolder(items) {
+    if (!items.length) return;
+    showToast(`Salvataggio di ${items.length} titoli…`, 4000);
+    for (const it of items) await saveSearchItem(it);
+    let data;
+    try { data = await (await fetch("/api/folders")).json(); }
+    catch (e) { showToast("Errore caricamento cartelle"); return; }
+    const folders = data.folders || [];
+    const overlay = document.createElement("div");
+    overlay.className = "picker-overlay";
+    const rows = folders.map(f => {
+        const kindB = f.kind ? ` <span class="picker-note">${escapeHtml(f.kind)}</span>` : "";
+        return `<button class="picker-folder" data-fid="${f.id}">${escapeHtml(f.name || "Cartella")}${kindB}</button>`;
+    }).join("");
+    overlay.innerHTML = `
+        <div class="picker-panel glass">
+            <h3>Aggiungi ${items.length} titoli a una cartella</h3>
+            <button class="secondary-btn small-btn bulk-newfolder" style="margin-bottom:10px">+ Nuova cartella</button>
+            <input type="text" class="picker-search" placeholder="Cerca una cartella…" autocomplete="off">
+            <div class="picker-list">${rows || '<div class="no-downloads">Nessuna cartella: creane una.</div>'}</div>
+            <div class="picker-actions"><button class="secondary-btn picker-close">Chiudi</button></div>
+        </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    overlay.querySelector(".picker-close").addEventListener("click", close);
+    overlay.querySelectorAll(".picker-folder").forEach(b => b.addEventListener("click", async () => {
+        close(); await addItemsToFolder(b.dataset.fid, items);
+    }));
+    overlay.querySelector(".bulk-newfolder").addEventListener("click", async () => {
+        const name = prompt("Nome della nuova cartella:");
+        if (name === null) return;
+        try {
+            const r = await fetch("/api/folders/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+            if (!r.ok) { showToast("Errore creazione cartella"); return; }
+            const d = await r.json();
+            const folder = (d.folders || [])[(d.folders || []).length - 1];
+            close();
+            if (folder) await addItemsToFolder(folder.id, items);
+        } catch (e) { showToast("Errore creazione cartella"); }
+    });
+    const ps = overlay.querySelector(".picker-search");
+    if (ps) ps.addEventListener("input", () => {
+        const qq = ps.value.trim().toLowerCase();
+        overlay.querySelectorAll(".picker-folder").forEach(b => { b.style.display = b.textContent.toLowerCase().includes(qq) ? "" : "none"; });
     });
 }
 

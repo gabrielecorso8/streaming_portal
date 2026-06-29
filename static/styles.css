@@ -1026,3 +1026,86 @@ video {
 .media-actions .icon-btn { font-size: .9rem; line-height: 1; padding: 4px 6px; color: #fff; }
 .media-actions .icon-btn:hover { color: #ffc400; }
 @media (hover: none) { .media-actions { opacity: 1; } }
+
+/* ===================================================================== */
+/*  v5 — Restyling elegante (stessa palette violet/pink, più raffinato)   */
+/* ===================================================================== */
+:root {
+    --accent-grad: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 45%, #ec4899 100%);
+    --font-display: 'Space Grotesk', 'Outfit', sans-serif;
+    --ring: 0 0 0 3px rgba(139, 92, 246, 0.25);
+}
+
+/* Headings + logo in display font, logo as gradient text */
+.app-title, .hero-heading h2, .downloads-header h2, .modal-details h2,
+.picker-panel h3, #playing-title {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+}
+.app-title {
+    background: var(--accent-grad);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.app-title span { color: transparent; }
+.logo-icon { filter: drop-shadow(0 0 10px rgba(167, 139, 250, 0.55)); }
+
+/* Buttons */
+.primary-btn {
+    background: var(--accent-grad); border: none; color: #fff; font-weight: 600;
+    border-radius: 12px; box-shadow: 0 6px 18px rgba(139, 92, 246, 0.28);
+    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+.primary-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(139, 92, 246, 0.42); filter: brightness(1.06); }
+.primary-btn:active { transform: translateY(0) scale(.99); }
+.secondary-btn {
+    background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color);
+    border-radius: 12px; color: var(--text-primary); transition: var(--transition-fast);
+}
+.secondary-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--border-hover); transform: translateY(-1px); }
+.icon-btn { border-radius: 10px; transition: var(--transition-fast); }
+.icon-btn:hover { background: rgba(139, 92, 246, 0.16); color: var(--primary-hover); }
+
+/* Cards / glass */
+.card.glass, .downloads-section {
+    border: 1px solid var(--border-color); border-radius: 18px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.card.glass:hover { border-color: rgba(139, 92, 246, 0.25); }
+
+/* Inputs / selects */
+input[type="text"]:focus, .custom-select:focus, .lib-search:focus, .picker-search:focus,
+#domain-input:focus, #proxy-input:focus, #url-input:focus {
+    outline: none; border-color: var(--border-hover); box-shadow: var(--ring);
+}
+
+/* Search posters */
+.media-card { border-radius: 14px; transition: transform .15s ease, box-shadow .15s ease; }
+.media-card:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45); }
+.media-cover { border-radius: 12px; }
+
+/* Library + folders */
+.folder-card { border-radius: 14px; }
+.library-item { transition: background .15s ease, transform .1s ease; }
+.library-item:hover { transform: translateX(2px); }
+
+/* Toast */
+.toast { border-radius: 14px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); backdrop-filter: blur(14px); }
+
+/* Multi-select of search posters */
+.media-select { position: absolute; top: 8px; left: 8px; width: 20px; height: 20px; cursor: pointer; z-index: 3; accent-color: var(--primary-color); }
+.media-card.selected { outline: 2px solid var(--primary-color); outline-offset: -2px; box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.18); }
+.sel-bar {
+    position: sticky; top: 76px; z-index: 30;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin: 0 0 14px; padding: 10px 16px; border-radius: 14px;
+    background: rgba(20, 14, 32, 0.9); backdrop-filter: blur(12px);
+    border: 1px solid var(--border-hover); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.sel-bar .sel-count { font-weight: 700; }
+.picker-folder {
+    display: block; width: 100%; text-align: left; font: inherit;
+    padding: 9px 12px; margin-bottom: 6px; border-radius: 10px; cursor: pointer;
+    color: var(--text-primary); background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-color);
+}
+.picker-folder:hover { background: rgba(139, 92, 246, 0.15); border-color: var(--border-hover); }

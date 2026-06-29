@@ -24,6 +24,14 @@ active_downloads = {}
 # Maps download_id -> absolute path of the finished file (used to open/reveal it)
 download_paths = {}
 
+# Registered by api.py: resolve_stream_info(sc_id, episode_id) -> dict with
+# {"download": {video_url, audio_url, ...}} used to re-sign expired Vixcloud URLs.
+STREAM_RESOLVER = None
+
+def set_stream_resolver(fn):
+    global STREAM_RESOLVER
+    STREAM_RESOLVER = fn
+
 # On-disk registry so the download queue + history survive a server restart.
 STATE_FILE = os.path.join("tmp", "downloads_state.json")
 _state_lock = threading.Lock()
@@ -50,7 +58,8 @@ class Decryptor:
 
 class DownloadTask:
     def __init__(self, download_id, title, m3u8_video_url, m3u8_audio_url=None, key_info=None,
-                 output_dir="downloads", extra_headers=None, vidxgo_meta=None, proxies=None):
+                 output_dir="downloads", extra_headers=None, vidxgo_meta=None, proxies=None,
+                 vixcloud_meta=None):
         self.download_id = download_id
         self.title = title
         self.m3u8_video_url = m3u8_video_url
@@ -76,6 +85,13 @@ class DownloadTask:
         self._sig = None
         self._sig_lock = threading.Lock()
         self._last_refresh = 0.0
+        # Vixcloud (native SC) token refresh: re-resolve the signed URL when a
+        # segment 403s because the original token/expires has lapsed mid-download.
+        self.vixcloud_meta = vixcloud_meta   # {sc_id, episode_id}
+        self._vix_qs = {}                    # per stream_type: fresh query params
+        self._vix_lock = threading.Lock()
+        self._vix_last = 0.0
+        self._cur_stream_type = "video"
 
         self.temp_dir = os.path.join("tmp", f"download_{download_id}")
         self.video_temp_dir = os.path.join(self.temp_dir, "video")
@@ -99,6 +115,7 @@ class DownloadTask:
             "output_dir": output_dir,
             "extra_headers": extra_headers,
             "vidxgo_meta": vidxgo_meta,
+            "vixcloud_meta": vixcloud_meta,
             "proxies": proxies,
         }
 
@@ -125,8 +142,41 @@ class DownloadTask:
             except Exception as ex:
                 print(f"[-] vidxgo token refresh failed: {ex}")
 
+    def _refresh_vix(self, stream_type, force=False):
+        """Re-resolve the native Vixcloud stream and capture fresh signing query
+        params (token/expires/...) so expired segment URLs can be re-signed."""
+        if not self.vixcloud_meta or STREAM_RESOLVER is None:
+            return
+        with self._vix_lock:
+            now = time.time()
+            if not force and (now - self._vix_last) < 5:
+                return
+            try:
+                info = STREAM_RESOLVER(self.vixcloud_meta.get("sc_id"),
+                                       self.vixcloud_meta.get("episode_id"))
+                dl = (info or {}).get("download") or {}
+                url = dl.get("video_url") if stream_type == "video" else dl.get("audio_url")
+                url = url or dl.get("video_url")
+                if url:
+                    q = urllib.parse.urlparse(url).query
+                    self._vix_qs[stream_type] = {k: v[0] for k, v in urllib.parse.parse_qs(q).items()}
+                    self._vix_last = now
+                    print(f"[+] Vixcloud token refreshed ({stream_type}).")
+            except Exception as ex:
+                print(f"[-] Vixcloud token refresh failed: {ex}")
+
     def _seg_url(self, base_seg_url):
         """Rewrite a segment URL with the current (auto-refreshed) token."""
+        if self.vixcloud_meta:
+            qs = self._vix_qs.get(self._cur_stream_type)
+            if qs:
+                parts = urllib.parse.urlparse(base_seg_url)
+                q = urllib.parse.parse_qs(parts.query)
+                for k in ("token", "expires", "h", "scz", "lang", "ub", "asn"):
+                    if k in qs:
+                        q[k] = [qs[k]]
+                return urllib.parse.urlunparse(parts._replace(query=urllib.parse.urlencode(q, doseq=True)))
+            return base_seg_url
         if not self.vidxgo_meta:
             return base_seg_url
         # Proactively refresh ~25s before expiry to avoid a wave of 403s.
@@ -205,6 +255,7 @@ class DownloadTask:
 
     def download_stream(self, stream_url, target_dir, key_bytes, stream_type="video", weight=1.0, progress_offset=0.0):
         os.makedirs(target_dir, exist_ok=True)
+        self._cur_stream_type = stream_type
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -279,7 +330,7 @@ class DownloadTask:
                 return
 
             # Simple retry mechanism (extra attempts for token-refresh streams)
-            attempts = 5 if self.vidxgo_meta else 3
+            attempts = 5 if (self.vidxgo_meta or self.vixcloud_meta) else 3
             for retry in range(attempts):
                 try:
                     seg_url = self._seg_url(base_seg_url)
@@ -299,15 +350,19 @@ class DownloadTask:
                             current_progress = progress_offset + (completed_segments / total_segments) * 100 * weight
                             self.update_status(self.status, current_progress)
                         return
-                    # An expired/forbidden token: re-mint and retry immediately.
-                    if seg_resp.status_code in (401, 403) and self.vidxgo_meta:
-                        self._refresh_sig(force=True)
-                        continue
+                    # An expired/forbidden token: re-sign and retry immediately.
+                    if seg_resp.status_code in (401, 403, 410):
+                        if self.vidxgo_meta:
+                            self._refresh_sig(force=True); continue
+                        if self.vixcloud_meta:
+                            self._refresh_vix(stream_type, force=True); continue
                     raise Exception(f"HTTP {seg_resp.status_code}")
                 except Exception as e:
                     print(f"[-] Segment {idx} download attempt {retry+1} failed: {e}")
                     if self.vidxgo_meta:
                         self._refresh_sig(force=True)
+                    elif self.vixcloud_meta:
+                        self._refresh_vix(stream_type, force=True)
                     time.sleep(1)
             raise Exception(f"Failed to download segment {idx} after retries")
 
@@ -701,8 +756,8 @@ _MANAGER = DownloadManager()
 
 
 def start_download_task(download_id, title, m3u8_video, m3u8_audio=None, key_info=None,
-                        extra_headers=None, vidxgo_meta=None, proxies=None):
-    """Public API (unchanged signature): enqueue a download onto the manager."""
+                        extra_headers=None, vidxgo_meta=None, proxies=None, vixcloud_meta=None):
+    """Public API: enqueue a download onto the manager."""
     return _MANAGER.enqueue({
         "download_id": download_id,
         "title": title,
@@ -711,6 +766,7 @@ def start_download_task(download_id, title, m3u8_video, m3u8_audio=None, key_inf
         "key_info": key_info,
         "extra_headers": extra_headers,
         "vidxgo_meta": vidxgo_meta,
+        "vixcloud_meta": vixcloud_meta,
         "proxies": proxies,
     })
 
@@ -731,5 +787,4 @@ def cancel_download(download_id):
 
 
 def set_max_concurrent(n):
-    """Entry point for the API to configure queue concurrency on startup."""
-    _MANAGER.set_concurrency(n)
+    """Entry point for the API to configure queue concurrency on startu

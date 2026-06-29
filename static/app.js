@@ -874,7 +874,9 @@ async function triggerDownload(label, titleId, episodeId = null) {
                 m3u8_video: data.download.video_url,
                 m3u8_audio: data.download.audio_url || null,
                 key_info: null,
-                stream_headers: data.download.headers || null
+                stream_headers: data.download.headers || null,
+                sc_id: titleId,
+                episode_id: episodeId || null
             };
             const dlResp = await fetch("/api/download", {
                 method: "POST",

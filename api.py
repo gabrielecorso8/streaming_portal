@@ -587,6 +587,8 @@ class DownloadRequest(BaseModel):
     key_info: Optional[dict] = None
     stream_headers: Optional[dict] = None
     vidxgo: Optional[dict] = None
+    sc_id: Optional[int] = None        # StreamingCommunity title id (for token refresh)
+    episode_id: Optional[int] = None
 
 @app.get("/api/settings")
 def get_settings():
@@ -1457,8 +1459,7 @@ def resolve_url(payload: ResolveUrlRequest):
             
     raise HTTPException(status_code=400, detail="Unable to extract movie/series details from URL")
 
-@app.get("/api/stream/url")
-def get_stream_details(id: int, episode_id: Optional[int] = None):
+def resolve_stream_info(id, episode_id=None):
     base_url = get_base_url()
     
     # 1. Fetch iframe url from streamingcommunity
@@ -1721,6 +1722,7 @@ def get_stream_key(url: str, referer: str):
 def download_media(payload: DownloadRequest):
     download_id = str(uuid.uuid4())
     
+    vixcloud_meta = {"sc_id": payload.sc_id, "episode_id": payload.episode_id} if payload.sc_id else None
     start_download_task(
         download_id=download_id,
         title=payload.title,
@@ -1729,10 +1731,21 @@ def download_media(payload: DownloadRequest):
         key_info=payload.key_info,
         extra_headers=payload.stream_headers,
         vidxgo_meta=payload.vidxgo,
+        vixcloud_meta=vixcloud_meta,
         proxies=get_proxies(),
     )
 
     return {"download_id": download_id}
+
+
+@app.get("/api/stream/url")
+def get_stream_details(id: int, episode_id: Optional[int] = None):
+    return resolve_stream_info(id, episode_id)
+
+
+# Let the downloader re-resolve fresh Vixcloud tokens when they expire mid-download.
+import downloader as _dl
+_dl.set_stream_resolver(resolve_stream_info)
 
 @app.get("/api/download/status")
 def get_download_status():

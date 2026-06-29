@@ -281,11 +281,19 @@ function renderSearchResults(results, query) {
         const date = item.release_date ? ` · ${escapeHtml(item.release_date)}` : "";
         card.innerHTML = `
             ${cover}
+            <div class="media-actions">
+                <button class="icon-btn fav-q-btn" title="Salva nei preferiti">☆</button>
+                <button class="icon-btn folder-q-btn" title="Metti in una cartella">📂</button>
+                <button class="icon-btn newfolder-q-btn" title="Crea una cartella per questo titolo">📁+</button>
+            </div>
             <div class="media-info">
                 <span class="media-type">${type}${score}${date}</span>
                 <span class="media-title">${escapeHtml(item.name || "Senza titolo")}</span>
             </div>`;
-        card.addEventListener("click", () => openSearchResult(item));
+        card.addEventListener("click", (e) => { if (e.target.closest(".media-actions")) return; openSearchResult(item); });
+        card.querySelector(".fav-q-btn").addEventListener("click", (e) => { e.stopPropagation(); quickFavoriteSearch(item); });
+        card.querySelector(".folder-q-btn").addEventListener("click", (e) => { e.stopPropagation(); quickFolderSearch(item); });
+        card.querySelector(".newfolder-q-btn").addEventListener("click", (e) => { e.stopPropagation(); quickNewFolderSearch(item); });
         el.searchResults.appendChild(card);
     });
 }
@@ -297,6 +305,55 @@ function openSearchResult(item) {
     }
     lastTitleContext = item.name || "";
     loadDetails(item.id_and_slug, item.url || "");
+}
+
+// --- Quick actions from search result posters (no need to open the title) ---
+async function saveSearchItem(item) {
+    // Save the searched title into the library (key = id-slug; backend regenerates
+    // the URL from the current domain). Returns true on success.
+    if (!item || !item.id_and_slug) { showToast("Titolo non valido"); return false; }
+    await addToLibrary(item.url || "", {
+        key: item.id_and_slug, name: item.name || "", cover: item.cover || "",
+        type: item.type || "", is_clone: false
+    });
+    return true;
+}
+
+async function quickFavoriteSearch(item) {
+    if (!(await saveSearchItem(item))) return;
+    const cur = libraryCache.find(e => e.key === item.id_and_slug);
+    if (!cur || !cur.favorite) await toggleFavorite(item.id_and_slug);
+    showToast(`"${item.name || "Titolo"}" salvato nei preferiti ★`);
+}
+
+async function quickFolderSearch(item) {
+    if (!(await saveSearchItem(item))) return;
+    openTitleFolderPicker({ key: item.id_and_slug, name: item.name || "" });
+}
+
+async function quickNewFolderSearch(item) {
+    if (!item || !item.id_and_slug) { showToast("Titolo non valido"); return; }
+    const name = prompt("Nome della nuova cartella (es. saga):", item.name || "");
+    if (name === null) return;
+    await saveSearchItem(item);
+    try {
+        const r = await fetch("/api/folders/create", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name })
+        });
+        if (!r.ok) { showToast("Errore creazione cartella"); return; }
+        const data = await r.json();
+        const folder = (data.folders || [])[(data.folders || []).length - 1];
+        if (folder) {
+            await fetch("/api/folders/toggle", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: folder.id, key: item.id_and_slug })
+            });
+            openFolders.add(folder.id);
+        }
+        await fetchLibrary();
+        showToast(`Cartella "${name}" creata con "${item.name || "il titolo"}"`);
+    } catch (e) { showToast("Errore creazione cartella"); }
 }
 
 // 2. Resolve Direct URL

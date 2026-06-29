@@ -1014,3 +1014,15 @@ video {
 .folder-domains .folder-card { margin-left: 16px; border-left: 2px solid rgba(138,180,255,.25); }
 .folder-parent-select { font-size: .78rem; padding: 3px 6px; max-width: 120px; }
 .folder-actions .subf-btn { font-size: .82rem; }
+
+/* --- Azioni rapide sulle locandine dei risultati di ricerca ------------- */
+.media-card { position: relative; }
+.media-actions {
+    position: absolute; top: 6px; right: 6px;
+    display: flex; gap: 4px; opacity: 0; transition: opacity .15s ease;
+    background: rgba(0,0,0,.45); border-radius: 999px; padding: 3px;
+}
+.media-card:hover .media-actions { opacity: 1; }
+.media-actions .icon-btn { font-size: .9rem; line-height: 1; padding: 4px 6px; color: #fff; }
+.media-actions .icon-btn:hover { color: #ffc400; }
+@media (hover: none) { .media-actions { opacity: 1; } }

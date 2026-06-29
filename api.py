@@ -2,6 +2,7 @@ import os
 import re
 import json
 import time
+import random
 import base64
 import hashlib
 import threading
@@ -25,29 +26,21 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- DNS-over-HTTPS (DoH) Patching ---
 def resolve_doh(host):
-    # Cloudflare DoH
-    try:
-        url = f"https://cloudflare-dns.com/dns-query?name={host}&type=A"
-        r = requests.get(url, headers={"Accept": "application/dns-json"}, timeout=3)
-        if r.status_code == 200:
-            answers = r.json().get("Answer", [])
-            for ans in answers:
-                if ans.get("type") == 1:
-                    return ans.get("data")
-    except Exception:
-        pass
-        
-    # Google DoH fallback
-    try:
-        url = f"https://dns.google/resolve?name={host}&type=A"
-        r = requests.get(url, timeout=3)
-        if r.status_code == 200:
-            answers = r.json().get("Answer", [])
-            for ans in answers:
-                if ans.get("type") == 1:
-                    return ans.get("data")
-    except Exception:
-        pass
+    """Resolve `host` via DNS-over-HTTPS, returning ALL A records (so the CDN can
+    be load-balanced across its nodes instead of pinning every connection to a
+    single IP)."""
+    for url, hdrs in (
+        (f"https://cloudflare-dns.com/dns-query?name={host}&type=A", {"Accept": "application/dns-json"}),
+        (f"https://dns.google/resolve?name={host}&type=A", {}),
+    ):
+        try:
+            r = requests.get(url, headers=hdrs, timeout=3)
+            if r.status_code == 200:
+                ips = [a.get("data") for a in r.json().get("Answer", []) if a.get("type") == 1 and a.get("data")]
+                if ips:
+                    return ips
+        except Exception:
+            pass
     return None
 
 # Cache host -> IP so DoH is resolved ONCE per host, not on every new socket
@@ -58,14 +51,16 @@ def patched_create_connection(address, *args, **kwargs):
     host, port = address
     if "streamingcommunity" in host or "vixcloud" in host:
         try:
-            resolved_ip = _DOH_CACHE.get(host)
-            if resolved_ip is None:
-                resolved_ip = resolve_doh(host)
-                if resolved_ip:
-                    _DOH_CACHE[host] = resolved_ip
-                    print(f"[DoH] Resolved {host} -> {resolved_ip} (cached)")
-            if resolved_ip:
-                return connection.real_create_connection((resolved_ip, port), *args, **kwargs)
+            ips = _DOH_CACHE.get(host)
+            if ips is None:
+                ips = resolve_doh(host)
+                if ips:
+                    _DOH_CACHE[host] = ips
+                    print(f"[DoH] Resolved {host} -> {len(ips)} IP(s) (cached)")
+            if ips:
+                # Spread connections across all CDN nodes (round-robin/random)
+                chosen = random.choice(ips) if len(ips) > 1 else ips[0]
+                return connection.real_create_connection((chosen, port), *args, **kwargs)
         except Exception as e:
             print(f"[DoH] Patched resolution failed for {host}: {e}")
     return connection.real_create_connection(address, *args, **kwargs)

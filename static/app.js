@@ -939,6 +939,15 @@ function startDownloadsPolling() {
     }, 2000);
 }
 
+function formatDuration(sec) {
+    sec = Math.max(0, Math.round(sec || 0));
+    if (sec < 60) return `${sec}s`;
+    const m = Math.floor(sec / 60), s = sec % 60;
+    if (m < 60) return s ? `${m}m ${s}s` : `${m}m`;
+    const h = Math.floor(m / 60), mm = m % 60;
+    return mm ? `${h}h ${mm}m` : `${h}h`;
+}
+
 function formatBytes(bytes) {
     if (!bytes) return "";
     const units = ["B", "KB", "MB", "GB"];
@@ -964,9 +973,9 @@ function renderDownloads(downloads) {
         let statusText = dl.status;
         if (dl.status === "pending") statusText = "In attesa…";
         else if (dl.status === "queued") statusText = "In coda…";
-        else if (dl.status === "downloading") statusText = `Scaricamento ${dl.progress}%`;
+        else if (dl.status === "downloading") statusText = `Scaricamento ${dl.progress}%` + (dl.eta != null ? ` · ~${formatDuration(dl.eta)} rimanenti` : "");
         else if (dl.status === "merging") statusText = "Unione tracce (FFmpeg)…";
-        else if (dl.status === "completed") statusText = dl.size ? `Completato · ${formatBytes(dl.size)}` : "Completato";
+        else if (dl.status === "completed") statusText = "Completato" + (dl.size ? ` · ${formatBytes(dl.size)}` : "") + (dl.elapsed != null ? ` · in ${formatDuration(dl.elapsed)}` : "");
         else if (dl.status === "failed") statusText = `Fallito: ${dl.error || "errore sconosciuto"}`;
         else if (dl.status === "cancelled") statusText = "Annullato";
 

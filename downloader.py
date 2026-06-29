@@ -86,6 +86,8 @@ class DownloadTask:
         self.error_msg = None
         self.output_path = None  # absolute path of the finished .mp4
         self.cancel_flag = False  # set by request_cancel() to stop the download
+        self.t_start = None       # download start time (for ETA)
+        self.t_done = None        # download completion time (for total elapsed)
 
         # Snapshot of the construction parameters, persisted to disk so the
         # download can be reconstructed and resumed after a server restart.
@@ -148,8 +150,14 @@ class DownloadTask:
             "progress": round(self.progress, 1),
             "error": self.error_msg
         }
+        if self.status in ("downloading", "merging") and self.t_start and self.progress > 1:
+            elapsed = time.time() - self.t_start
+            # ETA from overall progress (video 0-80%, audio 80-100%)
+            st["eta"] = round(elapsed * (100 - self.progress) / self.progress)
         if self.status == "completed" and self.output_path and os.path.exists(self.output_path):
             st["file"] = os.path.basename(self.output_path)
+            if self.t_start and self.t_done:
+                st["elapsed"] = round(self.t_done - self.t_start)
             try:
                 st["size"] = os.path.getsize(self.output_path)
             except OSError:
@@ -379,6 +387,7 @@ class DownloadTask:
         try:
             if self.cancel_flag:
                 raise DownloadCancelled()
+            self.t_start = time.time()
             self.update_status("downloading", 0.0)
             
             # Create download output path
@@ -394,6 +403,7 @@ class DownloadTask:
                 print(f"[*] Downloading direct MP4 stream: {self.m3u8_video_url}")
                 self.download_direct_file(self.m3u8_video_url, final_output_path)
                 download_paths[self.download_id] = self.output_path
+                self.t_done = time.time()
                 self.update_status("completed", 100.0)
                 print(f"[+] Download completed! Saved to {final_output_path}")
                 return
@@ -460,6 +470,7 @@ class DownloadTask:
             # Clean up temp files
             shutil.rmtree(self.temp_dir, ignore_errors=True)
             download_paths[self.download_id] = self.output_path
+            self.t_done = time.time()
             self.update_status("completed", 100.0)
             print(f"[+] Download completed! Saved to {final_output_path}")
 

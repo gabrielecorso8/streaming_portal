@@ -6,7 +6,14 @@ let libraryCache = [];     // Last known library list (to read favourite state)
 let openFolders = new Set(); // Folder ids currently expanded (kept across re-renders)
 let librarySearch = "";    // current library search query
 let lastLibraryData = null; // last folders payload (to re-render without refetch)
-let searchSelection = new Map(); // multi-select of search results (key -> item)
+let searchAll = [];        // all results from the last search (for pagination)
+let searchQ = "";          // last search query (for the header)
+let searchPage = 1;        // current results page (1-based)
+const SEARCH_PER_PAGE = 18; // posters shown per page
+let searchSel = new Map(); // id_and_slug -> item, multi-select on search posters
+let folderFilters = new Map(); // folderId -> {type, order} view filters (in-memory)
+let librarySearchType = "";  // ricerca libreria: filtro film/serie
+let librarySearchOrder = ""; // ricerca libreria: ordine (recent/oldest)
 
 // Helper for UI elements
 const el = {
@@ -23,7 +30,10 @@ const el = {
     searchResults: document.getElementById("search-results"),
     searchSort: document.getElementById("search-sort"),
     searchGenre: document.getElementById("search-genre"),
+    searchType: document.getElementById("search-type"),
+    searchClear: document.getElementById("search-clear"),
     openFolderBtn: document.getElementById("open-folder-btn"),
+    shutdownBtn: document.getElementById("shutdown-btn"),
 
     // Details Modal
     detailsModal: document.getElementById("details-modal"),
@@ -59,6 +69,8 @@ const el = {
     // Library
     libraryList: document.getElementById("library-list"),
     librarySearch: document.getElementById("library-search"),
+    libraryType: document.getElementById("library-type"),
+    libraryOrder: document.getElementById("library-order"),
     saveLibraryBtn: document.getElementById("save-library-btn"),
 
     // Downloads
@@ -100,6 +112,7 @@ async function init() {
     el.loadUrlBtn.addEventListener("click", handleMainInput);
     el.convertUrlBtn.addEventListener("click", convertDirectUrl);
     el.openFolderBtn.addEventListener("click", openDownloadsFolder);
+    if (el.shutdownBtn) el.shutdownBtn.addEventListener("click", shutdownApp);
     el.urlInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") handleMainInput();
     });
@@ -117,9 +130,21 @@ async function init() {
         librarySearch = el.librarySearch.value;
         if (lastLibraryData) renderLibrary(lastLibraryData);
     });
+    if (el.libraryType) el.libraryType.addEventListener("change", () => {
+        librarySearchType = el.libraryType.value;
+        if (lastLibraryData) renderLibrary(lastLibraryData);
+    });
+    if (el.libraryOrder) el.libraryOrder.addEventListener("change", () => {
+        librarySearchOrder = el.libraryOrder.value;
+        if (lastLibraryData) renderLibrary(lastLibraryData);
+    });
     if (el.saveLibraryBtn) el.saveLibraryBtn.addEventListener("click", saveAll);
     if (el.searchSort) el.searchSort.addEventListener("change", rerunSearchIfAny);
     if (el.searchGenre) el.searchGenre.addEventListener("change", rerunSearchIfAny);
+    if (el.searchType) el.searchType.addEventListener("change", rerunSearchIfAny);
+    if (el.searchClear) el.searchClear.addEventListener("click", clearSearch);
+    if (el.urlInput) el.urlInput.addEventListener("input", toggleClearBtn);
+    toggleClearBtn();
 
     // Start polling downloads
     startDownloadsPolling();
@@ -127,6 +152,7 @@ async function init() {
     // Load the saved/recent titles library and the remembered domains
     fetchLibrary();
     fetchDomains();
+    setupCollapsibles();
 }
 
 async function updateSettings() {
@@ -228,6 +254,8 @@ async function handleMainInput() {
     if (!value) return;
     if (looksLikeUrl(value)) {
         await resolveDirectUrl(value);
+    } else if (value.includes(";")) {
+        await searchList(value);
     } else {
         await searchCatalog(value);
     }
@@ -235,6 +263,7 @@ async function handleMainInput() {
 
 async function searchCatalog(query) {
     showToast("Ricerca in corso...");
+    const _li = document.getElementById("search-listinfo"); if (_li) _li.remove();
     if (el.searchResultsSection) el.searchResultsSection.classList.remove("hidden");
     if (el.searchResultsTitle) el.searchResultsTitle.textContent = `Risultati per "${query}"`;
     if (el.searchResults) {
@@ -244,6 +273,7 @@ async function searchCatalog(query) {
         const params = new URLSearchParams({ q: query });
         if (el.searchSort && el.searchSort.value) params.set("sort", el.searchSort.value);
         if (el.searchGenre && el.searchGenre.value) params.set("genre", el.searchGenre.value);
+        if (el.searchType && el.searchType.value) params.set("type", el.searchType.value);
         const resp = await fetch(`/api/search?${params.toString()}`);
         if (!resp.ok) {
             if (await checkDomainError(resp)) return;
@@ -261,98 +291,222 @@ async function searchCatalog(query) {
 
 function rerunSearchIfAny() {
     const value = el.urlInput.value.trim();
-    if (value && !looksLikeUrl(value)) searchCatalog(value);
+    if (value && !looksLikeUrl(value) && !value.includes(";")) searchCatalog(value);
+}
+
+// --- Ricerca a LISTA: titoli separati da ";" (saghe/collezioni dall'AI) ---
+async function searchList(query) {
+    const terms = query.split(";").map(t => t.trim()).filter(Boolean);
+    if (!terms.length) return;
+    showToast(`Ricerca lista: ${terms.length} titoli...`);
+    if (el.searchResultsSection) el.searchResultsSection.classList.remove("hidden");
+    if (el.searchResultsTitle) el.searchResultsTitle.textContent = `Lista: ${terms.length} titoli`;
+    if (el.searchResults) el.searchResults.innerHTML = '<div class="empty-state">Cerco i titoli della lista...</div>';
+    try {
+        const resp = await fetch(`/api/search/list?q=${encodeURIComponent(query)}`);
+        if (!resp.ok) { if (await checkDomainError(resp)) return; showToast("Ricerca lista non disponibile"); return; }
+        const data = await resp.json();
+        const found = (data || []).filter(d => d && d._found && d.id_and_slug);
+        const missing = (data || []).filter(d => d && !d._found).map(d => d._term || d.name || "?");
+        renderSearchResults(found, `Lista (${found.length}/${terms.length})`);
+        // auto-seleziona tutti i titoli trovati: pronti per "Nuova cartella"
+        found.forEach(it => { if (it.id_and_slug) searchSel.set(it.id_and_slug, it); });
+        renderSearchPage();
+        updateSelBar();
+        showListBanner(found.length, terms.length, missing);
+        if (!found.length) showToast("Nessun titolo della lista trovato");
+    } catch (e) { showToast("Errore ricerca lista"); }
+}
+
+function showListBanner(found, total, missingNames) {
+    const section = el.searchResultsSection; if (!section || !el.searchResults) return;
+    let b = document.getElementById("search-listinfo");
+    if (!b) { b = document.createElement("div"); b.id = "search-listinfo"; b.className = "list-info"; section.insertBefore(b, el.searchResults); }
+    let html = `Lista: trovati <b>${found}</b> su <b>${total}</b>. Sono gia' selezionati: usa <b>Nuova cartella</b> in basso per creare la collezione (o togli le spunte indesiderate).`;
+    if (missingNames && missingNames.length) html += `<div class="list-missing">Non trovati: ${missingNames.map(escapeHtml).join(", ")}</div>`;
+    b.innerHTML = html;
 }
 
 function renderSearchResults(results, query) {
+    searchAll = Array.isArray(results) ? results : [];
+    searchQ = query || "";
+    searchPage = 1;
+    searchSel.clear();
+    renderSearchPage();
+    updateSelBar();
+}
+
+function renderSearchPage() {
     if (!el.searchResults) return;
     el.searchResults.innerHTML = "";
-    if (!results || results.length === 0) {
+    if (!searchAll.length) {
         el.searchResults.innerHTML = '<div class="empty-state">Nessun risultato trovato.</div>';
+        renderPager(1, 0);
         return;
     }
-    results.forEach(item => {
-        const card = document.createElement("div");
-        card.className = "media-card";
-        const type = item.type === "tv" ? "Serie" : (item.type === "movie" ? "Film" : "Titolo");
-        const cover = item.cover
-            ? `<img class="media-cover" src="${escapeHtml(item.cover)}" alt="" loading="lazy">`
-            : `<div class="media-cover"></div>`;
-        const score = item.score ? ` · ${escapeHtml(item.score)}` : "";
-        const date = item.release_date ? ` · ${escapeHtml(item.release_date)}` : "";
-        card.innerHTML = `
-            ${cover}
-            <input type="checkbox" class="media-select" title="Seleziona per inserimento multiplo">
-            <div class="media-actions">
-                <button class="icon-btn fav-q-btn" title="Salva nei preferiti">☆</button>
-                <button class="icon-btn folder-q-btn" title="Metti in una cartella">📂</button>
-                <button class="icon-btn newfolder-q-btn" title="Crea una cartella per questo titolo">📁+</button>
-            </div>
-            <div class="media-info">
-                <span class="media-type">${type}${score}${date}</span>
-                <span class="media-title">${escapeHtml(item.name || "Senza titolo")}</span>
-            </div>`;
-        card.addEventListener("click", (e) => { if (e.target.closest(".media-actions") || e.target.closest(".media-select")) return; openSearchResult(item); });
-        const selCb = card.querySelector(".media-select");
-        selCb.checked = searchSelection.has(item.id_and_slug);
-        if (selCb.checked) card.classList.add("selected");
-        selCb.addEventListener("click", (e) => e.stopPropagation());
-        selCb.addEventListener("change", () => {
-            if (selCb.checked) { searchSelection.set(item.id_and_slug, item); card.classList.add("selected"); }
-            else { searchSelection.delete(item.id_and_slug); card.classList.remove("selected"); }
-            updateSearchSelectionBar();
-        });
-        card.querySelector(".fav-q-btn").addEventListener("click", (e) => { e.stopPropagation(); quickFavoriteSearch(item); });
-        card.querySelector(".folder-q-btn").addEventListener("click", (e) => { e.stopPropagation(); quickFolderSearch(item); });
-        card.querySelector(".newfolder-q-btn").addEventListener("click", (e) => { e.stopPropagation(); quickNewFolderSearch(item); });
-        el.searchResults.appendChild(card);
+    const total = searchAll.length;
+    const pages = Math.max(1, Math.ceil(total / SEARCH_PER_PAGE));
+    if (searchPage > pages) searchPage = pages;
+    if (searchPage < 1) searchPage = 1;
+    const start = (searchPage - 1) * SEARCH_PER_PAGE;
+    searchAll.slice(start, start + SEARCH_PER_PAGE).forEach(item => {
+        el.searchResults.appendChild(buildResultCard(item));
     });
-    updateSearchSelectionBar();
+    if (el.searchResultsTitle) {
+        el.searchResultsTitle.textContent = `Risultati per "${searchQ}" — ${total} titoli (pag. ${searchPage}/${pages})`;
+    }
+    renderPager(pages, total);
 }
 
-function updateSearchSelectionBar() {
-    let bar = document.getElementById("search-sel-bar");
-    const n = searchSelection.size;
-    if (n === 0) { if (bar) bar.remove(); return; }
+function buildResultCard(item) {
+    const card = document.createElement("div");
+    card.className = "media-card";
+    const selected = item.id_and_slug && searchSel.has(item.id_and_slug);
+    if (selected) card.classList.add("selected");
+    const type = item.type === "tv" ? "Serie" : (item.type === "movie" ? "Film" : "Titolo");
+    const cover = item.cover
+        ? `<img class="media-cover" src="${escapeHtml(item.cover)}" alt="" loading="lazy">`
+        : `<div class="media-cover"></div>`;
+    const score = item.score ? ` · ${escapeHtml(item.score)}` : "";
+    const date = item.release_date ? ` · ${escapeHtml(item.release_date)}` : "";
+    card.innerHTML = `
+        ${cover}
+        <label class="media-select" title="Seleziona">
+            <input type="checkbox" ${selected ? "checked" : ""}>
+        </label>
+        <div class="media-actions">
+            <button class="icon-btn fav-q-btn" title="Salva nei preferiti">☆</button>
+            <button class="icon-btn folder-q-btn" title="Metti in una cartella">📂</button>
+            <button class="icon-btn newfolder-q-btn" title="Crea una cartella per questo titolo">📁+</button>
+        </div>
+        <div class="media-info">
+            <span class="media-type">${type}${score}${date}</span>
+            <span class="media-title">${escapeHtml(item.name || "Senza titolo")}</span>
+        </div>`;
+    card.addEventListener("click", (e) => {
+        if (e.target.closest(".media-actions") || e.target.closest(".media-select")) return;
+        openSearchResult(item);
+    });
+    const selWrap = card.querySelector(".media-select");
+    selWrap.addEventListener("click", (e) => e.stopPropagation());
+    const selCb = selWrap.querySelector("input");
+    selCb.addEventListener("change", (e) => {
+        e.stopPropagation();
+        toggleResultSelection(item, card, selCb.checked);
+    });
+    card.querySelector(".fav-q-btn").addEventListener("click", (e) => { e.stopPropagation(); quickFavoriteSearch(item); });
+    card.querySelector(".folder-q-btn").addEventListener("click", (e) => { e.stopPropagation(); quickFolderSearch(item); });
+    card.querySelector(".newfolder-q-btn").addEventListener("click", (e) => { e.stopPropagation(); quickNewFolderSearch(item); });
+    card.draggable = true;
+    card.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("application/json", JSON.stringify({ src: "search", item }));
+        e.dataTransfer.effectAllowed = "copy";
+    });
+    return card;
+}
+
+function toggleResultSelection(item, card, on) {
+    if (!item.id_and_slug) return;
+    if (on) { searchSel.set(item.id_and_slug, item); if (card) card.classList.add("selected"); }
+    else { searchSel.delete(item.id_and_slug); if (card) card.classList.remove("selected"); }
+    updateSelBar();
+}
+
+function renderPager(pages, total) {
+    const section = el.searchResultsSection;
+    if (!section) return;
+    let pager = document.getElementById("search-pager");
+    if (pages <= 1) { if (pager) pager.remove(); return; }
+    if (!pager) {
+        pager = document.createElement("div");
+        pager.id = "search-pager";
+        pager.className = "pager";
+        section.appendChild(pager);
+    }
+    const nums = new Set([1, pages, searchPage, searchPage - 1, searchPage + 1]);
+    const list = [...nums].filter(n => n >= 1 && n <= pages).sort((a, b) => a - b);
+    let html = `<button class="pager-btn" data-go="prev" ${searchPage <= 1 ? "disabled" : ""}>‹ Prec</button>`;
+    let prev = 0;
+    list.forEach(n => {
+        if (prev && n - prev > 1) html += `<span class="pager-gap">…</span>`;
+        html += `<button class="pager-btn pager-num ${n === searchPage ? "active" : ""}" data-go="${n}">${n}</button>`;
+        prev = n;
+    });
+    html += `<button class="pager-btn" data-go="next" ${searchPage >= pages ? "disabled" : ""}>Succ ›</button>`;
+    pager.innerHTML = html;
+    pager.querySelectorAll(".pager-btn").forEach(b => b.addEventListener("click", () => {
+        const go = b.dataset.go;
+        if (go === "prev") searchPage--;
+        else if (go === "next") searchPage++;
+        else searchPage = parseInt(go, 10);
+        renderSearchPage();
+        if (section.scrollIntoView) section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+}
+
+function updateSelBar() {
+    let bar = document.getElementById("search-selbar");
+    const n = searchSel.size;
+    if (!n) { if (bar) bar.remove(); return; }
     if (!bar) {
         bar = document.createElement("div");
-        bar.id = "search-sel-bar";
-        bar.className = "sel-bar";
-        el.searchResults.parentNode.insertBefore(bar, el.searchResults);
+        bar.id = "search-selbar";
+        bar.className = "selbar";
+        document.body.appendChild(bar);
     }
-    bar.innerHTML = `<span class="sel-count">${n} selezionati</span>
-        <button class="primary-btn small-btn sel-add">Aggiungi a cartella</button>
-        <button class="secondary-btn small-btn sel-clear">Deseleziona</button>`;
-    bar.querySelector(".sel-add").addEventListener("click", () => openBulkAddToFolder([...searchSelection.values()]));
-    bar.querySelector(".sel-clear").addEventListener("click", () => {
-        searchSelection.clear();
-        document.querySelectorAll(".media-select").forEach(c => { c.checked = false; c.closest(".media-card").classList.remove("selected"); });
-        updateSearchSelectionBar();
-    });
+    bar.innerHTML = `
+        <span class="selbar-count">${n} selezionati</span>
+        <button class="primary-btn selbar-existing">📂 Salva in cartella</button>
+        <button class="secondary-btn selbar-new">📁+ Nuova cartella</button>
+        <button class="secondary-btn selbar-clear">Deseleziona</button>`;
+    bar.querySelector(".selbar-existing").addEventListener("click", () => openBulkFolderPicker([...searchSel.values()]));
+    bar.querySelector(".selbar-new").addEventListener("click", () => bulkNewFolder([...searchSel.values()]));
+    bar.querySelector(".selbar-clear").addEventListener("click", () => { searchSel.clear(); renderSearchPage(); updateSelBar(); });
 }
 
-async function addItemsToFolder(folderId, items) {
-    const keys = items.map(i => i.id_and_slug).filter(Boolean);
-    try {
-        const r = await fetch("/api/folders/add-items", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: folderId, keys })
+async function bulkSaveItems(items) {
+    // Save every selected search result into the library; return their stable keys.
+    const keys = [];
+    for (const it of items) {
+        if (!it.id_and_slug) continue;
+        await addToLibrary(it.url || "", {
+            key: it.id_and_slug, name: it.name || "", cover: it.cover || "",
+            type: it.type || "", release_date: it.release_date || "", is_clone: false
         });
-        if (r.ok) {
-            openFolders.add(folderId);
-            renderLibrary(await r.json());
-            searchSelection.clear();
-            document.querySelectorAll(".media-select").forEach(c => { c.checked = false; c.closest(".media-card").classList.remove("selected"); });
-            updateSearchSelectionBar();
-            showToast(`${keys.length} titoli aggiunti alla cartella`);
-        } else { showToast("Errore aggiunta alla cartella"); }
-    } catch (e) { showToast("Errore aggiunta alla cartella"); }
+        keys.push(it.id_and_slug);
+    }
+    return keys;
 }
 
-async function openBulkAddToFolder(items) {
+async function bulkNewFolder(items) {
     if (!items.length) return;
-    showToast(`Salvataggio di ${items.length} titoli…`, 4000);
-    for (const it of items) await saveSearchItem(it);
+    const name = prompt(`Nome della nuova cartella per ${items.length} titoli:`, "");
+    if (name === null || !name.trim()) return;
+    showToast("Salvataggio in corso…");
+    const keys = await bulkSaveItems(items);
+    try {
+        const r = await fetch("/api/folders/create", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: name.trim() })
+        });
+        if (!r.ok) { showToast("Errore creazione cartella"); return; }
+        const data = await r.json();
+        const folder = (data.folders || [])[(data.folders || []).length - 1];
+        if (folder) {
+            await fetch("/api/folders/add-items", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: folder.id, keys })
+            });
+            openFolders.add(folder.id);
+        }
+        await fetchLibrary();
+        searchSel.clear(); renderSearchPage(); updateSelBar();
+        showToast(`Cartella "${name.trim()}" creata con ${keys.length} titoli`);
+    } catch (e) { showToast("Errore creazione cartella"); }
+}
+
+async function openBulkFolderPicker(items) {
+    if (!items.length) return;
     let data;
     try { data = await (await fetch("/api/folders")).json(); }
     catch (e) { showToast("Errore caricamento cartelle"); return; }
@@ -361,39 +515,51 @@ async function openBulkAddToFolder(items) {
     overlay.className = "picker-overlay";
     const rows = folders.map(f => {
         const kindB = f.kind ? ` <span class="picker-note">${escapeHtml(f.kind)}</span>` : "";
-        return `<button class="picker-folder" data-fid="${f.id}">${escapeHtml(f.name || "Cartella")}${kindB}</button>`;
+        return `<label class="picker-row">
+            <input type="checkbox" data-fid="${f.id}">
+            <span>${escapeHtml(f.name || "Cartella")}</span>${kindB}
+        </label>`;
     }).join("");
     overlay.innerHTML = `
         <div class="picker-panel glass">
-            <h3>Aggiungi ${items.length} titoli a una cartella</h3>
-            <button class="secondary-btn small-btn bulk-newfolder" style="margin-bottom:10px">+ Nuova cartella</button>
-            <input type="text" class="picker-search" placeholder="Cerca una cartella…" autocomplete="off">
-            <div class="picker-list">${rows || '<div class="no-downloads">Nessuna cartella: creane una.</div>'}</div>
-            <div class="picker-actions"><button class="secondary-btn picker-close">Chiudi</button></div>
+            <h3>Salva ${items.length} titoli nelle cartelle</h3>
+            <p class="picker-hint">Spunta una o più cartelle in cui aggiungere i titoli selezionati.</p>
+            <input type="text" class="picker-search" placeholder="Cerca una cartella…" autocomplete="off" spellcheck="false">
+            <div class="picker-list">${rows || '<div class="no-downloads">Nessuna cartella. Usa "Nuova cartella".</div>'}</div>
+            <div class="picker-actions">
+                <button class="secondary-btn picker-cancel">Annulla</button>
+                <button class="primary-btn picker-confirm">Conferma</button>
+            </div>
         </div>`;
     document.body.appendChild(overlay);
     const close = () => overlay.remove();
     overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
-    overlay.querySelector(".picker-close").addEventListener("click", close);
-    overlay.querySelectorAll(".picker-folder").forEach(b => b.addEventListener("click", async () => {
-        close(); await addItemsToFolder(b.dataset.fid, items);
-    }));
-    overlay.querySelector(".bulk-newfolder").addEventListener("click", async () => {
-        const name = prompt("Nome della nuova cartella:");
-        if (name === null) return;
-        try {
-            const r = await fetch("/api/folders/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
-            if (!r.ok) { showToast("Errore creazione cartella"); return; }
-            const d = await r.json();
-            const folder = (d.folders || [])[(d.folders || []).length - 1];
-            close();
-            if (folder) await addItemsToFolder(folder.id, items);
-        } catch (e) { showToast("Errore creazione cartella"); }
-    });
+    overlay.querySelector(".picker-cancel").addEventListener("click", close);
     const ps = overlay.querySelector(".picker-search");
     if (ps) ps.addEventListener("input", () => {
         const qq = ps.value.trim().toLowerCase();
-        overlay.querySelectorAll(".picker-folder").forEach(b => { b.style.display = b.textContent.toLowerCase().includes(qq) ? "" : "none"; });
+        overlay.querySelectorAll(".picker-row").forEach(r => {
+            r.style.display = r.textContent.toLowerCase().includes(qq) ? "" : "none";
+        });
+    });
+    overlay.querySelector(".picker-confirm").addEventListener("click", async () => {
+        const fids = Array.from(overlay.querySelectorAll('input[type="checkbox"]:checked')).map(c => c.dataset.fid);
+        if (!fids.length) { showToast("Seleziona almeno una cartella"); return; }
+        showToast("Salvataggio in corso…");
+        const keys = await bulkSaveItems(items);
+        try {
+            for (const fid of fids) {
+                await fetch("/api/folders/add-items", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: fid, keys })
+                });
+                openFolders.add(fid);
+            }
+            await fetchLibrary();
+            searchSel.clear(); renderSearchPage(); updateSelBar();
+            showToast(`${keys.length} titoli salvati in ${fids.length} cartella/e`);
+        } catch (e) { showToast("Errore salvataggio"); }
+        close();
     });
 }
 
@@ -413,7 +579,7 @@ async function saveSearchItem(item) {
     if (!item || !item.id_and_slug) { showToast("Titolo non valido"); return false; }
     await addToLibrary(item.url || "", {
         key: item.id_and_slug, name: item.name || "", cover: item.cover || "",
-        type: item.type || "", is_clone: false
+        type: item.type || "", release_date: item.release_date || "", is_clone: false
     });
     return true;
 }
@@ -1259,7 +1425,7 @@ async function addToLibrary(url, data) {
     const entry = {
         key: data.key || url, url: url,
         name: data.name || "", cover: data.cover || "",
-        type: data.type || "", is_clone: !!data.is_clone
+        type: data.type || "", release_date: data.release_date || "", is_clone: !!data.is_clone
     };
     try {
         const r = await fetch("/api/library", {
@@ -1307,6 +1473,24 @@ function titleRow(item, ctx) {
         if (up && !up.disabled) up.addEventListener("click", (e) => { e.stopPropagation(); moveInFolder(ctx.folderId, ctx.keys, ctx.index, -1); });
         if (dn && !dn.disabled) dn.addEventListener("click", (e) => { e.stopPropagation(); moveInFolder(ctx.folderId, ctx.keys, ctx.index, 1); });
     }
+    // Drag & drop: every row is draggable (onto a folder = add); inside a folder
+    // a row is also a reorder drop-target.
+    row.draggable = true;
+    row.addEventListener("dragstart", (e) => {
+        e.stopPropagation();
+        e.dataTransfer.setData("application/json", JSON.stringify({
+            src: "lib", key: item.key, fromFolder: ctx ? ctx.folderId : "",
+            item: { id_and_slug: item.key, key: item.key, name: item.name, cover: item.cover, type: item.type, url: item.url, release_date: item.release_date }
+        }));
+        e.dataTransfer.effectAllowed = "move";
+        row.classList.add("dragging");
+    });
+    row.addEventListener("dragend", () => row.classList.remove("dragging"));
+    if (ctx) {
+        row.addEventListener("dragover", (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; row.classList.add("drop-target"); });
+        row.addEventListener("dragleave", () => row.classList.remove("drop-target"));
+        row.addEventListener("drop", (e) => { e.preventDefault(); e.stopPropagation(); row.classList.remove("drop-target"); handleRowDrop(e, ctx); });
+    }
     return row;
 }
 
@@ -1322,6 +1506,126 @@ async function moveInFolder(folderId, keys, index, delta) {
         });
         if (r.ok) renderLibrary(await r.json());
     } catch (e) { showToast("Errore riordino titoli"); }
+}
+
+async function nestFolder(childId, parentId) {
+    try {
+        const r = await fetch("/api/folders/parent", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: childId, parent: parentId })
+        });
+        if (r.ok) {
+            if (parentId) openFolders.add(parentId);
+            renderLibrary(await r.json());
+            showToast(parentId ? "Cartella annidata" : "Cartella portata in radice");
+        } else {
+            const d = await r.json().catch(() => ({}));
+            showToast(d.detail || "Spostamento non valido");
+        }
+    } catch (e) { showToast("Errore spostamento cartella"); }
+}
+
+async function shutdownApp() {
+    if (!confirm("Spegnere SC Portal? Il server verra' chiuso.")) return;
+    try { await fetch("/api/shutdown", { method: "POST" }); } catch (e) {}
+    document.body.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:center;height:100vh;'
+        + 'font-family:sans-serif;color:#9ca3af;text-align:center;padding:2rem">'
+        + '<div><h2 style="color:#fff;margin-bottom:.5rem">SC Portal spento</h2>'
+        + '<p>Puoi chiudere questa scheda del browser.</p></div></div>';
+}
+
+async function toggleFolderFavorite(id) {
+    try {
+        const r = await fetch("/api/folders/favorite", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id })
+        });
+        if (r.ok) renderLibrary(await r.json());
+        else showToast("Errore preferito cartella");
+    } catch (e) { showToast("Errore preferito cartella"); }
+}
+
+function applyFolderView(items, st) {
+    let arr = (items || []).slice();
+    if (st && st.type) arr = arr.filter(it => (it.type || "") === st.type);
+    if (st && st.order === "recent") arr.sort((a, b) => (b.release_date || "").localeCompare(a.release_date || ""));
+    else if (st && st.order === "oldest") arr.sort((a, b) => (a.release_date || "9999").localeCompare(b.release_date || "9999"));
+    return arr;
+}
+
+async function handleFolderAdd(folderId, data) {
+    if (!data) return;
+    let keys = [];
+    if (data.src === "search" && data.item) keys = await bulkSaveItems([data.item]);
+    else if (data.key) keys = [data.key];
+    if (!keys.length) return;
+    try {
+        const r = await fetch("/api/folders/add-items", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: folderId, keys })
+        });
+        if (r.ok) { openFolders.add(folderId); renderLibrary(await r.json()); showToast("Aggiunto alla cartella"); }
+        else showToast("Errore aggiunta alla cartella");
+    } catch (e) { showToast("Errore aggiunta alla cartella"); }
+}
+
+async function handleRowDrop(e, ctx) {
+    let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
+    if (data.src === "lib" && data.fromFolder === ctx.folderId) {
+        const targetKey = ctx.keys[ctx.index];
+        if (data.key === targetKey) return;
+        const arr = ctx.keys.slice();
+        const from = arr.indexOf(data.key);
+        if (from === -1) { await handleFolderAdd(ctx.folderId, data); return; }
+        arr.splice(from, 1);
+        const tIdx = arr.indexOf(targetKey);
+        arr.splice(tIdx < 0 ? arr.length : tIdx, 0, data.key);
+        try {
+            const r = await fetch("/api/folders/set", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: ctx.folderId, items: arr })
+            });
+            if (r.ok) renderLibrary(await r.json());
+        } catch (err) { showToast("Errore riordino titoli"); }
+    } else {
+        await handleFolderAdd(ctx.folderId, data);
+    }
+}
+
+function setupCollapsibles() {
+    document.querySelectorAll(".collapsible").forEach((sec) => {
+        const id = sec.id || "";
+        let stored = null;
+        try { stored = localStorage.getItem("collapse_" + id); } catch (e) {}
+        const collapsed = stored === null ? true : stored === "1"; // default: compatto
+        sec.classList.toggle("collapsed", collapsed);
+        const header = sec.querySelector(".tool-toggle");
+        if (!header || header.dataset.cbound) return;
+        header.dataset.cbound = "1";
+        header.addEventListener("click", (e) => {
+            if (e.target.closest("#save-library-btn, #test-domains-btn")) return;
+            const c = sec.classList.toggle("collapsed");
+            try { localStorage.setItem("collapse_" + id, c ? "1" : "0"); } catch (e2) {}
+        });
+    });
+}
+
+function toggleClearBtn() {
+    if (!el.searchClear) return;
+    el.searchClear.style.display = (el.urlInput && el.urlInput.value.trim()) ? "" : "none";
+}
+
+function clearSearch() {
+    if (el.urlInput) el.urlInput.value = "";
+    toggleClearBtn();
+    searchAll = []; searchQ = ""; searchPage = 1; searchSel.clear();
+    if (el.searchResults) el.searchResults.innerHTML = "";
+    const pg = document.getElementById("search-pager"); if (pg) pg.remove();
+    const li = document.getElementById("search-listinfo"); if (li) li.remove();
+    updateSelBar();
+    if (el.searchResultsSection) el.searchResultsSection.classList.add("hidden");
+    if (el.urlInput) el.urlInput.focus();
 }
 
 function renderLibrary(data) {
@@ -1360,6 +1664,7 @@ function renderLibrary(data) {
                     <span class="folder-count">${countTxt}</span>
                 </div>
                 <div class="folder-actions">
+                    <button class="icon-btn folderfav-btn" title="${f.favorite ? "Togli dai preferiti" : "Aggiungi ai preferiti"}">${f.favorite ? "★" : "☆"}</button>
                     <select class="folder-parent-select custom-select" title="Sposta in un'altra cartella">${parentOpts}</select>
                     <select class="folder-kind-select custom-select" title="Tipologia cartella">
                         <option value="">tipo…</option>
@@ -1377,6 +1682,28 @@ function renderLibrary(data) {
             </div>
             <div class="folder-domains${openFolders.has(f.id) ? "" : " hidden"}"></div>`;
         const body = card.querySelector(".folder-domains");
+        const _fst = folderFilters.get(f.id) || { type: "", order: "" };
+        if ((f.items || []).length) {
+            const fbar = document.createElement("div");
+            fbar.className = "folder-filterbar";
+            fbar.innerHTML = `
+                <select class="ff-type custom-select" title="Filtra per tipo">
+                    <option value="">Tutti</option>
+                    <option value="movie">Film</option>
+                    <option value="tv">Serie</option>
+                </select>
+                <select class="ff-order custom-select" title="Ordina">
+                    <option value="">Rilevanza</option>
+                    <option value="recent">Uscita recente</option>
+                    <option value="oldest">Meno recente</option>
+                </select>`;
+            fbar.addEventListener("click", (e) => e.stopPropagation());
+            const tSel = fbar.querySelector(".ff-type"); tSel.value = _fst.type;
+            const oSel = fbar.querySelector(".ff-order"); oSel.value = _fst.order;
+            tSel.addEventListener("change", () => { const st = folderFilters.get(f.id) || { type: "", order: "" }; st.type = tSel.value; folderFilters.set(f.id, st); renderLibrary(lastLibraryData); });
+            oSel.addEventListener("change", () => { const st = folderFilters.get(f.id) || { type: "", order: "" }; st.order = oSel.value; folderFilters.set(f.id, st); renderLibrary(lastLibraryData); });
+            body.appendChild(fbar);
+        }
         const toggleFolder = () => {
             body.classList.toggle("hidden");
             if (body.classList.contains("hidden")) openFolders.delete(f.id);
@@ -1392,7 +1719,12 @@ function renderLibrary(data) {
             }
         } else {
             const keys = f.items.map(i => i.key);
-            f.items.forEach((it, idx) => body.appendChild(titleRow(it, { folderId: f.id, keys, index: idx })));
+            const view = applyFolderView(f.items, _fst);
+            const defaultView = !_fst.type && !_fst.order;
+            view.forEach((it) => {
+                if (defaultView) body.appendChild(titleRow(it, { folderId: f.id, keys, index: keys.indexOf(it.key) }));
+                else body.appendChild(titleRow(it));
+            });
         }
         card.querySelector(".folder-head").addEventListener("click", (e) => {
             if (e.target.closest(".folder-actions")) return;
@@ -1404,6 +1736,8 @@ function renderLibrary(data) {
         card.querySelector(".ren-btn").addEventListener("click", (e) => { e.stopPropagation(); renameFolder(f.id, f.name); });
         card.querySelector(".delf-btn").addEventListener("click", (e) => { e.stopPropagation(); removeFolder(f.id, f.name); });
         card.querySelector(".toggle-btn").addEventListener("click", (e) => { e.stopPropagation(); toggleFolder(); });
+        const favBtn = card.querySelector(".folderfav-btn");
+        if (favBtn) favBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleFolderFavorite(f.id); });
         const kindSel = card.querySelector(".folder-kind-select");
         kindSel.value = f.kind || "";
         kindSel.addEventListener("click", (e) => e.stopPropagation());
@@ -1411,22 +1745,44 @@ function renderLibrary(data) {
         const parSel = card.querySelector(".folder-parent-select");
         parSel.addEventListener("click", (e) => e.stopPropagation());
         parSel.addEventListener("change", (e) => { e.stopPropagation(); moveFolderParent(f.id, e.target.value); });
+        card.draggable = true;
+        card.addEventListener("dragstart", (e) => {
+            e.stopPropagation();
+            e.dataTransfer.setData("application/json", JSON.stringify({ src: "folder", id: f.id }));
+            e.dataTransfer.effectAllowed = "move";
+            card.classList.add("dragging");
+        });
+        card.addEventListener("dragend", () => card.classList.remove("dragging"));
+        card.addEventListener("dragover", (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; card.classList.add("folder-drag-over"); });
+        card.addEventListener("dragleave", (e) => { if (!card.contains(e.relatedTarget)) card.classList.remove("folder-drag-over"); });
+        card.addEventListener("drop", async (e) => {
+            e.preventDefault(); e.stopPropagation(); card.classList.remove("folder-drag-over");
+            let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
+            if (data.src === "folder") {
+                if (data.id && data.id !== f.id) await nestFolder(data.id, f.id);
+            } else {
+                await handleFolderAdd(f.id, data);
+            }
+        });
         return card;
     };
 
     // Search mode: flat list of matching titles, folder structure hidden.
     const q = (librarySearch || "").trim().toLowerCase();
-    if (q) {
-        const titleResults = allTitles.filter(it => (it.name || "").toLowerCase().includes(q));
-        const folderResults = folders.filter(f =>
-            (f.name || "").toLowerCase().includes(q) || (f.kind || "").toLowerCase().includes(q));
+    const fType = librarySearchType || "";
+    const fOrder = librarySearchOrder || "";
+    if (q || fType || fOrder) {
+        let titleResults = allTitles.filter(it => (it.name || "").toLowerCase().includes(q));
+        titleResults = applyFolderView(titleResults, { type: fType, order: fOrder });
+        const folderResults = q ? folders.filter(f =>
+            (f.name || "").toLowerCase().includes(q) || (f.kind || "").toLowerCase().includes(q)) : [];
 
         if (folderResults.length) {
             const ft = document.createElement("div");
             ft.className = "domains-subtitle";
             ft.textContent = `Cartelle (${folderResults.length})`;
             el.libraryList.appendChild(ft);
-            folderResults.forEach(f => el.libraryList.appendChild(buildFolderCard(f, false)));
+            folderResults.forEach(f => el.libraryList.appendChild(buildFolderCard(f, true)));
         }
 
         const tt = document.createElement("div");
@@ -1458,17 +1814,44 @@ function renderLibrary(data) {
     createBtn.addEventListener("click", createFolder);
     el.libraryList.appendChild(createBtn);
 
+    // Drop-zone "radice": trascina qui una cartella per portarla fuori da ogni
+    // cartella genitore (oppure trascina una cartella su un'altra per annidarla).
+    const rootZone = document.createElement("div");
+    rootZone.className = "root-dropzone";
+    rootZone.textContent = "Trascina qui una cartella per portarla in radice";
+    rootZone.addEventListener("dragover", (e) => { e.preventDefault(); rootZone.classList.add("drag-over"); });
+    rootZone.addEventListener("dragleave", () => rootZone.classList.remove("drag-over"));
+    rootZone.addEventListener("drop", async (e) => {
+        e.preventDefault(); rootZone.classList.remove("drag-over");
+        let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
+        if (data.src === "folder" && data.id) await nestFolder(data.id, "");
+    });
+    el.libraryList.appendChild(rootZone);
+
     // Favourites shortcut (always shown, persists across sessions)
     const favs = libraryCache.filter(it => it && it.favorite);
-    if (favs.length) {
+    const favFolders = folders.filter(f => f && f.favorite);
+    if (favs.length || favFolders.length) {
+        const favBlock = document.createElement("div");
+        favBlock.className = "fav-block";
         const favTitle = document.createElement("div");
         favTitle.className = "domains-subtitle fav-subtitle";
         favTitle.textContent = "★ Preferiti";
-        el.libraryList.appendChild(favTitle);
-        favs.forEach(it => el.libraryList.appendChild(titleRow(it)));
+        favBlock.appendChild(favTitle);
+        favs.forEach(it => favBlock.appendChild(titleRow(it)));
+        // le cartelle preferite mostrano anche le loro sottocartelle (recurse)
+        favFolders.forEach(f => favBlock.appendChild(buildFolderCard(f, true)));
+        el.libraryList.appendChild(favBlock);
     }
 
-    folders.filter(f => !(f.parent || "")).forEach(f => el.libraryList.appendChild(buildFolderCard(f)));
+    const rootFolders = folders.filter(f => !(f.parent || ""));
+    if (rootFolders.length) {
+        const restTitle = document.createElement("div");
+        restTitle.className = "domains-subtitle lib-rest-title";
+        restTitle.textContent = "Cartelle";
+        el.libraryList.appendChild(restTitle);
+        rootFolders.forEach(f => el.libraryList.appendChild(buildFolderCard(f)));
+    }
 
     const unTitle = document.createElement("div");
     unTitle.className = "domains-subtitle";

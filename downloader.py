@@ -787,4 +787,5 @@ def cancel_download(download_id):
 
 
 def set_max_concurrent(n):
-    """Entry point for the API to configure queue concurrency on startu
+    """Entry point for the API to configure queue concurrency on startup."""
+    _MANAGER.set_concurrency(n)

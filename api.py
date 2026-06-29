@@ -7,6 +7,7 @@ import base64
 import hashlib
 import threading
 import urllib.parse
+import ipaddress
 import uuid
 import requests
 import urllib3
@@ -80,13 +81,17 @@ import sys
 
 app = FastAPI(title="StreamingCommunity Unofficial Portal")
 
-# CORS Setup
+# CORS: nessun wildcard. Solo le origini locali possono chiamare l'API cross-origin
+# (le richieste same-origin del portale non sono comunque soggette a CORS).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[
+        "http://localhost:8082", "http://127.0.0.1:8082",
+        "http://localhost", "http://127.0.0.1",
+    ],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
 )
 
 
@@ -100,7 +105,77 @@ async def no_cache_static(request, call_next):
         response.headers["Cache-Control"] = "no-cache, must-revalidate"
     return response
 
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# --------------------------------------------------------------------------- #
+#  Sicurezza: header HTTP + protezione DNS-rebinding / CSRF dell'API locale.
+#  Non c'e' login, quindi garantiamo che solo chiamanti locali same-origin
+#  possano usare le API che modificano dati.
+# --------------------------------------------------------------------------- #
+_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' https://cdn.jsdelivr.net; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src 'self' https://fonts.gstatic.com; "
+    "img-src 'self' data: https:; "
+    "media-src 'self' blob: https:; "
+    "connect-src 'self' https:; "
+    "worker-src 'self' blob:; "
+    "frame-src https:; "
+    "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+)
+
+
+def _host_allowed(host_header):
+    """Consente solo host di loopback o LAN privata. Blocca il DNS-rebinding in
+    cui un dominio pubblico malevolo risolve a 127.0.0.1."""
+    if not host_header:
+        return False
+    h = host_header.split(":", 1)[0].strip().strip("[]").lower()
+    if h in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
+        return True
+    try:
+        ip = ipaddress.ip_address(h)
+        return ip.is_loopback or ip.is_private
+    except ValueError:
+        return False  # rifiuta nomi di dominio arbitrari
+
+
+def _same_origin(request):
+    """Blocca le richieste cross-site che modificano dati (CSRF): l'host di
+    Origin/Referer deve combaciare con l'Host del portale."""
+    host = (request.headers.get("host") or "").lower()
+    origin = request.headers.get("origin") or request.headers.get("referer") or ""
+    if not origin:
+        return True  # niente contesto cross-site
+    try:
+        return urllib.parse.urlparse(origin).netloc.lower() == host
+    except Exception:
+        return False
+
+
+@app.middleware("http")
+async def security_headers(request, call_next):
+    if not _host_allowed(request.headers.get("host", "")):
+        return Response("Host non consentito", status_code=400)
+    if request.method in ("POST", "PUT", "PATCH", "DELETE") and not _same_origin(request):
+        return Response("Richiesta cross-origin non consentita", status_code=403)
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    response.headers["Content-Security-Policy"] = _CSP
+    return response
+
+if getattr(sys, "frozen", False):
+    # Running as a PyInstaller .exe: keep user data (settings/library/covers/
+    # downloads) NEXT TO the executable, but read bundled resources (static) from
+    # the temporary extraction dir.
+    PROJECT_DIR = os.path.dirname(sys.executable)
+    RES_DIR = getattr(sys, "_MEIPASS", PROJECT_DIR)
+else:
+    PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+    RES_DIR = PROJECT_DIR
 SETTINGS_FILE = os.path.join(PROJECT_DIR, "settings.json")
 DOWNLOADS_DIR = os.path.join(PROJECT_DIR, "downloads")
 LIBRARY_FILE = os.path.join(PROJECT_DIR, "library.json")
@@ -742,6 +817,17 @@ def refresh_domain():
         return {"found": True, "domain": domain}
     return {"found": False, "domain": SETTINGS.get("domain")}
 
+
+@app.post("/api/shutdown")
+def shutdown_server():
+    """Spegne il server (usato dal pulsante 'Spegni' dell'interfaccia, cosi'
+    l'utente non deve toccare il terminale)."""
+    def _stop():
+        time.sleep(0.4)
+        os._exit(0)
+    threading.Thread(target=_stop, daemon=True).start()
+    return {"ok": True}
+
 # --------------------------------------------------------------------------- #
 #  Content folders (playlists of LIBRARY titles, each with a cover image)
 # --------------------------------------------------------------------------- #
@@ -794,6 +880,7 @@ def _title_view(e):
         "name": e.get("name") or "Senza titolo",
         "cover": e.get("cover", ""),
         "type": e.get("type", ""),
+        "release_date": e.get("release_date", ""),
         "is_clone": bool(e.get("is_clone", False)),
         "url": url,
         "favorite": bool(e.get("favorite", False)),
@@ -812,9 +899,17 @@ def _folders_payload():
             if e:
                 items.append(_title_view(e))
                 assigned.add(k)
+        cover = f.get("cover", "")
+        if not cover and items:
+            dated = [it for it in items if (it.get("release_date") or "").strip() and it.get("cover")]
+            if dated:
+                cover = min(dated, key=lambda it: it.get("release_date")).get("cover", "")
+            else:
+                cover = next((it.get("cover") for it in items if it.get("cover")), "")
         folders_out.append({
-            "id": f["id"], "name": f.get("name", ""), "cover": f.get("cover", ""),
-            "kind": f.get("kind", ""), "parent": f.get("parent", ""), "items": items,
+            "id": f["id"], "name": f.get("name", ""), "cover": cover,
+            "kind": f.get("kind", ""), "parent": f.get("parent", ""),
+            "favorite": bool(f.get("favorite", False)), "items": items,
         })
     unassigned = [_title_view(e) for e in _sorted_library(LIBRARY)
                   if e.get("key") and e["key"] not in assigned]
@@ -907,6 +1002,17 @@ def add_items_to_folder(payload: FolderItems):
     for k in payload.keys:
         if k in libkeys and k not in items:
             items.append(k)
+    save_settings(SETTINGS)
+    return _folders_payload()
+
+
+@app.post("/api/folders/favorite")
+def toggle_folder_favorite(payload: FolderId):
+    """Segna/desegna una cartella come preferita (mostrata in cima alla libreria)."""
+    f = next((x for x in _folders() if x["id"] == payload.id), None)
+    if not f:
+        raise HTTPException(status_code=404, detail="Cartella non trovata")
+    f["favorite"] = not f.get("favorite", False)
     save_settings(SETTINGS)
     return _folders_payload()
 
@@ -1054,7 +1160,7 @@ def search_legacy(q: str):
 
 
 @app.get("/api/search")
-def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None):
+def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None, type: Optional[str] = None):
     base_url = get_base_url()
     query = urllib.parse.quote(q)
     try:
@@ -1083,7 +1189,7 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None):
             cdn_url = get_cdn_url(page_data)
 
         results = []
-        for item in data[:30]:
+        for item in data:
             if not isinstance(item, dict):
                 continue
             title_id = item.get("id")
@@ -1101,6 +1207,10 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None):
                 "cover": image_url(item.get("images"), cdn_url=cdn_url),
                 "url": f"{base_url}/it/titles/{id_and_slug}" if id_and_slug else "",
             })
+
+        wanted_type = (type or "").strip().lower()
+        if wanted_type in ("movie", "tv"):
+            results = [r for r in results if (r.get("type") or "") == wanted_type]
 
         wanted_genre = (genre or "").strip().lower()
         if wanted_genre:
@@ -1121,11 +1231,49 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None):
             results.sort(key=lambda x: float(x.get("score") or 0), reverse=True)
         elif sort == "recent":
             results.sort(key=lambda x: x.get("release_date") or "", reverse=True)
+        elif sort == "oldest":
+            results.sort(key=lambda x: x.get("release_date") or "9999")
         return results
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/search/list")
+def search_list(q: str):
+    """Ricerca a LISTA: piu' titoli separati da ';' (per importare al volo intere
+    saghe/collezioni generate dall'AI). Ritorna il miglior risultato per ciascun
+    titolo, con _found True/False, cercando in parallelo."""
+    terms = [t.strip() for t in (q or "").split(";") if t.strip()][:60]
+    if not terms:
+        return []
+
+    dom_err = {"exc": None}
+
+    def one(term):
+        try:
+            r = search(term)
+            if r:
+                item = dict(r[0])
+                item["_term"] = term
+                item["_found"] = True
+                return item
+        except HTTPException as he:
+            if isinstance(he.detail, dict) and he.detail.get("domain_error"):
+                dom_err["exc"] = he
+        except Exception:
+            pass
+        return {"name": term, "_term": term, "_found": False, "id_and_slug": ""}
+
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        results = list(ex.map(one, terms))
+
+    # Se nulla e' stato trovato per colpa del dominio non raggiungibile, segnalalo
+    # esplicitamente (503) cosi' il frontend mostra il prompt "aggiorna dominio".
+    if dom_err["exc"] is not None and not any(r.get("_found") for r in results):
+        raise dom_err["exc"]
+    return results
+
 
 @app.get("/api/details/{id_and_slug}")
 def get_details(id_and_slug: str):
@@ -1834,6 +1982,7 @@ class LibraryEntry(BaseModel):
     name: Optional[str] = ""
     cover: Optional[str] = ""
     type: Optional[str] = ""           # "movie" | "tv" | ""
+    release_date: Optional[str] = ""   # year/date of release (for recency sort)
     is_clone: Optional[bool] = False
 
 
@@ -1866,6 +2015,8 @@ def add_library(entry: LibraryEntry):
         if not (isinstance(cur_cover, str) and cur_cover.startswith("/covers/")):
             existing["cover"] = entry.cover or cur_cover
         existing["type"] = entry.type or existing.get("type")
+        if not (existing.get("release_date") or "").strip():
+            existing["release_date"] = entry.release_date or existing.get("release_date", "")
         existing["is_clone"] = bool(entry.is_clone)
         existing["last_opened"] = now
     else:
@@ -1875,6 +2026,7 @@ def add_library(entry: LibraryEntry):
             "name": entry.name or "Senza titolo",
             "cover": entry.cover or "",
             "type": entry.type or "",
+            "release_date": entry.release_date or "",
             "is_clone": bool(entry.is_clone),
             "favorite": False,
             "added_at": now,
@@ -2035,6 +2187,6 @@ def open_downloads_folder():
 app.mount("/covers", StaticFiles(directory=COVERS_DIR), name="covers")
 
 # Mount static folder
-static_path = os.path.join(PROJECT_DIR, "static")
+static_path = os.path.join(RES_DIR, "static")
 if os.path.exists(static_path):
     app.mount("/", StaticFiles(directory=static_path, html=True), name="static")

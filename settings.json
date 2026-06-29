@@ -1,0 +1,302 @@
+{
+    "domain": "streamingcommunityz.tech",
+    "domains": [
+        "streamingcommunityz.tech"
+    ],
+    "folders": [
+        {
+            "id": "7c3812d8",
+            "name": "PAOLO SORRENTINO",
+            "kind": "regista",
+            "cover": "/covers/7c3812d8.jpg",
+            "items": [
+                "6625-le-conseguenze-dellamore",
+                "https://streaming-community.fans/titles/12355-guarda-lamico-di-famiglia-streaming.html",
+                "6973-il-divo",
+                "8150-this-must-be-the-place",
+                "148-la-grande-bellezza",
+                "43933-youth-la-giovinezza",
+                "6780-loro",
+                "3894-e-stata-la-mano-di-dio",
+                "10348-parthenope"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "07fbee53",
+            "name": "CHRISTOPHER NOLAN",
+            "kind": "regista",
+            "cover": "/covers/07fbee53.jpg",
+            "items": [
+                "6034-oppenheimer",
+                "1925-tenet",
+                "692-dunkirk",
+                "112-interstellar",
+                "1703-il-cavaliere-oscuro-il-ritorno",
+                "733-inception",
+                "1447-il-cavaliere-oscuro",
+                "2161-the-prestige",
+                "787-batman-begins",
+                "9507-insomnia",
+                "2938-memento"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "76e67349",
+            "name": "DUNE",
+            "kind": "saga",
+            "cover": "/covers/76e67349.png",
+            "items": [
+                "9905-dune-prophecy",
+                "4005-dune",
+                "6820-dune-parte-due"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "a0001979",
+            "name": "MATRIX",
+            "kind": "saga",
+            "cover": "/covers/a0001979.png",
+            "items": [
+                "1994-matrix",
+                "2008-matrix-reloaded",
+                "2003-matrix-revolutions",
+                "3914-matrix-resurrections"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "418c1eb4",
+            "name": "MULTIVERSO ANIMATO",
+            "kind": "genere",
+            "cover": "/covers/418c1eb4.png",
+            "items": [
+                "115-rick-and-morty",
+                "6426-the-midnight-gospel",
+                "1214-love-death-robots",
+                "10714-secret-level",
+                "59153-spider-noir-black-and-white",
+                "4140-inside-job",
+                "976-i-griffin",
+                "1369-futurama",
+                "1304-i-simpson",
+                "1478-american-dad",
+                "109-bojack-horseman"
+            ],
+            "parent": "",
+            "favorite": true
+        },
+        {
+            "id": "678a6e16",
+            "name": "PIRATI DEI CARAIBI",
+            "kind": "saga",
+            "cover": "/covers/678a6e16.jpg",
+            "items": [
+                "90-pirati-dei-caraibi-la-maledizione-della-prima-luna",
+                "282-pirati-dei-caraibi-la-maledizione-del-forziere-fantasma",
+                "281-pirati-dei-caraibi-ai-confini-del-mondo",
+                "280-pirati-dei-caraibi-oltre-i-confini-del-mare",
+                "279-pirati-dei-caraibi-la-vendetta-di-salazar"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "97ad1e0b",
+            "name": "SAGA DI WESTEROS",
+            "kind": "saga",
+            "cover": "/covers/97ad1e0b.png",
+            "items": [
+                "5431-house-of-the-dragon",
+                "46957-a-knight-of-the-seven-kingdoms",
+                "70-il-trono-di-spade"
+            ],
+            "parent": "",
+            "favorite": true
+        },
+        {
+            "id": "e1c98e63",
+            "name": "SAGA DELLA TERRA DI MEZZO",
+            "kind": "saga",
+            "cover": "/covers/e1c98e63.png",
+            "items": [
+                "5369-il-signore-degli-anelli-gli-anelli-del-potere",
+                "2280-lo-hobbit-un-viaggio-inaspettato",
+                "2281-lo-hobbit-la-desolazione-di-smaug",
+                "2279-lo-hobbit-la-battaglia-delle-cinque-armate",
+                "2282-il-signore-degli-anelli-la-compagnia-dellanello",
+                "1136-il-signore-degli-anelli-le-due-torri",
+                "1139-il-signore-degli-anelli-il-ritorno-del-re"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "4b398859",
+            "name": "VIKINGS",
+            "kind": "saga",
+            "cover": "/covers/4b398859.jpg",
+            "items": [
+                "73-vikings",
+                "4703-vikings-valhalla"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "048a1c59",
+            "name": "BREAKING BED SAGA",
+            "kind": "saga",
+            "cover": "/covers/048a1c59.png",
+            "items": [
+                "3-breaking-bad-reazioni-collaterali",
+                "64-better-call-saul",
+                "240-el-camino-il-film-di-breaking-bad"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "12be67e8",
+            "name": "STAR WARS",
+            "kind": "saga",
+            "cover": "/covers/12be67e8.jpeg",
+            "items": [],
+            "parent": ""
+        },
+        {
+            "id": "41bd012d",
+            "name": "AVATAR",
+            "kind": "saga",
+            "cover": "/covers/41bd012d.jpg",
+            "items": [
+                "429-avatar",
+                "2518-avatar-la-via-dellacqua",
+                "12943-avatar-fuoco-e-cenere"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "5632208a",
+            "name": "QUENTIN TARANTINO",
+            "kind": "regista",
+            "cover": "/covers/5632208a.jpg",
+            "items": [
+                "969-le-iene",
+                "2099-pulp-fiction",
+                "8119-jackie-brown",
+                "1566-kill-bill-volume-1",
+                "1567-kill-bill-volume-2",
+                "12931-grindhouse-a-prova-di-morte",
+                "618-bastardi-senza-gloria",
+                "254-django-unchained",
+                "4388-the-hateful-eight",
+                "935-cera-una-volta-a-hollywood"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "c3bb2087",
+            "name": "JURASSIC PARK",
+            "kind": "saga",
+            "cover": "/covers/c3bb2087.png",
+            "items": [
+                "835-jurassic-park",
+                "834-il-mondo-perduto-jurassic-park",
+                "833-jurassic-park-iii",
+                "831-jurassic-world",
+                "832-jurassic-world-il-regno-distrutto",
+                "4660-jurassic-world-il-dominio",
+                "9898-jurassic-world-rebirth"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "38768a27",
+            "name": "SKY",
+            "kind": "genere",
+            "cover": "/covers/38768a27.jpg",
+            "items": [
+                "7289-alessandro-borghese-4-ristoranti",
+                "5494-bruno-barbieri-4-hotel",
+                "1955-masterchef-italia",
+                "12374-money-road-ogni-tentazione-ha-un-prezzo",
+                "4739-pechino-express"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "014f4bdf",
+            "name": "MADAGASCAR",
+            "kind": "saga",
+            "parent": "",
+            "cover": "/covers/014f4bdf.webp",
+            "items": [
+                "2965-i-pinguini-di-madagascar",
+                "4944-madagascar",
+                "4942-madagascar-2",
+                "4943-madagascar-3-ricercati-in-europa"
+            ]
+        },
+        {
+            "id": "d464dddb",
+            "name": "SPIDER-VERSE",
+            "kind": "",
+            "parent": "",
+            "cover": "",
+            "items": [
+                "391-spider-man-un-nuovo-universo",
+                "6239-spider-man-across-the-spider-verse"
+            ]
+        },
+        {
+            "id": "166d9ac7",
+            "name": "PEAKY BLINDERS",
+            "kind": "",
+            "parent": "",
+            "cover": "/covers/166d9ac7.webp",
+            "items": [
+                "83-peaky-blinders",
+                "48502-peaky-blinders-the-immortal-man"
+            ]
+        },
+        {
+            "id": "1a5b0c4c",
+            "name": "MARVEL",
+            "kind": "",
+            "parent": "",
+            "cover": "/covers/1a5b0c4c.jpg",
+            "items": [],
+            "favorite": false
+        },
+        {
+            "id": "5778f6db",
+            "name": "ORIGINI MCU (1943\u20132012)",
+            "kind": "",
+            "parent": "1a5b0c4c",
+            "cover": "",
+            "items": [
+                "326-captain-america-il-primo-vendicatore",
+                "1019-captain-marvel",
+                "314-iron-man",
+                "313-iron-man-2",
+                "327-lincredibile-hulk",
+                "312-thor",
+                "215-the-avengers"
+            ],
+            "favorite": false
+        },
+        {
+            "id": "613d9766",
+            "name": "FASE 2",
+            "kind": "",
+            "parent": "1a5b0c4c",
+            "cover": "",
+            "items": [
+                "315-iron-man-3",
+                "378-thor-the-dark-world",
+                "318-captain-america-the-winter-soldier",
+                "377-guardiani-della-galassia",
+                "376-guardiani-della-galassia-vol-2",
+                "217-avengers-age-of-ultron",
+                "319-ant-man"
+            ],
+            "favorite": fal

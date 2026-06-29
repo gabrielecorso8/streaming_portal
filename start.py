@@ -8,6 +8,38 @@ import shutil
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 VENV_DIR = os.path.join(PROJECT_DIR, "venv")
 BIN_DIR = os.path.join(PROJECT_DIR, "bin")
+LOG_FILE = os.path.join(PROJECT_DIR, "server.log")
+
+
+def _ensure_streams():
+    """Avviato con pythonw.exe (senza console) sys.stdout/stderr sono None:
+    qualsiasi print() o il logging di uvicorn farebbe CRASHARE l'avvio. Qui li
+    reindirizziamo su un file di log, cosi' il riavvio nascosto funziona sempre."""
+    needs = (sys.stdout is None) or (sys.stderr is None) or \
+            (getattr(sys.stdout, "fileno", None) is None)
+    try:
+        if sys.stdout is not None:
+            sys.stdout.fileno()
+    except Exception:
+        needs = True
+    if not needs:
+        return
+    try:
+        f = open(LOG_FILE, "a", buffering=1, encoding="utf-8", errors="replace")
+    except Exception:
+        f = open(os.devnull, "w")
+    if sys.stdout is None or _broken(sys.stdout):
+        sys.stdout = f
+    if sys.stderr is None or _broken(sys.stderr):
+        sys.stderr = f
+
+
+def _broken(stream):
+    try:
+        stream.fileno()
+        return False
+    except Exception:
+        return True
 
 def check_venv():
     """Returns True if running inside a virtual environment."""
@@ -87,13 +119,87 @@ def start_server():
 
     print("[*] Launching FastAPI local server...")
     import uvicorn
-    # Start the server (api.py contains the FastAPI application 'app')
-    uvicorn.run("api:app", host="0.0.0.0", port=8082, reload=True)
+    import threading, webbrowser, time, socket
+    dev = os.environ.get("SC_DEV") == "1"
+    url = "http://localhost:8082"
+
+    # If a previous instance is still listening, just open the browser instead of
+    # failing to bind (so re-launching the shortcut never gets "stuck").
+    def _port_in_use(port):
+        sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sk.settimeout(0.5)
+            return sk.connect_ex(("127.0.0.1", port)) == 0
+        except Exception:
+            return False
+        finally:
+            sk.close()
+
+    if _port_in_use(8082):
+        print("[i] SC Portal risulta gia' attivo: apro il browser.")
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+        return
+
+    if not dev:
+        def _open_browser():
+            time.sleep(2.5)
+            try:
+                webbrowser.open(url)
+            except Exception:
+                pass
+        threading.Thread(target=_open_browser, daemon=True).start()
+    print("\n" + "=" * 50)
+    print("  SC Portal e' attivo:  " + url)
+    print("  Si aprira' da solo nel browser tra pochi secondi.")
+    print("  Per CHIUDERE: usa il pulsante Spegni nella piattaforma.")
+    print("=" * 50 + "\n")
+    # Start the server (api.py contains the FastAPI 'app'). Auto-reload only in
+    # dev mode (set SC_DEV=1); disabled for the normal one-click app launch.
+    try:
+        uvicorn.run("api:app", host="0.0.0.0", port=8082, reload=dev)
+    except OSError as e:
+        # Port busy / transient bind error: wait briefly and retry once.
+        print(f"[!] Avvio non riuscito ({e}); riprovo tra 2s...")
+        time.sleep(2)
+        uvicorn.run("api:app", host="0.0.0.0", port=8082, reload=dev)
+
+def deps_ok():
+    """True se le dipendenze chiave sono gia' installate (cosi' a ogni riavvio
+    NON rilanciamo pip: l'avvio resta veloce e funziona anche offline)."""
+    try:
+        import uvicorn, fastapi, requests, bs4, m3u8  # noqa: F401
+        return True
+    except Exception:
+        return False
+
 
 if __name__ == "__main__":
-    if not check_venv():
-        bootstrap_venv()
-    else:
-        install_dependencies()
-        download_ffmpeg()
-        start_server()
+    _ensure_streams()
+    try:
+        if not check_venv():
+            bootstrap_venv()
+        else:
+            # Installazione SOLO se manca qualcosa; mai fatale (con pythonw non
+            # c'e' console: un errore non deve impedire l'avvio del server).
+            if not deps_ok():
+                try:
+                    install_dependencies()
+                except Exception as e:
+                    print(f"[!] Installazione dipendenze non riuscita: {e}")
+            try:
+                download_ffmpeg()
+            except Exception as e:
+                print(f"[!] FFmpeg non disponibile ora: {e}")
+            start_server()
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        try:
+            with open(LOG_FILE, "a", encoding="utf-8") as lf:
+                lf.write("\n[CRASH avvio]\n")
+                traceback.print_exc(file=lf)
+        except Exception:
+            pass

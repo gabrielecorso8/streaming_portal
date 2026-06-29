@@ -16,3 +16,11 @@ bin/
 
 # NOTE: library.json, settings.json and covers/ are intentionally TRACKED
 # so the curated collection (titles, folders, cover images) ships with the repo.
+
+# PyInstaller build output (l'eseguibile si rigenera con "Crea EXE.bat")
+build/
+dist/
+*.exe
+
+# File locali dell'agente (non vanno nel repo)
+.claude/

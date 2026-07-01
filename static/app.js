@@ -94,8 +94,6 @@ const el = {
     sourceDomainInput: document.getElementById("source-domain-input"),
     addSourceDomainBtn: document.getElementById("add-source-domain-btn"),
     sourceDomainsList: document.getElementById("source-domains-list"),
-    upcomingList: document.getElementById("upcoming-list"),
-    refreshUpcomingBtn: document.getElementById("refresh-upcoming-btn"),
 
     // Library
     libraryList: document.getElementById("library-list"),
@@ -160,7 +158,6 @@ async function init() {
     if (el.manualDomainBtn) el.manualDomainBtn.addEventListener("click", updateDomainFromLink);
     if (el.addSourceDomainBtn) el.addSourceDomainBtn.addEventListener("click", addSourceDomain);
     if (el.sourceDomainInput) el.sourceDomainInput.addEventListener("keypress", (e) => { if (e.key === "Enter") addSourceDomain(); });
-    if (el.refreshUpcomingBtn) el.refreshUpcomingBtn.addEventListener("click", fetchUpcoming);
     document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && el.playerSection && !el.playerSection.classList.contains("hidden")) closePlayer();
     });
@@ -225,7 +222,6 @@ async function init() {
     fetchLibrary();
     fetchDomains();
     fetchSourceDomains();
-    fetchUpcoming();
     setupCollapsibles();
     refreshLocalDownloads();
     if (el.videoPlayer) el.videoPlayer.addEventListener("timeupdate", checkNextBanner);
@@ -1639,41 +1635,6 @@ async function refreshDownloads() {
     try { const sresp = await fetch("/api/download/status"); renderDownloads(sresp.ok ? await sresp.json() : []); }
     catch (e) { renderDownloads([]); }
     showToast(`Trovati ${localDownloads.length} titoli scaricati in /downloads`);
-}
-
-async function fetchUpcoming() {
-    if (!el.upcomingList) return;
-    try {
-        const r = await fetch("/api/upcoming");
-        if (!r.ok) return;
-        renderUpcoming(await r.json());
-    } catch (e) {
-        el.upcomingList.innerHTML = '<div class="no-downloads">Impossibile aggiornare le uscite.</div>';
-    }
-}
-
-function formatReleaseDate(value) {
-    if (!value) return "";
-    const parts = String(value).split("-");
-    if (parts.length >= 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    return value;
-}
-
-function renderUpcoming(items) {
-    if (!el.upcomingList) return;
-    const list = items || [];
-    if (!list.length) {
-        el.upcomingList.innerHTML = '<div class="no-downloads">Nessuna uscita futura trovata per ora.</div>';
-        return;
-    }
-    el.upcomingList.innerHTML = "";
-    list.forEach(it => {
-        const row = document.createElement("div");
-        row.className = "upcoming-item";
-        const cover = it.cover ? `<img class="library-cover" src="${escapeHtml(it.cover)}" alt="" loading="lazy">` : `<div class="library-cover placeholder"></div>`;
-        row.innerHTML = `${cover}<div class="upcoming-meta"><span class="upcoming-title">${escapeHtml(it.title || "Titolo")}</span><span class="upcoming-relation">${escapeHtml(it.relation || "Titolo collegato")}</span></div><span class="upcoming-date">${escapeHtml(formatReleaseDate(it.date || ""))}</span>`;
-        el.upcomingList.appendChild(row);
-    });
 }
 
 // --- Riconoscimento episodi (serie) dai nomi file --------------------------

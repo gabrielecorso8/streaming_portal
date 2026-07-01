@@ -1023,48 +1023,6 @@ video {
     min-width: 0;
 }
 
-.upcoming-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.upcoming-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 9px 10px;
-    border-radius: 12px;
-    background: rgba(255,255,255,.04);
-    border: 1px solid rgba(255,255,255,.07);
-}
-
-.upcoming-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-    flex: 1 1 auto;
-}
-
-.upcoming-title {
-    font-weight: 700;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.upcoming-relation {
-    font-size: .78rem;
-    opacity: .65;
-}
-
-.upcoming-date {
-    color: var(--primary-hover);
-    font-weight: 800;
-    white-space: nowrap;
-}
-
 /* --- Favourite button inside the title modal ---------------------------- */
 .fav-modal-btn {
     display: inline-flex; align-items: center; gap: 6px;

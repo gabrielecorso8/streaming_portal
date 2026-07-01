@@ -9,7 +9,6 @@ import threading
 import urllib.parse
 import ipaddress
 import uuid
-from datetime import date
 import requests
 import urllib3
 import m3u8
@@ -1026,123 +1025,6 @@ def _folders_payload():
                   if e.get("key") and e["key"] not in assigned]
     return {"folders": folders_out, "unassigned": unassigned,
             "custom_filters": list(SETTINGS.get("custom_filters") or [])}
-
-
-UPCOMING_SEEDS = [
-    {
-        "always": True,
-        "match": ["christopher nolan", "nolan", "oppenheimer", "interstellar", "inception"],
-        "title": "The Odyssey (Christopher Nolan)",
-        "date": "2026-07-16",
-        "relation": "Cinema - nuovo film di Christopher Nolan",
-    },
-    {
-        "always": True,
-        "match": ["anelli del potere", "terra di mezzo", "signore degli anelli"],
-        "title": "Gli Anelli del Potere - Stagione 3",
-        "date": "2026-11-11",
-        "relation": "Prime Video - nuova stagione",
-    },
-    {
-        "always": True,
-        "match": ["avengers", "marvel", "mcu", "fantastic four", "x-men"],
-        "title": "Avengers: Doomsday",
-        "date": "2026-12-18",
-        "relation": "Cinema - Marvel Studios",
-    },
-    {
-        "always": True,
-        "match": ["harry potter", "hogwarts", "wizarding world"],
-        "title": "Harry Potter - Stagione 1",
-        "date": "2026-12-25",
-        "relation": "HBO / HBO Max - nuova serie",
-    },
-    {
-        "always": True,
-        "match": ["spider-man", "spiderman", "marvel"],
-        "title": "Spider-Man: Brand New Day",
-        "date": "2026-07-31",
-        "relation": "Cinema - Marvel / Sony",
-    },
-    {
-        "always": True,
-        "match": ["dune", "denis villeneuve"],
-        "title": "Dune: Part Three",
-        "date": "2026-12-18",
-        "relation": "Cinema - saga Dune",
-    },
-    {
-        "always": True,
-        "match": ["avatar", "james cameron"],
-        "title": "Avatar 4",
-        "date": "2029-12-21",
-        "relation": "Cinema - saga Avatar",
-    },
-    {
-        "always": True,
-        "match": ["batman", "dc"],
-        "title": "The Batman: Part II",
-        "date": "2027-10-01",
-        "relation": "Cinema - DC",
-    },
-    {
-        "always": True,
-        "match": ["avengers", "marvel", "mcu"],
-        "title": "Avengers: Secret Wars",
-        "date": "2027-12-17",
-        "relation": "Cinema - Marvel Studios",
-    },
-    {
-        "always": True,
-        "match": ["frozen", "disney"],
-        "title": "Frozen 3",
-        "date": "2027-11-24",
-        "relation": "Cinema - Disney",
-    },
-]
-
-
-def _norm_text(value):
-    return re.sub(r"\s+", " ", (value or "").lower()).strip()
-
-
-@app.get("/api/upcoming")
-def get_upcoming():
-    """Upcoming sequels/connected titles inferred from saved library/folders.
-    Without external API keys this uses future dates already stored in the
-    library plus a local curated seed list for known connected releases."""
-    today = date.today().isoformat()
-    hay = []
-    for e in LIBRARY:
-        hay.append(_norm_text(e.get("name")))
-    for f in _folders():
-        hay.append(_norm_text(f.get("name")))
-    joined = " | ".join(x for x in hay if x)
-    out = []
-    seen = set()
-    for e in LIBRARY:
-        rd = (e.get("release_date") or "").strip()
-        if rd and rd >= today:
-            key = (e.get("key") or e.get("name") or "") + rd
-            seen.add(key)
-            out.append({
-                "title": e.get("name") or "Titolo",
-                "date": rd,
-                "cover": e.get("cover", ""),
-                "relation": "Gia' presente in libreria",
-                "key": e.get("key", ""),
-            })
-    for seed in UPCOMING_SEEDS:
-        if seed.get("always") or any(m in joined for m in seed["match"]):
-            key = seed["title"] + seed["date"]
-            if key not in seen and seed["date"] >= today:
-                item = dict(seed)
-                item.pop("always", None)
-                item.pop("match", None)
-                out.append(item)
-                seen.add(key)
-    out.sort(key=lambda x: x.get("date") or "9999")
-    return out
 
 
 @app.get("/api/folders")

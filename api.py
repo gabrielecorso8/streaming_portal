@@ -934,7 +934,8 @@ def _folders_payload():
         folders_out.append({
             "id": f["id"], "name": f.get("name", ""), "cover": cover,
             "kind": f.get("kind", ""), "parent": f.get("parent", ""),
-            "favorite": bool(f.get("favorite", False)), "items": items,
+            "favorite": bool(f.get("favorite", False)),
+            "order": list(f.get("order", [])), "items": items,
         })
     unassigned = [_title_view(e) for e in _sorted_library(LIBRARY)
                   if e.get("key") and e["key"] not in assigned]
@@ -1042,6 +1043,23 @@ class FolderReorder(BaseModel):
     before: str   # id della cartella prima della quale posizionare
 
 
+class FolderOrder(BaseModel):
+    id: str
+    order: List[str] = []   # token: chiave titolo oppure "f:<id_sottocartella>"
+
+
+@app.post("/api/folders/order")
+def set_folder_order(payload: FolderOrder):
+    """Salva l'ordine manuale combinato (titoli + sottocartelle) dentro una
+    cartella. I token sono le chiavi dei titoli o 'f:<id>' per le sottocartelle."""
+    f = next((x for x in _folders() if x["id"] == payload.id), None)
+    if not f:
+        raise HTTPException(status_code=404, detail="Cartella non trovata")
+    f["order"] = [t for t in payload.order if isinstance(t, str)]
+    save_settings(SETTINGS)
+    return _folders_payload()
+
+
 @app.post("/api/folders/reorder")
 def reorder_folders(payload: FolderReorder):
     """Riordina le cartelle: sposta `id` subito PRIMA di `before` rendendole
@@ -1049,9 +1067,15 @@ def reorder_folders(payload: FolderReorder):
     livello."""
     folders = _folders()
     src = next((x for x in folders if x["id"] == payload.id), None)
-    tgt = next((x for x in folders if x["id"] == payload.before), None)
-    if not src or not tgt:
+    if not src:
         raise HTTPException(status_code=404, detail="Cartella non trovata")
+    tgt = next((x for x in folders if x["id"] == payload.before), None)
+    if tgt is None:
+        # before vuoto/non trovato: sposta in fondo mantenendo il genitore
+        folders.remove(src)
+        folders.append(src)
+        save_settings(SETTINGS)
+        return _folders_payload()
     if src is tgt:
         return _folders_payload()
     src["parent"] = tgt.get("parent", "")   # stesso livello del target
@@ -2389,16 +2413,66 @@ def list_local_downloads():
     return out
 
 
+def _win_explorer_foreground(target):
+    """Apre la cartella in Esplora risorse e la porta DAVVERO in primo piano,
+    anche quando SC Portal gira in background (pythonw): Windows di norma vieta
+    a un processo senza focus di rubare il primo piano, quindi usiamo il trucco
+    del tasto ALT (che azzera il timeout del blocco foreground) prima di
+    SetForegroundWindow. Gira in un thread per non bloccare la risposta HTTP."""
+    import time, ctypes
+    from ctypes import wintypes
+    try:
+        subprocess.Popen(["explorer", target])
+    except Exception:
+        return
+    leaf = (os.path.basename(target.rstrip("\\/")) or target).lower()
+    try:
+        user32 = ctypes.windll.user32
+    except Exception:
+        return
+    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+
+    def _try_focus():
+        found = []
+
+        def cb(hwnd, lparam):
+            if not user32.IsWindowVisible(hwnd):
+                return True
+            cbuf = ctypes.create_unicode_buffer(256)
+            user32.GetClassNameW(hwnd, cbuf, 256)
+            if cbuf.value in ("CabinetWClass", "ExploreWClass"):
+                tbuf = ctypes.create_unicode_buffer(512)
+                user32.GetWindowTextW(hwnd, tbuf, 512)
+                if leaf in (tbuf.value or "").lower():
+                    found.append(hwnd)
+            return True
+
+        user32.EnumWindows(EnumWindowsProc(cb), 0)
+        if found:
+            hwnd = found[-1]
+            user32.keybd_event(0x12, 0, 0, 0)   # ALT down
+            user32.keybd_event(0x12, 0, 2, 0)   # ALT up -> sblocca il foreground
+            user32.ShowWindow(hwnd, 9)          # SW_RESTORE
+            user32.SetForegroundWindow(hwnd)
+            user32.BringWindowToTop(hwnd)
+            return True
+        return False
+
+    for _ in range(20):   # riprova ~4s finche' la finestra di explorer compare
+        if _try_focus():
+            break
+        time.sleep(0.2)
+
+
 @app.post("/api/downloads/open-folder")
 def open_downloads_folder():
-    """Open the downloads directory in the OS file manager."""
+    """Open the downloads directory in the OS file manager (foreground on Win)."""
+    import threading
     os.makedirs(DOWNLOADS_DIR, exist_ok=True)
     target = os.path.normpath(DOWNLOADS_DIR)
     try:
         if sys.platform.startswith("win"):
-            # explorer apre la cartella in modo affidabile (os.startfile a volte
-            # non porta la finestra in primo piano da un processo in background).
-            subprocess.Popen(["explorer", target])
+            threading.Thread(target=_win_explorer_foreground, args=(target,), daemon=True).start()
         elif sys.platform == "darwin":
             subprocess.Popen(["open", target])
         else:

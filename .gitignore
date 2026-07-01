@@ -27,3 +27,4 @@ dist/
 
 # Backup locali della migrazione link
 *.bak_link_migration
+*.bak_nullfix

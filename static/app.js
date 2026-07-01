@@ -1867,9 +1867,10 @@ function titleRow(item, ctx) {
         : `<div class="library-cover placeholder"></div>`;
     const name = item.name && item.name.trim() ? item.name : "Senza titolo";
     // Up/down reorder controls only inside a folder (ctx provided).
+    const _clen = ctx ? (ctx.combined ? (ctx.tokens ? ctx.tokens.length : 0) : (ctx.keys ? ctx.keys.length : 0)) : 0;
     const moveBtns = (ctx && !ctx.noReorder) ? `
             <button class="icon-btn moveup-btn" title="Sposta su"${ctx.index === 0 ? " disabled" : ""}>⬆</button>
-            <button class="icon-btn movedown-btn" title="Sposta giù"${ctx.index === ctx.keys.length - 1 ? " disabled" : ""}>⬇</button>` : "";
+            <button class="icon-btn movedown-btn" title="Sposta giù"${ctx.index >= _clen - 1 ? " disabled" : ""}>⬇</button>` : "";
     row.innerHTML = `
         ${cover}
         <div class="library-meta">
@@ -1904,8 +1905,9 @@ function titleRow(item, ctx) {
     if (ctx && !ctx.noReorder) {
         const up = row.querySelector(".moveup-btn");
         const dn = row.querySelector(".movedown-btn");
-        if (up && !up.disabled) up.addEventListener("click", (e) => { e.stopPropagation(); moveInFolder(ctx.folderId, ctx.keys, ctx.index, -1); });
-        if (dn && !dn.disabled) dn.addEventListener("click", (e) => { e.stopPropagation(); moveInFolder(ctx.folderId, ctx.keys, ctx.index, 1); });
+        const _mv = (delta) => { if (ctx.combined) reorderCombined(ctx.folderId, ctx.tokens, ctx.index, delta); else moveInFolder(ctx.folderId, ctx.keys, ctx.index, delta); };
+        if (up && !up.disabled) up.addEventListener("click", (e) => { e.stopPropagation(); _mv(-1); });
+        if (dn && !dn.disabled) dn.addEventListener("click", (e) => { e.stopPropagation(); _mv(1); });
     }
     // Drag & drop: every row is draggable (onto a folder = add); inside a folder
     // a row is also a reorder drop-target.
@@ -1951,6 +1953,53 @@ async function reorderFolder(id, beforeId) {
         if (r.ok) { renderLibrary(await r.json()); showToast("Cartelle riordinate"); }
         else showToast("Errore riordino cartelle");
     } catch (e) { showToast("Errore riordino cartelle"); }
+}
+
+// Riordino combinato (titoli + sottocartelle) dentro una cartella, via token.
+async function reorderCombined(folderId, tokens, index, delta) {
+    const j = index + delta;
+    if (!tokens || j < 0 || j >= tokens.length) return;
+    const arr = tokens.slice();
+    [arr[index], arr[j]] = [arr[j], arr[index]];
+    try {
+        const r = await fetch("/api/folders/order", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: folderId, order: arr })
+        });
+        if (r.ok) renderLibrary(await r.json());
+    } catch (e) { showToast("Errore riordino"); }
+}
+
+// Drop di riordino combinato: sposta il token trascinato prima del target.
+// Ritorna true se ha gestito il drop (elemento dello stesso genitore).
+async function combinedDropReorder(folderId, tokens, targetToken, data) {
+    if (!tokens) return false;
+    const dragToken = data && data.src === "folder" ? ("f:" + data.id)
+        : (data && data.src === "lib" ? data.key : null);
+    if (!dragToken || dragToken === targetToken) return false;
+    if (!tokens.includes(dragToken)) return false; // non appartiene a questa cartella
+    const arr = tokens.slice();
+    arr.splice(arr.indexOf(dragToken), 1);
+    const ti = arr.indexOf(targetToken);
+    arr.splice(ti < 0 ? arr.length : ti, 0, dragToken);
+    try {
+        const r = await fetch("/api/folders/order", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: folderId, order: arr })
+        });
+        if (r.ok) { renderLibrary(await r.json()); return true; }
+    } catch (e) {}
+    return false;
+}
+
+// Su/giù per cartelle in radice (dentro i gruppi per tipologia / "Altre").
+async function reorderRoot(list, index, delta) {
+    const j = index + delta;
+    if (!list || j < 0 || j >= list.length) return;
+    let beforeId;
+    if (delta < 0) beforeId = list[index - 1].id;
+    else beforeId = (index + 2 < list.length) ? list[index + 2].id : "";
+    await reorderFolder(list[index].id, beforeId);
 }
 
 function updateLibrarySelBar() {
@@ -2098,6 +2147,11 @@ async function handleFolderAdd(folderId, data) {
 
 async function handleRowDrop(e, ctx) {
     let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
+    if (ctx && ctx.combined) {
+        if (await combinedDropReorder(ctx.folderId, ctx.tokens, ctx.tokens[ctx.index], data)) return;
+        await handleFolderAdd(ctx.folderId, data);
+        return;
+    }
     if (data.src === "lib" && data.fromFolder === ctx.folderId) {
         const targetKey = ctx.keys[ctx.index];
         if (data.key === targetKey) return;
@@ -2171,7 +2225,7 @@ function renderLibrary(data) {
     el.libraryList.innerHTML = "";
 
     const allFolders = folders;
-    const buildFolderCard = (f, recurse = true) => {
+    const buildFolderCard = (f, recurse = true, reorderCtx = null) => {
         const card = document.createElement("div");
         card.className = "folder-card";
         const coverStyle = f.cover ? `style="background-image:url('${f.cover}')"` : "";
@@ -2206,6 +2260,8 @@ function renderLibrary(data) {
             allFolders.filter(o => o.id !== f.id)
                       .map(o => `<option value="${o.id}"${(f.parent || "") === o.id ? " selected" : ""}>${escapeHtml(o.name)}</option>`)
         ).join("");
+        const _rlen = reorderCtx ? (reorderCtx.tokens ? reorderCtx.tokens.length : (reorderCtx.list ? reorderCtx.list.length : 0)) : 0;
+        const folderMoveBtns = reorderCtx ? `<button class="icon-btn folder-moveup" title="Sposta su"${reorderCtx.index === 0 ? " disabled" : ""}>⬆</button><button class="icon-btn folder-movedown" title="Sposta giù"${reorderCtx.index >= _rlen - 1 ? " disabled" : ""}>⬇</button>` : "";
         card.innerHTML = `
             <div class="folder-head">
                 <div class="folder-cover ${f.cover ? "" : "placeholder"}" ${coverStyle}></div>
@@ -2214,6 +2270,7 @@ function renderLibrary(data) {
                     <span class="folder-count">${countTxt}</span>
                 </div>
                 <div class="folder-actions">
+                    ${folderMoveBtns}
                     <button class="icon-btn folderfav-btn" title="${f.favorite ? "Togli dai preferiti" : "Aggiungi ai preferiti"}">${f.favorite ? "★" : "☆"}</button>
                     <select class="folder-parent-select custom-select" title="Sposta in un'altra cartella">${parentOpts}</select>
                     <select class="folder-kind-select custom-select" title="Tipologia cartella">
@@ -2296,17 +2353,34 @@ function renderLibrary(data) {
                 merged.push(te);
             });
             while (si < subs.length) merged.push(subs[si++]);
+            // ordine manuale combinato salvato (titoli + sottocartelle)
+            const tokenOf = (en) => en.kind === "folder" ? ("f:" + en.c.id) : en.it.key;
+            if (f.order && f.order.length) {
+                const pos = {}; f.order.forEach((t, i) => { pos[t] = i; });
+                merged = merged.slice().sort((a, b) => {
+                    const pa = pos[tokenOf(a)], pb = pos[tokenOf(b)];
+                    if (pa == null && pb == null) return 0;
+                    if (pa == null) return 1;
+                    if (pb == null) return -1;
+                    return pa - pb;
+                });
+            }
         }
+        const seqTokens = merged.map(en => en.kind === "folder" ? ("f:" + en.c.id) : en.it.key);
         if (!merged.length) {
             const empty = document.createElement("div");
             empty.className = "no-downloads";
             empty.textContent = "Cartella vuota. Usa \u2795 per i titoli o \uD83D\uDCC1+ per una sottocartella.";
             body.appendChild(empty);
         } else {
-            merged.forEach(e => {
-                if (e.kind === "folder") body.appendChild(buildFolderCard(e.c, true));
-                else if (defaultView) body.appendChild(titleRow(e.it, { folderId: f.id, keys, index: keys.indexOf(e.it.key) }));
-                else body.appendChild(titleRow(e.it, { folderId: f.id, noReorder: true }));
+            merged.forEach((e, i) => {
+                if (e.kind === "folder") {
+                    body.appendChild(buildFolderCard(e.c, true, defaultView ? { folderId: f.id, tokens: seqTokens, index: i } : null));
+                } else if (defaultView) {
+                    body.appendChild(titleRow(e.it, { folderId: f.id, combined: true, tokens: seqTokens, index: i }));
+                } else {
+                    body.appendChild(titleRow(e.it, { folderId: f.id, noReorder: true }));
+                }
             });
         }
         card.querySelector(".folder-head").addEventListener("click", (e) => {
@@ -2321,6 +2395,12 @@ function renderLibrary(data) {
         card.querySelector(".toggle-btn").addEventListener("click", (e) => { e.stopPropagation(); toggleFolder(); });
         const favBtn = card.querySelector(".folderfav-btn");
         if (favBtn) favBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleFolderFavorite(f.id); });
+        if (reorderCtx) {
+            const fu = card.querySelector(".folder-moveup"), fdn = card.querySelector(".folder-movedown");
+            const _fmv = (delta) => { if (reorderCtx.root) reorderRoot(reorderCtx.list, reorderCtx.index, delta); else reorderCombined(reorderCtx.folderId, reorderCtx.tokens, reorderCtx.index, delta); };
+            if (fu && !fu.disabled) fu.addEventListener("click", (e) => { e.stopPropagation(); _fmv(-1); });
+            if (fdn && !fdn.disabled) fdn.addEventListener("click", (e) => { e.stopPropagation(); _fmv(1); });
+        }
         const kindSel = card.querySelector(".folder-kind-select");
         kindSel.value = f.kind || "";
         kindSel.addEventListener("click", (e) => e.stopPropagation());
@@ -2341,6 +2421,9 @@ function renderLibrary(data) {
         card.addEventListener("drop", async (e) => {
             e.preventDefault(); e.stopPropagation(); card.classList.remove("folder-drag-over");
             let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
+            if (reorderCtx && reorderCtx.tokens) {
+                if (await combinedDropReorder(reorderCtx.folderId, reorderCtx.tokens, "f:" + f.id, data)) return;
+            }
             if (data.src === "folder") {
                 if (data.id && data.id !== f.id) {
                     const dragged = allFolders.find(x => x.id === data.id);
@@ -2450,7 +2533,7 @@ function renderLibrary(data) {
             none.textContent = "Nessuna cartella qui. Imposta il tipo di una cartella per raccoglierla in questo gruppo.";
             body.appendChild(none);
         } else {
-            list.forEach(f => body.appendChild(buildFolderCard(f)));
+            list.forEach((f, i) => body.appendChild(buildFolderCard(f, true, { root: true, list, index: i })));
         }
         head.addEventListener("click", () => {
             const hidden = body.classList.toggle("hidden");
@@ -2472,7 +2555,7 @@ function renderLibrary(data) {
         restTitle.className = "domains-subtitle lib-rest-title";
         restTitle.textContent = "Altre cartelle";
         el.libraryList.appendChild(restTitle);
-        uncategorized.forEach(f => el.libraryList.appendChild(buildFolderCard(f)));
+        uncategorized.forEach((f, i) => el.libraryList.appendChild(buildFolderCard(f, true, { root: true, list: uncategorized, index: i })));
     }
 
     // La libreria mostra SOLO preferiti e cartelle: i titoli solo aperti non

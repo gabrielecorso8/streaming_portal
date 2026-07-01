@@ -2705,14 +2705,17 @@ function renderLibrary(data) {
     const rootFolders = folders.filter(f => !(f.parent || ""));
 
     // Tre gruppi collassabili che raccolgono le cartelle per tipologia (kind).
-    const buildCategoryGroup = (label, kindKey, list, icon) => {
+    const buildCategoryGroup = (label, kindKey, list, icon, options = {}) => {
         const wrap = document.createElement("div");
         wrap.className = "cat-group";
         const open = openGroups.has(kindKey);
         const head = document.createElement("div");
         head.className = "cat-head" + (open ? " open" : "");
+        const editBtn = options.custom
+            ? `<button class="icon-btn cat-edit-btn" title="Modifica filtro" type="button">✎</button>`
+            : "";
         head.innerHTML = `<span class="cat-title">${icon} ${label}</span>`
-            + `<span class="cat-count">${list.length}</span><span class="cat-chevron">▾</span>`;
+            + `<span class="cat-count">${list.length}</span>${editBtn}<span class="cat-chevron">▾</span>`;
         const body = document.createElement("div");
         body.className = "cat-body" + (open ? "" : " hidden");
         if (!list.length) {
@@ -2727,6 +2730,11 @@ function renderLibrary(data) {
             const hidden = body.classList.toggle("hidden");
             head.classList.toggle("open", !hidden);
             if (hidden) openGroups.delete(kindKey); else openGroups.add(kindKey);
+        });
+        const edit = head.querySelector(".cat-edit-btn");
+        if (edit) edit.addEventListener("click", (e) => {
+            e.stopPropagation();
+            renameCustomFilter(kindKey);
         });
         wrap.appendChild(head);
         wrap.appendChild(body);
@@ -2744,7 +2752,7 @@ function renderLibrary(data) {
     [...new Set([...(customFilters || []), ...rootFolders.map(f => f.kind || "")]
         .filter(k => k && !["saga", "regista", "genere"].includes(k)))]
         .sort()
-        .forEach(k => el.libraryList.appendChild(buildCategoryGroup(k.charAt(0).toUpperCase() + k.slice(1), k, byKind(k), "▣")));
+        .forEach(k => el.libraryList.appendChild(buildCategoryGroup(k.charAt(0).toUpperCase() + k.slice(1), k, byKind(k), "▣", { custom: true })));
 
     const uncategorized = rootFolders.filter(f => !(f.kind || ""));
     if (uncategorized.length) {
@@ -2867,6 +2875,36 @@ async function createCustomFilter() {
             showToast(e.detail || "Errore creazione filtro");
         }
     } catch (e) { showToast("Errore creazione filtro"); }
+}
+
+async function renameCustomFilter(oldKind) {
+    const raw = prompt("Nuovo nome del filtro:", oldKind || "");
+    if (raw === null) return;
+    const kind = normalizeCustomFilterName(raw);
+    if (!kind) {
+        showToast("Inserisci un nome valido");
+        return;
+    }
+    if (kind === oldKind) return;
+    try {
+        const r = await fetch("/api/filters/rename", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ old: oldKind, name: kind })
+        });
+        if (r.ok) {
+            localCustomFilters.delete(oldKind);
+            localCustomFilters.add(kind);
+            if (openGroups.has(oldKind)) {
+                openGroups.delete(oldKind);
+                openGroups.add(kind);
+            }
+            renderLibrary(await r.json());
+            showToast("Filtro aggiornato");
+        } else {
+            const e = await r.json().catch(() => ({}));
+            showToast(e.detail || "Errore modifica filtro");
+        }
+    } catch (e) { showToast("Errore modifica filtro"); }
 }
 
 async function createSubfolder(parentId) {

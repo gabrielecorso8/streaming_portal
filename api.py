@@ -827,6 +827,11 @@ class CustomFilterPayload(BaseModel):
     name: str
 
 
+class CustomFilterRenamePayload(BaseModel):
+    old: str
+    name: str
+
+
 @app.get("/api/domains")
 def list_domains():
     """The remembered domains with their last-known liveness status."""
@@ -913,6 +918,28 @@ def create_custom_filter(payload: CustomFilterPayload):
     if name not in lst:
         lst.append(name)
         save_settings(SETTINGS)
+    return _folders_payload()
+
+
+@app.post("/api/filters/rename")
+def rename_custom_filter(payload: CustomFilterRenamePayload):
+    old = normalize_filter_name(payload.old)
+    name = normalize_filter_name(payload.name)
+    builtin = {"saga", "regista", "genere"}
+    if not old or not name:
+        raise HTTPException(status_code=400, detail="Filtro non valido")
+    if old in builtin or name in builtin:
+        raise HTTPException(status_code=400, detail="Filtro riservato")
+    filters = SETTINGS.setdefault("custom_filters", [])
+    if old not in filters and not any((f.get("kind") or "") == old for f in _folders()):
+        raise HTTPException(status_code=404, detail="Filtro non trovato")
+    SETTINGS["custom_filters"] = [x for x in filters if x != old and x != name]
+    if name not in SETTINGS["custom_filters"]:
+        SETTINGS["custom_filters"].append(name)
+    for f in _folders():
+        if (f.get("kind") or "") == old:
+            f["kind"] = name
+    save_settings(SETTINGS)
     return _folders_payload()
 
 

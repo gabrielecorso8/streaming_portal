@@ -1323,6 +1323,7 @@ body {
 .cat-head:hover { border-color: var(--border-hover); box-shadow: 0 6px 18px rgba(139,92,246,.18); }
 .cat-title { font-weight: 700; font-size: 1rem; flex: 1; }
 .cat-count { background: rgba(255,255,255,.08); padding: .1rem .55rem; border-radius: 999px; font-size: .8rem; color: var(--text-secondary); }
+.cat-edit-btn { width: 30px; height: 30px; flex: 0 0 auto; }
 .cat-chevron { transition: transform .25s ease; color: var(--text-secondary); }
 .cat-head.open .cat-chevron { transform: rotate(180deg); }
 .cat-body { padding: .6rem 0 .25rem .6rem; display: flex; flex-direction: column; gap: .75rem; }

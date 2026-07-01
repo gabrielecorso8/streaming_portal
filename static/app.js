@@ -1420,19 +1420,33 @@ function renderDownloads(downloads) {
 
     // Attivi in cima; completati raggruppati per cartella/libreria.
     const allRows = [...downloads].reverse().concat(extra);
+    const groupCounts = new Map();
+    allRows.forEach(dl => {
+        if (dl.status !== "completed") return;
+        const g = downloadGroupFor(dl);
+        if (!g || !g.id) return;
+        const k = downloadGroupKey(g);
+        groupCounts.set(k, (groupCounts.get(k) || 0) + 1);
+    });
+    const visibleGroupFor = (dl) => {
+        if (!dl || dl.status !== "completed") return null;
+        const g = downloadGroupFor(dl);
+        if (!g || !g.id) return null;
+        return (groupCounts.get(downloadGroupKey(g)) || 0) >= 2 ? g : null;
+    };
     const ordered = allRows.slice().sort((a, b) => {
         const aa = ["pending", "queued", "downloading", "merging"].includes(a.status);
         const bb = ["pending", "queued", "downloading", "merging"].includes(b.status);
         if (aa !== bb) return aa ? -1 : 1;
-        const ga = downloadGroupFor(a);
-        const gb = downloadGroupFor(b);
+        const ga = visibleGroupFor(a);
+        const gb = visibleGroupFor(b);
         return ((ga && ga.name) || "").localeCompare((gb && gb.name) || "");
     });
 
     el.downloadsList.innerHTML = "";
     let lastGroup = "";
     ordered.forEach(dl => {
-        const group = dl.status === "completed" ? downloadGroupFor(dl) : null;
+        const group = visibleGroupFor(dl);
         if (group && group.name !== lastGroup) {
             const head = document.createElement("div");
             head.className = "download-group-head";
@@ -1484,9 +1498,8 @@ function renderDownloads(downloads) {
             : "";
 
         const info = libInfoForDownload(dl);
-        const folderInfo = downloadGroupFor(dl);
         const cover = info && info.cover
-            ? `<img class="library-cover dl-cover" src="${escapeHtml((folderInfo && folderInfo.cover) || info.cover)}" alt="" loading="lazy">`
+            ? `<img class="library-cover dl-cover" src="${escapeHtml(info.cover)}" alt="" loading="lazy">`
             : `<div class="library-cover placeholder dl-cover"></div>`;
         const typeBadge = info ? (info.type === "tv" ? "Serie" : (info.type === "movie" ? "Film" : "")) : "";
         item.innerHTML = `
@@ -1706,6 +1719,10 @@ function libKeyForName(name) {
     if (!n) return "";
     const hit = (libraryCache || []).find(it => normName(it.name) === n);
     return hit ? hit.key : "";
+}
+
+function downloadGroupKey(group) {
+    return group && (group.id || group.name || "");
 }
 
 function downloadGroupFor(dl) {

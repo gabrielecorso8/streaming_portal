@@ -276,6 +276,8 @@ def load_settings():
     if data["domain"] and data["domain"] not in data["domains"]:
         data["domains"].append(data["domain"])
     data["source_domains"] = [normalize_source_domain(d) for d in data.get("source_domains", []) if normalize_source_domain(d)]
+    data["custom_filters"] = [re.sub(r"\s+", " ", str(x).strip().lower())[:40]
+                              for x in data.get("custom_filters", []) if str(x).strip()]
     return data
 
 def save_settings(settings):
@@ -812,6 +814,10 @@ class DomainPayload(BaseModel):
     domain: str
 
 
+class CustomFilterPayload(BaseModel):
+    name: str
+
+
 @app.get("/api/domains")
 def list_domains():
     """The remembered domains with their last-known liveness status."""
@@ -885,6 +891,20 @@ def remove_source_domain(payload: DomainPayload):
     SETTINGS["source_domains"] = [x for x in SETTINGS.get("source_domains", []) if x != d]
     save_settings(SETTINGS)
     return list_source_domains()
+
+
+@app.post("/api/filters/create")
+def create_custom_filter(payload: CustomFilterPayload):
+    name = re.sub(r"\s+", " ", (payload.name or "").strip().lower())[:40]
+    if not name or not re.match(r"^[\w\sàèéìòù'\-]*$", name, re.I):
+        raise HTTPException(status_code=400, detail="Filtro non valido")
+    if name in ("saga", "regista", "genere"):
+        return _folders_payload()
+    lst = SETTINGS.setdefault("custom_filters", [])
+    if name not in lst:
+        lst.append(name)
+        save_settings(SETTINGS)
+    return _folders_payload()
 
 
 @app.post("/api/domain/refresh")
@@ -1004,7 +1024,8 @@ def _folders_payload():
         })
     unassigned = [_title_view(e) for e in _sorted_library(LIBRARY)
                   if e.get("key") and e["key"] not in assigned]
-    return {"folders": folders_out, "unassigned": unassigned}
+    return {"folders": folders_out, "unassigned": unassigned,
+            "custom_filters": list(SETTINGS.get("custom_filters") or [])}
 
 
 UPCOMING_SEEDS = [
@@ -1446,10 +1467,13 @@ def search_source_domain(domain, q, limit=12):
     host = normalize_source_domain(domain)
     if not host:
         return []
+    host_base = host.removeprefix("www.")
     query = urllib.parse.quote(q)
     candidates = [
         f"https://{host}/?s={query}",
         f"https://{host}/search?q={query}",
+        f"https://{host}/search/{query}",
+        f"https://{host}/?search={query}",
         f"https://{host}/?story={query}&do=search&subaction=search",
     ]
     out, seen = [], set()
@@ -1461,7 +1485,8 @@ def search_source_domain(domain, q, limit=12):
             soup = BeautifulSoup(resp.text, "lxml")
             for a in soup.find_all("a", href=True):
                 href = urllib.parse.urljoin(url, a.get("href"))
-                if host not in urllib.parse.urlparse(href).netloc.lower():
+                href_host = normalize_source_domain(urllib.parse.urlparse(href).netloc).removeprefix("www.")
+                if not (href_host == host_base or href_host.endswith("." + host_base)):
                     continue
                 if not re.search(r"(title|film|serie|anime|stream|guarda|watch|\.html)", href, re.I):
                     continue
@@ -1882,10 +1907,13 @@ def resolve_url(payload: ResolveUrlRequest):
         except ValueError:
             episode_id = None
             
-    if "streaming" not in netloc:
+    source_hosts = {normalize_source_domain(d).removeprefix("www.") for d in SETTINGS.get("source_domains", [])}
+    cur_host = normalize_source_domain(netloc).removeprefix("www.")
+    is_extra_source = any(cur_host == h or cur_host.endswith("." + h) for h in source_hosts if h)
+    if "streaming" not in netloc and not is_extra_source:
         raise HTTPException(status_code=400, detail="Invalid domain. Must be a StreamingCommunity link, a direct stream (.m3u8/.mp4) or a vidxgo URL.")
         
-    is_clone = "watch" in netloc or "-" in netloc
+    is_clone = is_extra_source or "watch" in netloc or "-" in netloc
     
     if is_clone:
         try:

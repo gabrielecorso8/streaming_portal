@@ -6,6 +6,7 @@ let libraryCache = [];     // Last known library list (to read favourite state)
 let openFolders = new Set(); // Folder ids currently expanded (kept across re-renders)
 let openGroups = new Set(); // categorie (saga/regista/genere) espanse
 let openDownloadGroups = new Set(); // cartelle/sottocartelle download espanse
+let touchedDownloadGroups = new Set(); // ricorda quali gruppi download l'utente ha aperto/chiuso
 let librarySel = new Map(); // key -> item: multi-selezione titoli in libreria
 let playbackCtx = null;    // {folderId, items:[...], index}: contesto prev/next
 let currentPlayTitle = "";  // titolo attualmente in riproduzione
@@ -75,6 +76,7 @@ const el = {
     refreshDownloadsBtn: document.getElementById("refresh-downloads-btn"),
     castBtn: document.getElementById("cast-btn"),
     headerSearchBtn: document.getElementById("header-search-btn"),
+    headerFavoritesBtn: document.getElementById("header-favorites-btn"),
     headerDownloadsBtn: document.getElementById("header-downloads-btn"),
     headerLibraryBtn: document.getElementById("header-library-btn"),
     prevTitleBtn: document.getElementById("prev-title-btn"),
@@ -88,6 +90,7 @@ const el = {
     // Domains
     domainsList: document.getElementById("domains-list"),
     testDomainsBtn: document.getElementById("test-domains-btn"),
+    manualDomainBtn: document.getElementById("manual-domain-btn"),
     sourceDomainInput: document.getElementById("source-domain-input"),
     addSourceDomainBtn: document.getElementById("add-source-domain-btn"),
     sourceDomainsList: document.getElementById("source-domains-list"),
@@ -154,6 +157,7 @@ async function init() {
     el.seasonSelect.addEventListener("change", loadSeasonEpisodes);
     
     if (el.testDomainsBtn) el.testDomainsBtn.addEventListener("click", testDomains);
+    if (el.manualDomainBtn) el.manualDomainBtn.addEventListener("click", updateDomainFromLink);
     if (el.addSourceDomainBtn) el.addSourceDomainBtn.addEventListener("click", addSourceDomain);
     if (el.sourceDomainInput) el.sourceDomainInput.addEventListener("keypress", (e) => { if (e.key === "Enter") addSourceDomain(); });
     if (el.refreshUpcomingBtn) el.refreshUpcomingBtn.addEventListener("click", fetchUpcoming);
@@ -168,7 +172,12 @@ async function init() {
         setTimeout(() => { if (el.urlInput) el.urlInput.focus(); }, 300);
     });
     if (el.headerLibraryBtn) el.headerLibraryBtn.addEventListener("click", () => {
-        if (el.libraryList) el.libraryList.scrollIntoView({ behavior: "smooth", block: "start" });
+        const target = document.querySelector("#library-list .cat-group") || el.libraryList;
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    if (el.headerFavoritesBtn) el.headerFavoritesBtn.addEventListener("click", () => {
+        const target = document.querySelector("#library-list .fav-block") || el.libraryList;
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
     });
     if (el.headerDownloadsBtn) el.headerDownloadsBtn.addEventListener("click", () => {
         refreshDownloads();
@@ -177,6 +186,7 @@ async function init() {
     window.addEventListener("scroll", () => {
         const hide = window.scrollY < 250;
         if (el.headerSearchBtn) el.headerSearchBtn.classList.toggle("hidden", hide);
+        if (el.headerFavoritesBtn) el.headerFavoritesBtn.classList.toggle("hidden", hide);
         if (el.headerLibraryBtn) el.headerLibraryBtn.classList.toggle("hidden", hide);
         if (el.headerDownloadsBtn) el.headerDownloadsBtn.classList.toggle("hidden", hide);
     });
@@ -1735,7 +1745,7 @@ function downloadGroupKey(group) {
 
 function buildDownloadFolderNode(meta, count, level) {
     const key = `dl:${level}:${downloadGroupKey(meta)}`;
-    if (!openDownloadGroups.has(key)) openDownloadGroups.add(key);
+    if (!touchedDownloadGroups.has(key)) openDownloadGroups.add(key);
     const wrap = document.createElement("div");
     wrap.className = `download-folder download-folder-${level}`;
     const head = document.createElement("div");
@@ -1758,8 +1768,9 @@ function buildDownloadFolderNode(meta, count, level) {
     body.className = "download-folder-body";
     body.classList.toggle("hidden", !openDownloadGroups.has(key));
     head.addEventListener("click", () => {
-        const open = body.classList.toggle("hidden");
-        if (open) openDownloadGroups.delete(key); else openDownloadGroups.add(key);
+        const nowHidden = body.classList.toggle("hidden");
+        touchedDownloadGroups.add(key);
+        if (nowHidden) openDownloadGroups.delete(key); else openDownloadGroups.add(key);
         toggle.textContent = body.classList.contains("hidden") ? "▸" : "▾";
     });
     wrap.appendChild(head);
@@ -1784,20 +1795,18 @@ function downloadPlacementFor(dl) {
         root = { id: cur.id, name: cur.name || "Cartella", cover: cur.cover || "" };
     }
     let sub = null;
-    if (root.id !== actual.id) {
+    const ep = parseEpisode(dl.title);
+    if (ep) {
+        const seriesInfo = (libraryCache || []).find(x => normName(x.name) === normName(ep.series));
+        sub = {
+            id: `series:${normName(ep.series)}`,
+            name: ep.series || (info && info.name) || "Serie",
+            cover: (seriesInfo && seriesInfo.cover) || (info && info.cover) || "",
+        };
+    } else if (root.id !== actual.id) {
         sub = actual;
-    } else {
-        const ep = parseEpisode(dl.title);
-        if (ep) {
-            const seriesInfo = (libraryCache || []).find(x => normName(x.name) === normName(ep.series));
-            sub = {
-                id: `series:${normName(ep.series)}`,
-                name: ep.series || (info && info.name) || "Serie",
-                cover: (seriesInfo && seriesInfo.cover) || (info && info.cover) || "",
-            };
-        } else if (info) {
-            sub = { id: `title:${info.key || normName(info.name)}`, name: info.name || dl.title, cover: info.cover || "" };
-        }
+    } else if (info) {
+        sub = { id: `title:${info.key || normName(info.name)}`, name: info.name || dl.title, cover: info.cover || "" };
     }
     return { root, sub };
 }
@@ -2133,8 +2142,12 @@ async function reorderFolder(id, beforeId) {
 async function reorderCombined(folderId, tokens, index, delta) {
     const j = index + delta;
     if (!tokens || j < 0 || j >= tokens.length) return;
-    const arr = tokens.slice();
-    [arr[index], arr[j]] = [arr[j], arr[index]];
+    const arr = allTokensForFolder(folderId, tokens);
+    const a = tokens[index], b = tokens[j];
+    const ai = arr.indexOf(a), bi = arr.indexOf(b);
+    if (ai < 0 || bi < 0) return;
+    arr.splice(ai, 1);
+    arr.splice(bi, 0, a);
     try {
         const r = await fetch("/api/folders/order", {
             method: "POST", headers: { "Content-Type": "application/json" },
@@ -2142,6 +2155,20 @@ async function reorderCombined(folderId, tokens, index, delta) {
         });
         if (r.ok) renderLibrary(await r.json());
     } catch (e) { showToast("Errore riordino"); }
+}
+
+function allTokensForFolder(folderId, fallbackTokens) {
+    const folders = (lastLibraryData && lastLibraryData.folders) || [];
+    const f = folders.find(x => x.id === folderId);
+    if (!f) return (fallbackTokens || []).slice();
+    const valid = new Set([]
+        .concat((f.items || []).map(it => it.key))
+        .concat(folders.filter(x => (x.parent || "") === folderId).map(x => "f:" + x.id)));
+    const out = [];
+    (f.order || []).forEach(t => { if (valid.has(t) && !out.includes(t)) out.push(t); });
+    valid.forEach(t => { if (!out.includes(t)) out.push(t); });
+    (fallbackTokens || []).forEach(t => { if (valid.has(t) && !out.includes(t)) out.push(t); });
+    return out;
 }
 
 // Drop di riordino combinato: sposta il token trascinato prima del target.
@@ -2152,7 +2179,7 @@ async function combinedDropReorder(folderId, tokens, targetToken, data) {
         : (data && data.src === "lib" ? data.key : null);
     if (!dragToken || dragToken === targetToken) return false;
     if (!tokens.includes(dragToken)) return false; // non appartiene a questa cartella
-    const arr = tokens.slice();
+    const arr = allTokensForFolder(folderId, tokens);
     arr.splice(arr.indexOf(dragToken), 1);
     const ti = arr.indexOf(targetToken);
     arr.splice(ti < 0 ? arr.length : ti, 0, dragToken);
@@ -2388,6 +2415,7 @@ function renderLibrary(data) {
     const scrollY = window.scrollY;  // keep the user's place across the rebuild
     const folders = (data && data.folders) || [];
     const unassigned = (data && data.unassigned) || [];
+    const customFilters = (data && data.custom_filters) || [];
     // de-duplicated list of every title (for search + favourites + modal star)
     const allTitles = [];
     const seen = new Set();
@@ -2452,7 +2480,8 @@ function renderLibrary(data) {
                         <option value="genere">Genere</option>
                         <option value="regista">Regista</option>
                         <option value="saga">Saga</option>
-                        ${f.kind && !["genere","regista","saga"].includes(f.kind) ? `<option value="${escapeHtml(f.kind)}">${escapeHtml(f.kind)}</option>` : ""}
+                        ${[...new Set([...(customFilters || []), f.kind].filter(k => k && !["genere","regista","saga"].includes(k)))]
+                            .map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join("")}
                         <option value="__custom__">+ Filtro personalizzato</option>
                     </select>
                     <button class="icon-btn subf-btn" title="Nuova sottocartella">📁+</button>
@@ -2551,11 +2580,9 @@ function renderLibrary(data) {
         } else {
             merged.forEach((e, i) => {
                 if (e.kind === "folder") {
-                    body.appendChild(buildFolderCard(e.c, true, defaultView ? { folderId: f.id, tokens: seqTokens, index: i } : null));
-                } else if (defaultView) {
-                    body.appendChild(titleRow(e.it, { folderId: f.id, combined: true, tokens: seqTokens, index: i }));
+                    body.appendChild(buildFolderCard(e.c, true, { folderId: f.id, tokens: seqTokens, index: i }));
                 } else {
-                    body.appendChild(titleRow(e.it, { folderId: f.id, noReorder: true }));
+                    body.appendChild(titleRow(e.it, { folderId: f.id, combined: true, tokens: seqTokens, index: i }));
                 }
             });
         }
@@ -2738,7 +2765,8 @@ function renderLibrary(data) {
     customFilterBtn.textContent = "+ Nuovo filtro";
     customFilterBtn.addEventListener("click", createCustomFilter);
     el.libraryList.appendChild(customFilterBtn);
-    [...new Set(rootFolders.map(f => f.kind || "").filter(k => k && !["saga", "regista", "genere"].includes(k)))]
+    [...new Set([...(customFilters || []), ...rootFolders.map(f => f.kind || "")]
+        .filter(k => k && !["saga", "regista", "genere"].includes(k)))]
         .sort()
         .forEach(k => el.libraryList.appendChild(buildCategoryGroup(k.charAt(0).toUpperCase() + k.slice(1), k, byKind(k), "▣")));
 
@@ -2834,12 +2862,10 @@ async function createFolder() {
 async function createCustomFilter() {
     const kind = prompt("Nome del nuovo filtro personalizzato:");
     if (kind === null || !kind.trim()) return;
-    const name = prompt(`Nome della prima raccolta per "${kind.trim()}":`, kind.trim());
-    if (name === null) return;
     try {
-        const r = await fetch("/api/folders/create", {
+        const r = await fetch("/api/filters/create", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: (name || kind).trim(), kind: kind.trim() })
+            body: JSON.stringify({ name: kind.trim() })
         });
         if (r.ok) {
             openGroups.add(kind.trim().toLowerCase());
@@ -3127,6 +3153,25 @@ async function testDomains() {
                                  : "Nessun dominio salvato è attivo: aggiornane uno.", 6000);
         }
     } catch (e) { showToast("Errore durante la verifica dei domini"); }
+}
+
+async function updateDomainFromLink() {
+    const value = prompt("Incolla un link valido di StreamingCommunity:");
+    if (value === null || !value.trim()) return;
+    try {
+        const r = await fetch("/api/settings", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ domain: value.trim() })
+        });
+        if (r.ok) {
+            const data = await r.json();
+            if (el.domainInput) el.domainInput.value = data.domain || "";
+            await fetchDomains();
+            showToast("Dominio StreamingCommunity aggiornato");
+        } else {
+            showToast("Link/dominio non valido");
+        }
+    } catch (e) { showToast("Errore aggiornamento dominio"); }
 }
 
 function updateModalStar() {

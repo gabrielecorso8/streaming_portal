@@ -7,6 +7,7 @@ let openFolders = new Set(); // Folder ids currently expanded (kept across re-re
 let openGroups = new Set(); // categorie (saga/regista/genere) espanse
 let openDownloadGroups = new Set(); // cartelle/sottocartelle download espanse
 let touchedDownloadGroups = new Set(); // ricorda quali gruppi download l'utente ha aperto/chiuso
+let localCustomFilters = new Set(); // filtri creati nella sessione corrente
 let librarySel = new Map(); // key -> item: multi-selezione titoli in libreria
 let playbackCtx = null;    // {folderId, items:[...], index}: contesto prev/next
 let currentPlayTitle = "";  // titolo attualmente in riproduzione
@@ -2376,7 +2377,7 @@ function renderLibrary(data) {
     const scrollY = window.scrollY;  // keep the user's place across the rebuild
     const folders = (data && data.folders) || [];
     const unassigned = (data && data.unassigned) || [];
-    const customFilters = (data && data.custom_filters) || [];
+    const customFilters = [...new Set([].concat((data && data.custom_filters) || [], [...localCustomFilters]))];
     // de-duplicated list of every title (for search + favourites + modal star)
     const allTitles = [];
     const seen = new Set();
@@ -2820,17 +2821,25 @@ async function createFolder() {
     } catch (e) { showToast("Errore creazione cartella"); }
 }
 
+function normalizeCustomFilterName(value) {
+    return String(value || "").trim().toLowerCase().replace(/\s+/g, " ").slice(0, 40);
+}
+
 async function createCustomFilter() {
-    const kind = prompt("Nome del nuovo filtro personalizzato:");
-    if (kind === null || !kind.trim()) return;
+    const raw = prompt("Nome del nuovo filtro personalizzato:");
+    const kind = normalizeCustomFilterName(raw);
+    if (raw === null || !kind) return;
     try {
         const r = await fetch("/api/filters/create", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: kind.trim() })
+            body: JSON.stringify({ name: kind })
         });
         if (r.ok) {
-            openGroups.add(kind.trim().toLowerCase());
-            renderLibrary(await r.json());
+            localCustomFilters.add(kind);
+            openGroups.add(kind);
+            const data = await r.json();
+            if (!((data.custom_filters || []).includes(kind))) data.custom_filters = [...(data.custom_filters || []), kind];
+            renderLibrary(data);
             showToast("Filtro personalizzato creato");
         } else {
             const e = await r.json().catch(() => ({}));

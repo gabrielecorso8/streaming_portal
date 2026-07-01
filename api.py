@@ -275,8 +275,11 @@ def load_settings():
     if data["domain"] and data["domain"] not in data["domains"]:
         data["domains"].append(data["domain"])
     data["source_domains"] = [normalize_source_domain(d) for d in data.get("source_domains", []) if normalize_source_domain(d)]
-    data["custom_filters"] = [re.sub(r"\s+", " ", str(x).strip().lower())[:40]
-                              for x in data.get("custom_filters", []) if str(x).strip()]
+    data["custom_filters"] = []
+    for x in data.get("custom_filters", []):
+        nm = normalize_filter_name(x)
+        if nm and nm not in data["custom_filters"]:
+            data["custom_filters"].append(nm)
     return data
 
 def save_settings(settings):
@@ -294,6 +297,13 @@ def remember_domain(domain):
     lst = SETTINGS.setdefault("domains", [])
     if domain not in lst:
         lst.append(domain)
+
+
+def normalize_filter_name(value):
+    name = re.sub(r"\s+", " ", str(value or "").strip().lower())[:40]
+    if not name or not re.match(r"^[\w\s'\-]+$", name, re.I):
+        return ""
+    return name
 
 
 def normalize_source_domain(value):
@@ -894,8 +904,8 @@ def remove_source_domain(payload: DomainPayload):
 
 @app.post("/api/filters/create")
 def create_custom_filter(payload: CustomFilterPayload):
-    name = re.sub(r"\s+", " ", (payload.name or "").strip().lower())[:40]
-    if not name or not re.match(r"^[\w\sàèéìòù'\-]*$", name, re.I):
+    name = normalize_filter_name(payload.name)
+    if not name:
         raise HTTPException(status_code=400, detail="Filtro non valido")
     if name in ("saga", "regista", "genere"):
         return _folders_payload()
@@ -1035,9 +1045,7 @@ def get_folders():
 @app.post("/api/folders/create")
 def create_folder(payload: FolderCreate):
     name = (payload.name or "").strip() or "Nuova cartella"
-    kind = re.sub(r"\s+", " ", (payload.kind or "").strip().lower())[:40]
-    if not re.match(r"^[\w\sàèéìòù'\-]*$", kind, re.I):
-        kind = ""
+    kind = normalize_filter_name(payload.kind)
     parent = (payload.parent or "").strip()
     if parent and not any(x["id"] == parent for x in _folders()):
         parent = ""
@@ -1269,8 +1277,8 @@ def set_folder_kind(payload: FolderKind):
     f = next((x for x in _folders() if x["id"] == payload.id), None)
     if not f:
         raise HTTPException(status_code=404, detail="Cartella non trovata")
-    kind = re.sub(r"\s+", " ", (payload.kind or "").strip().lower())[:40]
-    if not re.match(r"^[\w\sàèéìòù'\-]*$", kind, re.I):
+    kind = normalize_filter_name(payload.kind)
+    if (payload.kind or "").strip() and not kind:
         raise HTTPException(status_code=400, detail="Tipologia non valida")
     f["kind"] = kind
     save_settings(SETTINGS)

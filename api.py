@@ -301,7 +301,7 @@ def remember_domain(domain):
 
 def normalize_filter_name(value):
     name = re.sub(r"\s+", " ", str(value or "").strip().lower())[:40]
-    if not name or not re.match(r"^[\w\s'\-]+$", name, re.I):
+    if not name or re.search(r"[\x00-\x1f<>]", name):
         return ""
     return name
 

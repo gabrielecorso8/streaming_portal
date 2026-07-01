@@ -2836,13 +2836,17 @@ async function createFolder() {
 }
 
 function normalizeCustomFilterName(value) {
-    return String(value || "").trim().toLowerCase().replace(/\s+/g, " ").slice(0, 40);
+    return String(value || "").trim().toLowerCase().replace(/\s+/g, " ").replace(/[<>]/g, "").slice(0, 40);
 }
 
 async function createCustomFilter() {
     const raw = prompt("Nome del nuovo filtro personalizzato:");
+    if (raw === null) return;
     const kind = normalizeCustomFilterName(raw);
-    if (raw === null || !kind) return;
+    if (!kind) {
+        showToast("Inserisci un nome valido");
+        return;
+    }
     try {
         const r = await fetch("/api/filters/create", {
             method: "POST", headers: { "Content-Type": "application/json" },
@@ -2853,6 +2857,9 @@ async function createCustomFilter() {
             openGroups.add(kind);
             const data = await r.json();
             if (!((data.custom_filters || []).includes(kind))) data.custom_filters = [...(data.custom_filters || []), kind];
+            if (lastLibraryData) {
+                lastLibraryData.custom_filters = [...new Set([...(lastLibraryData.custom_filters || []), kind])];
+            }
             renderLibrary(data);
             showToast("Filtro personalizzato creato");
         } else {

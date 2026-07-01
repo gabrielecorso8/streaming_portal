@@ -937,7 +937,8 @@ video {
 
 .download-folder-body {
     display: flex;
-    flex-direction: column;
+    flex-flow: row wrap;
+    align-items: flex-start;
     gap: 6px;
 }
 
@@ -1354,3 +1355,28 @@ body {
 .dl-cover { width: 46px; height: 69px; flex: 0 0 auto; border-radius: 6px; object-fit: cover; aspect-ratio: auto; }
 .download-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .3rem; }
 .download-meta .download-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.download-item.poster-only {
+    width: 58px;
+    padding: 0;
+    gap: 0;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    cursor: pointer;
+}
+.download-item.poster-only .dl-cover {
+    width: 58px;
+    height: 87px;
+    border-radius: 7px;
+    box-shadow: 0 8px 18px rgba(0,0,0,.28);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.download-item.poster-only:hover .dl-cover,
+.download-item.poster-only:focus-visible .dl-cover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(0,0,0,.36);
+}
+.download-item.poster-only:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 3px;
+}

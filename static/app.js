@@ -1432,7 +1432,9 @@ function renderDownloads(downloads) {
     el.downloadsList.innerHTML = "";
     const buildDownloadItem = (dl) => {
         const item = document.createElement("div");
-        item.className = `download-item state-${dl.status}`;
+        const isActive = isActiveRow(dl);
+        const posterOnly = dl.status === "completed";
+        item.className = `download-item state-${dl.status}${posterOnly ? " poster-only" : ""}`;
 
         let statusText = dl.status;
         if (dl.status === "pending") statusText = "In attesa…";
@@ -1443,7 +1445,6 @@ function renderDownloads(downloads) {
         else if (dl.status === "failed") statusText = `Fallito: ${dl.error || "errore sconosciuto"}`;
         else if (dl.status === "cancelled") statusText = "Annullato";
 
-        const isActive = isActiveRow(dl);
         const showBar = isActive;
 
         const nextInfo = dl.status === "completed" ? nextTitleForDownload(dl) : null;
@@ -1475,26 +1476,40 @@ function renderDownloads(downloads) {
             ? `<img class="library-cover dl-cover" src="${escapeHtml(info.cover)}" alt="" loading="lazy">`
             : `<div class="library-cover placeholder dl-cover"></div>`;
         const typeBadge = info ? (info.type === "tv" ? "Serie" : (info.type === "movie" ? "Film" : "")) : "";
-        item.innerHTML = `
-            ${cover}
-            <div class="download-meta">
-                <span class="download-name" title="${escapeHtml(dl.file || dl.title || "")}">${escapeHtml(dl.title || "")}</span>
-                <span class="download-status status-${dl.status}">${statusText}${typeBadge ? ` \u00b7 ${typeBadge}` : ""}</span>
-                ${showBar ? `<div class="progress-container"><div class="progress-bar" style="width: ${dl.progress}%"></div></div>` : ""}
-            </div>
-            ${actions}
-        `;
+        item.title = dl.file || dl.title || "";
+        item.innerHTML = posterOnly
+            ? `${cover}`
+            : `
+                ${cover}
+                <div class="download-meta">
+                    <span class="download-name" title="${escapeHtml(dl.file || dl.title || "")}">${escapeHtml(dl.title || "")}</span>
+                    <span class="download-status status-${dl.status}">${statusText}${typeBadge ? ` \u00b7 ${typeBadge}` : ""}</span>
+                    ${showBar ? `<div class="progress-container"><div class="progress-bar" style="width: ${dl.progress}%"></div></div>` : ""}
+                </div>
+                ${actions}
+            `;
 
         if (dl.status === "completed") {
-            item.querySelector(".play-file-btn").addEventListener("click", () => playDownloaded(dl.id, dl.title, dl.key));
+            item.addEventListener("click", () => playDownloaded(dl.id, dl.title, dl.key));
+            item.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    playDownloaded(dl.id, dl.title, dl.key);
+                }
+            });
+            item.tabIndex = 0;
+            item.setAttribute("role", "button");
+            item.setAttribute("aria-label", dl.title ? `Riproduci ${dl.title}` : "Riproduci download");
             const nb = item.querySelector(".dl-next-btn");
             if (nb) nb.addEventListener("click", () => {
                 if (nextInfo && nextInfo.playId) playDownloaded(nextInfo.playId, nextInfo.name, nextInfo.key);
                 else if (nextInfo && nextInfo.isEpisode) downloadNextEpisode(nextInfo.series, nextInfo.season, nextInfo.episode);
                 else if (nextInfo) downloadTitles([{ key: nextInfo.key, name: nextInfo.name }]);
             });
-            item.querySelector(".open-file-btn").addEventListener("click", () => openDownloadFile(dl.id));
-            item.querySelector(".reveal-file-btn").addEventListener("click", () => revealDownloadFile(dl.id));
+            const openBtn = item.querySelector(".open-file-btn");
+            if (openBtn) openBtn.addEventListener("click", () => openDownloadFile(dl.id));
+            const revealBtn = item.querySelector(".reveal-file-btn");
+            if (revealBtn) revealBtn.addEventListener("click", () => revealDownloadFile(dl.id));
         } else if (isActive) {
             item.querySelector(".cancel-dl-btn").addEventListener("click", () => cancelDownload(dl.id));
         }
@@ -1707,7 +1722,6 @@ function downloadGroupKey(group) {
 
 function buildDownloadFolderNode(meta, count, level) {
     const key = `dl:${level}:${downloadGroupKey(meta)}`;
-    if (!touchedDownloadGroups.has(key)) openDownloadGroups.add(key);
     const wrap = document.createElement("div");
     wrap.className = `download-folder download-folder-${level}`;
     const head = document.createElement("div");

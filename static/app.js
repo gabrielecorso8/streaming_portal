@@ -87,6 +87,11 @@ const el = {
     // Domains
     domainsList: document.getElementById("domains-list"),
     testDomainsBtn: document.getElementById("test-domains-btn"),
+    sourceDomainInput: document.getElementById("source-domain-input"),
+    addSourceDomainBtn: document.getElementById("add-source-domain-btn"),
+    sourceDomainsList: document.getElementById("source-domains-list"),
+    upcomingList: document.getElementById("upcoming-list"),
+    refreshUpcomingBtn: document.getElementById("refresh-upcoming-btn"),
 
     // Library
     libraryList: document.getElementById("library-list"),
@@ -143,11 +148,14 @@ async function init() {
     el.closePlayerBtn.addEventListener("click", closePlayer);
     
     // Setup detail actions
-    el.streamMovieBtn.addEventListener("click", () => startStream(currentTitle.id, currentTitle.name));
+    if (el.streamMovieBtn) el.streamMovieBtn.addEventListener("click", () => startStream(currentTitle.id, currentTitle.name));
     el.downloadMovieBtn.addEventListener("click", () => triggerDownload(currentTitle.name, currentTitle.id));
     el.seasonSelect.addEventListener("change", loadSeasonEpisodes);
     
     if (el.testDomainsBtn) el.testDomainsBtn.addEventListener("click", testDomains);
+    if (el.addSourceDomainBtn) el.addSourceDomainBtn.addEventListener("click", addSourceDomain);
+    if (el.sourceDomainInput) el.sourceDomainInput.addEventListener("keypress", (e) => { if (e.key === "Enter") addSourceDomain(); });
+    if (el.refreshUpcomingBtn) el.refreshUpcomingBtn.addEventListener("click", fetchUpcoming);
     document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && el.playerSection && !el.playerSection.classList.contains("hidden")) closePlayer();
     });
@@ -205,6 +213,8 @@ async function init() {
     // Load the saved/recent titles library and the remembered domains
     fetchLibrary();
     fetchDomains();
+    fetchSourceDomains();
+    fetchUpcoming();
     setupCollapsibles();
     refreshLocalDownloads();
     if (el.videoPlayer) el.videoPlayer.addEventListener("timeupdate", checkNextBanner);
@@ -530,7 +540,7 @@ async function bulkSaveItems(items) {
         if (!it.id_and_slug) continue;
         await addToLibrary(it.url || "", {
             key: it.id_and_slug, name: it.name || "", cover: it.cover || "",
-            type: it.type || "", release_date: it.release_date || "", is_clone: false
+            type: it.type || "", release_date: it.release_date || "", is_clone: !!it.is_clone
         });
         keys.push(it.id_and_slug);
     }
@@ -628,6 +638,10 @@ function openSearchResult(item) {
         return;
     }
     lastTitleContext = item.name || "";
+    if (item.is_clone && item.url) {
+        resolveDirectUrl(item.url, item.name || "");
+        return;
+    }
     loadDetails(item.id_and_slug, item.url || "");
 }
 
@@ -638,7 +652,7 @@ async function saveSearchItem(item) {
     if (!item || !item.id_and_slug) { showToast("Titolo non valido"); return false; }
     await addToLibrary(item.url || "", {
         key: item.id_and_slug, name: item.name || "", cover: item.cover || "",
-        type: item.type || "", release_date: item.release_date || "", is_clone: false
+        type: item.type || "", release_date: item.release_date || "", is_clone: !!item.is_clone
     });
     return true;
 }
@@ -966,11 +980,7 @@ function renderEpisodes(episodes) {
         const duration = ep.duration ? `${ep.duration}m` : "";
         const plot = ep.plot ? ep.plot : "Nessuna trama disponibile.";
 
-        // Clone series episodes: download only (reliable); native: stream + download
-        const buttons = isClone
-            ? `<button class="secondary-btn download-ep-btn">Download</button>`
-            : `<button class="primary-btn stream-ep-btn">Stream</button>
-               <button class="secondary-btn download-ep-btn">Download</button>`;
+        const buttons = `<button class="primary-btn download-ep-btn">Scarica</button>`;
 
         item.innerHTML = `
             <div class="episode-header">
@@ -994,10 +1004,6 @@ function renderEpisodes(episodes) {
                 cloneEpisodeDownload(parseInt(season, 10), ep.number, fullEpName);
             });
         } else {
-            item.querySelector(".stream-ep-btn").addEventListener("click", () => {
-                closeModal();
-                startStream(currentTitle.id, fullEpName, ep.id);
-            });
             item.querySelector(".download-ep-btn").addEventListener("click", () => {
                 triggerDownload(fullEpName, currentTitle.id, ep.id);
             });
@@ -1412,11 +1418,32 @@ function renderDownloads(downloads) {
         return;
     }
 
-    // Attivi (più recenti prima) + file già presenti in /downloads
-    const ordered = [...downloads].reverse().concat(extra);
+    // Attivi in cima; completati raggruppati per cartella/libreria.
+    const allRows = [...downloads].reverse().concat(extra);
+    const ordered = allRows.slice().sort((a, b) => {
+        const aa = ["pending", "queued", "downloading", "merging"].includes(a.status);
+        const bb = ["pending", "queued", "downloading", "merging"].includes(b.status);
+        if (aa !== bb) return aa ? -1 : 1;
+        const ga = downloadGroupFor(a);
+        const gb = downloadGroupFor(b);
+        return ((ga && ga.name) || "").localeCompare((gb && gb.name) || "");
+    });
 
     el.downloadsList.innerHTML = "";
+    let lastGroup = "";
     ordered.forEach(dl => {
+        const group = dl.status === "completed" ? downloadGroupFor(dl) : null;
+        if (group && group.name !== lastGroup) {
+            const head = document.createElement("div");
+            head.className = "download-group-head";
+            const cover = `<div class="download-group-cover${group.cover ? "" : " placeholder"}"></div>`;
+            head.innerHTML = `${cover}<span>${escapeHtml(group.name)}</span>`;
+            if (group.cover) head.querySelector(".download-group-cover").style.backgroundImage = `url("${String(group.cover).replace(/"/g, "%22")}")`;
+            el.downloadsList.appendChild(head);
+            lastGroup = group.name;
+        } else if (!group) {
+            lastGroup = "";
+        }
         const item = document.createElement("div");
         item.className = `download-item state-${dl.status}`;
 
@@ -1435,9 +1462,9 @@ function renderDownloads(downloads) {
         const nextInfo = dl.status === "completed" ? nextTitleForDownload(dl) : null;
         let nextBtn = "";
         if (nextInfo) {
-            if (nextInfo.playId) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Riproduci: ${escapeHtml(nextInfo.name || "")}">▶ Prossimo</button>`;
-            else if (nextInfo.isEpisode && nextInfo.series) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Scarica il prossimo episodio">⬇ Scarica episodio ${nextInfo.episode + 1} stagione ${nextInfo.season}</button>`;
-            else if (!nextInfo.isEpisode && /^\d+-/.test(nextInfo.key || "")) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Scarica: ${escapeHtml(nextInfo.name || "")}">⬇ Scarica prossimo</button>`;
+            if (nextInfo.playId) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Riproduci: ${escapeHtml(nextInfo.name || "")}">Prossimo</button>`;
+            else if (nextInfo.isEpisode && nextInfo.series) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Scarica il seguente">Scarica il seguente</button>`;
+            else if (!nextInfo.isEpisode && /^\d+-/.test(nextInfo.key || "")) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Scarica: ${escapeHtml(nextInfo.name || "")}">Scarica il seguente</button>`;
         }
         const actions = dl.status === "completed"
             ? `<div class="download-actions">
@@ -1457,8 +1484,9 @@ function renderDownloads(downloads) {
             : "";
 
         const info = libInfoForDownload(dl);
+        const folderInfo = downloadGroupFor(dl);
         const cover = info && info.cover
-            ? `<img class="library-cover dl-cover" src="${info.cover}" alt="" loading="lazy">`
+            ? `<img class="library-cover dl-cover" src="${escapeHtml((folderInfo && folderInfo.cover) || info.cover)}" alt="" loading="lazy">`
             : `<div class="library-cover placeholder dl-cover"></div>`;
         const typeBadge = info ? (info.type === "tv" ? "Serie" : (info.type === "movie" ? "Film" : "")) : "";
         item.innerHTML = `
@@ -1582,6 +1610,41 @@ async function refreshDownloads() {
     showToast(`Trovati ${localDownloads.length} titoli scaricati in /downloads`);
 }
 
+async function fetchUpcoming() {
+    if (!el.upcomingList) return;
+    try {
+        const r = await fetch("/api/upcoming");
+        if (!r.ok) return;
+        renderUpcoming(await r.json());
+    } catch (e) {
+        el.upcomingList.innerHTML = '<div class="no-downloads">Impossibile aggiornare le uscite.</div>';
+    }
+}
+
+function formatReleaseDate(value) {
+    if (!value) return "";
+    const parts = String(value).split("-");
+    if (parts.length >= 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return value;
+}
+
+function renderUpcoming(items) {
+    if (!el.upcomingList) return;
+    const list = items || [];
+    if (!list.length) {
+        el.upcomingList.innerHTML = '<div class="no-downloads">Nessuna uscita futura trovata per ora.</div>';
+        return;
+    }
+    el.upcomingList.innerHTML = "";
+    list.forEach(it => {
+        const row = document.createElement("div");
+        row.className = "upcoming-item";
+        const cover = it.cover ? `<img class="library-cover" src="${escapeHtml(it.cover)}" alt="" loading="lazy">` : `<div class="library-cover placeholder"></div>`;
+        row.innerHTML = `${cover}<div class="upcoming-meta"><span class="upcoming-title">${escapeHtml(it.title || "Titolo")}</span><span class="upcoming-relation">${escapeHtml(it.relation || "Titolo collegato")}</span></div><span class="upcoming-date">${escapeHtml(formatReleaseDate(it.date || ""))}</span>`;
+        el.upcomingList.appendChild(row);
+    });
+}
+
 // --- Riconoscimento episodi (serie) dai nomi file --------------------------
 function parseEpisode(name) {
     const s = name || "";
@@ -1643,6 +1706,23 @@ function libKeyForName(name) {
     if (!n) return "";
     const hit = (libraryCache || []).find(it => normName(it.name) === n);
     return hit ? hit.key : "";
+}
+
+function downloadGroupFor(dl) {
+    if (!lastLibraryData || !dl) return null;
+    const info = libInfoForDownload(dl);
+    const key = (info && info.key) || dl.key || libKeyForName(dl.title);
+    const ep = parseEpisode(dl.title);
+    const seriesNorm = ep ? normName(ep.series) : "";
+    for (const f of (lastLibraryData.folders || [])) {
+        const items = f.items || [];
+        const byKey = key && items.some(it => it.key === key);
+        const bySeries = seriesNorm && items.some(it => normName(it.name) === seriesNorm);
+        if (byKey || bySeries) {
+            return { id: f.id, name: f.name || "Cartella", cover: f.cover || ((items[0] || {}).cover || "") };
+        }
+    }
+    return info ? { id: "", name: "Titoli singoli", cover: "" } : null;
 }
 
 function libInfoForDownload(dl) {
@@ -2278,6 +2358,8 @@ function renderLibrary(data) {
                         <option value="genere">Genere</option>
                         <option value="regista">Regista</option>
                         <option value="saga">Saga</option>
+                        ${f.kind && !["genere","regista","saga"].includes(f.kind) ? `<option value="${escapeHtml(f.kind)}">${escapeHtml(f.kind)}</option>` : ""}
+                        <option value="__custom__">+ Filtro personalizzato</option>
                     </select>
                     <button class="icon-btn subf-btn" title="Nuova sottocartella">📁+</button>
                     <button class="icon-btn adddom-btn" title="Aggiungi titoli dalla libreria">➕</button>
@@ -2404,7 +2486,16 @@ function renderLibrary(data) {
         const kindSel = card.querySelector(".folder-kind-select");
         kindSel.value = f.kind || "";
         kindSel.addEventListener("click", (e) => e.stopPropagation());
-        kindSel.addEventListener("change", (e) => { e.stopPropagation(); setFolderKind(f.id, e.target.value); });
+        kindSel.addEventListener("change", (e) => {
+            e.stopPropagation();
+            if (e.target.value === "__custom__") {
+                const name = prompt("Nome del nuovo filtro:", f.kind || "");
+                if (name && name.trim()) setFolderKind(f.id, name.trim());
+                else e.target.value = f.kind || "";
+            } else {
+                setFolderKind(f.id, e.target.value);
+            }
+        });
         const parSel = card.querySelector(".folder-parent-select");
         parSel.addEventListener("click", (e) => e.stopPropagation());
         parSel.addEventListener("change", (e) => { e.stopPropagation(); moveFolderParent(f.id, e.target.value); });
@@ -2548,8 +2639,11 @@ function renderLibrary(data) {
     const byKind = (k) => rootFolders.filter(f => (f.kind || "") === k);
     [["Saghe", "saga", "🎬"], ["Registi", "regista", "🎥"], ["Generi", "genere", "🏷️"]]
         .forEach(([label, key, icon]) => el.libraryList.appendChild(buildCategoryGroup(label, key, byKind(key), icon)));
+    [...new Set(rootFolders.map(f => f.kind || "").filter(k => k && !["saga", "regista", "genere"].includes(k)))]
+        .sort()
+        .forEach(k => el.libraryList.appendChild(buildCategoryGroup(k.charAt(0).toUpperCase() + k.slice(1), k, byKind(k), "▣")));
 
-    const uncategorized = rootFolders.filter(f => !["saga", "regista", "genere"].includes(f.kind || ""));
+    const uncategorized = rootFolders.filter(f => !(f.kind || ""));
     if (uncategorized.length) {
         const restTitle = document.createElement("div");
         restTitle.className = "domains-subtitle lib-rest-title";
@@ -2853,6 +2947,52 @@ async function removeDomain(domain) {
         const r = await fetch("/api/domains/remove", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ domain }) });
         if (r.ok) await fetchDomains();
     } catch (e) { showToast("Errore rimozione dominio"); }
+}
+
+async function fetchSourceDomains() {
+    if (!el.sourceDomainsList) return;
+    try {
+        const r = await fetch("/api/source-domains");
+        if (r.ok) renderSourceDomains(await r.json());
+    } catch (e) {}
+}
+
+function renderSourceDomains(data) {
+    if (!el.sourceDomainsList) return;
+    const list = (data && data.domains) || [];
+    el.sourceDomainsList.innerHTML = "";
+    if (!list.length) {
+        el.sourceDomainsList.innerHTML = '<div class="no-downloads">Aggiungi qui domini/cataloghi compatibili per anime o titoli mancanti.</div>';
+        return;
+    }
+    list.forEach(domain => {
+        const row = document.createElement("div");
+        row.className = "domain-item";
+        row.innerHTML = `<span class="domain-dot unknown"></span><span class="domain-name">${escapeHtml(domain)}</span><span class="domain-tag">fonte extra</span><div class="domain-actions"><button class="icon-btn del-source-btn" title="Rimuovi">✕</button></div>`;
+        row.querySelector(".del-source-btn").addEventListener("click", () => removeSourceDomain(domain));
+        el.sourceDomainsList.appendChild(row);
+    });
+}
+
+async function addSourceDomain() {
+    const domain = (el.sourceDomainInput && el.sourceDomainInput.value || "").trim();
+    if (!domain) return;
+    try {
+        const r = await fetch("/api/source-domains/add", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ domain }) });
+        if (r.ok) {
+            if (el.sourceDomainInput) el.sourceDomainInput.value = "";
+            renderSourceDomains(await r.json());
+            showToast("Fonte extra aggiunta");
+        } else showToast("Fonte non valida");
+    } catch (e) { showToast("Errore aggiunta fonte"); }
+}
+
+async function removeSourceDomain(domain) {
+    if (!confirm(`Rimuovere la fonte "${domain}"?`)) return;
+    try {
+        const r = await fetch("/api/source-domains/remove", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ domain }) });
+        if (r.ok) renderSourceDomains(await r.json());
+    } catch (e) { showToast("Errore rimozione fonte"); }
 }
 
 async function testDomains() {

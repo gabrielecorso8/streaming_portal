@@ -9,6 +9,7 @@ import threading
 import urllib.parse
 import ipaddress
 import uuid
+from datetime import date
 import requests
 import urllib3
 import m3u8
@@ -274,6 +275,7 @@ def load_settings():
     # Make sure the current domain is part of the remembered list.
     if data["domain"] and data["domain"] not in data["domains"]:
         data["domains"].append(data["domain"])
+    data["source_domains"] = [normalize_source_domain(d) for d in data.get("source_domains", []) if normalize_source_domain(d)]
     return data
 
 def save_settings(settings):
@@ -291,6 +293,35 @@ def remember_domain(domain):
     lst = SETTINGS.setdefault("domains", [])
     if domain not in lst:
         lst.append(domain)
+
+
+def normalize_source_domain(value):
+    """Domains for compatible/backup catalogues, kept separate from the active
+    StreamingCommunity host so changing SC never damages the user's library."""
+    value = (value or "").strip()
+    if not value:
+        return ""
+    if "://" in value:
+        value = urllib.parse.urlparse(value).netloc or value
+    return value.strip().strip("/").lower()
+
+
+def refresh_library_urls_for_domain():
+    """Persist fresh URLs for native SC titles after every domain change.
+    The stable key remains the source of truth, so this is a safety sync for
+    stored JSON and old UI reads, not a destructive migration."""
+    changed = False
+    base = get_base_url()
+    for e in LIBRARY:
+        key = e.get("key") or ""
+        if re.match(r"^\d+-[\w-]+$", key):
+            fresh = f"{base}/it/titles/{key}"
+            if e.get("url") != fresh:
+                e["url"] = fresh
+                changed = True
+    if changed:
+        save_library(LIBRARY)
+    return changed
 
 
 # In-memory liveness status of remembered domains: {domain: bool}. Refreshed at
@@ -349,6 +380,7 @@ def health_check_domains(auto_discover=False):
     if active:
         SETTINGS["domain"] = active
         save_settings(SETTINGS)
+        refresh_library_urls_for_domain()
         print(f"[+] Remembered domain attivo: {active}")
     elif auto_discover:
         discovered = detect_active_domain()
@@ -358,6 +390,7 @@ def health_check_domains(auto_discover=False):
             DOMAIN_STATUS[discovered] = True
             SETTINGS["domain"] = discovered
             save_settings(SETTINGS)
+            refresh_library_urls_for_domain()
             print(f"[+] Dominio auto-rilevato: {discovered}")
         else:
             print("[!] Nessun dominio attivo trovato automaticamente.")
@@ -767,6 +800,7 @@ def update_settings(payload: SettingsUpdate):
         SETTINGS["domain"] = d
         remember_domain(d)
         DOMAIN_STATUS[d] = test_domain_alive(d)
+        refresh_library_urls_for_domain()
     if payload.proxy is not None:
         SETTINGS["proxy"] = payload.proxy.strip()
         apply_proxies()
@@ -805,6 +839,7 @@ def add_domain(payload: DomainPayload):
     DOMAIN_STATUS[d] = alive
     if alive:
         SETTINGS["domain"] = d  # switch to it if it works
+        refresh_library_urls_for_domain()
     save_settings(SETTINGS)
     return list_domains()
 
@@ -819,8 +854,37 @@ def remove_domain(payload: DomainPayload):
         nxt = next((x for x in SETTINGS["domains"] if DOMAIN_STATUS.get(x)), None) \
             or (SETTINGS["domains"][0] if SETTINGS["domains"] else "")
         SETTINGS["domain"] = nxt
+        refresh_library_urls_for_domain()
     save_settings(SETTINGS)
     return list_domains()
+
+
+@app.get("/api/source-domains")
+def list_source_domains():
+    """Extra compatible catalogues used for missing titles/anime.
+    They do not replace the active StreamingCommunity domain."""
+    domains = list(SETTINGS.get("source_domains") or [])
+    return {"domains": domains}
+
+
+@app.post("/api/source-domains/add")
+def add_source_domain(payload: DomainPayload):
+    d = normalize_source_domain(payload.domain)
+    if not d:
+        raise HTTPException(status_code=400, detail="Dominio vuoto")
+    lst = SETTINGS.setdefault("source_domains", [])
+    if d not in lst:
+        lst.append(d)
+        save_settings(SETTINGS)
+    return list_source_domains()
+
+
+@app.post("/api/source-domains/remove")
+def remove_source_domain(payload: DomainPayload):
+    d = normalize_source_domain(payload.domain)
+    SETTINGS["source_domains"] = [x for x in SETTINGS.get("source_domains", []) if x != d]
+    save_settings(SETTINGS)
+    return list_source_domains()
 
 
 @app.post("/api/domain/refresh")
@@ -835,6 +899,7 @@ def refresh_domain():
         remember_domain(domain)
         DOMAIN_STATUS[domain] = True
         save_settings(SETTINGS)
+        refresh_library_urls_for_domain()
         return {"found": True, "domain": domain}
     return {"found": False, "domain": SETTINGS.get("domain")}
 
@@ -942,6 +1007,62 @@ def _folders_payload():
     return {"folders": folders_out, "unassigned": unassigned}
 
 
+UPCOMING_SEEDS = [
+    {
+        "match": ["anelli del potere", "terra di mezzo", "signore degli anelli"],
+        "title": "Gli Anelli del Potere - Stagione 3",
+        "date": "2026-11-11",
+        "relation": "Serie collegata alla Terra di Mezzo",
+    },
+    {
+        "match": ["christopher nolan", "nolan", "oppenheimer", "interstellar", "inception"],
+        "title": "The Odyssey (Christopher Nolan)",
+        "date": "2026-07-16",
+        "relation": "Nuovo film collegato al regista",
+    },
+]
+
+
+def _norm_text(value):
+    return re.sub(r"\s+", " ", (value or "").lower()).strip()
+
+
+@app.get("/api/upcoming")
+def get_upcoming():
+    """Upcoming sequels/connected titles inferred from saved library/folders.
+    Without external API keys this uses future dates already stored in the
+    library plus a local curated seed list for known connected releases."""
+    today = date.today().isoformat()
+    hay = []
+    for e in LIBRARY:
+        hay.append(_norm_text(e.get("name")))
+    for f in _folders():
+        hay.append(_norm_text(f.get("name")))
+    joined = " | ".join(x for x in hay if x)
+    out = []
+    seen = set()
+    for e in LIBRARY:
+        rd = (e.get("release_date") or "").strip()
+        if rd and rd >= today:
+            key = (e.get("key") or e.get("name") or "") + rd
+            seen.add(key)
+            out.append({
+                "title": e.get("name") or "Titolo",
+                "date": rd,
+                "cover": e.get("cover", ""),
+                "relation": "Gia' presente in libreria",
+                "key": e.get("key", ""),
+            })
+    for seed in UPCOMING_SEEDS:
+        if any(m in joined for m in seed["match"]):
+            key = seed["title"] + seed["date"]
+            if key not in seen and seed["date"] >= today:
+                out.append(dict(seed))
+                seen.add(key)
+    out.sort(key=lambda x: x.get("date") or "9999")
+    return out
+
+
 @app.get("/api/folders")
 def get_folders():
     return _folders_payload()
@@ -950,8 +1071,8 @@ def get_folders():
 @app.post("/api/folders/create")
 def create_folder(payload: FolderCreate):
     name = (payload.name or "").strip() or "Nuova cartella"
-    kind = (payload.kind or "").strip().lower()
-    if kind not in ("", "genere", "regista", "saga"):
+    kind = re.sub(r"\s+", " ", (payload.kind or "").strip().lower())[:40]
+    if not re.match(r"^[\w\sàèéìòù'\-]*$", kind, re.I):
         kind = ""
     parent = (payload.parent or "").strip()
     if parent and not any(x["id"] == parent for x in _folders()):
@@ -1176,7 +1297,7 @@ def set_folder_parent(payload: FolderParent):
 
 class FolderKind(BaseModel):
     id: str
-    kind: str  # "" | "genere" | "regista" | "saga"
+    kind: str  # empty, built-in kind, or a custom user filter
 
 
 @app.post("/api/folders/kind")
@@ -1184,8 +1305,8 @@ def set_folder_kind(payload: FolderKind):
     f = next((x for x in _folders() if x["id"] == payload.id), None)
     if not f:
         raise HTTPException(status_code=404, detail="Cartella non trovata")
-    kind = (payload.kind or "").strip().lower()
-    if kind not in ("", "genere", "regista", "saga"):
+    kind = re.sub(r"\s+", " ", (payload.kind or "").strip().lower())[:40]
+    if not re.match(r"^[\w\sàèéìòù'\-]*$", kind, re.I):
         raise HTTPException(status_code=400, detail="Tipologia non valida")
     f["kind"] = kind
     save_settings(SETTINGS)
@@ -1255,6 +1376,66 @@ def search_legacy(q: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def search_source_domain(domain, q, limit=12):
+    """Best-effort HTML search for compatible clone catalogues.
+    It is intentionally generic: users can add a domain for anime/missing films
+    without coupling it to the rotating StreamingCommunity host."""
+    host = normalize_source_domain(domain)
+    if not host:
+        return []
+    query = urllib.parse.quote(q)
+    candidates = [
+        f"https://{host}/?s={query}",
+        f"https://{host}/search?q={query}",
+        f"https://{host}/?story={query}&do=search&subaction=search",
+    ]
+    out, seen = [], set()
+    for url in candidates:
+        try:
+            resp = session.get(url, headers=get_headers(), timeout=8, verify=False)
+            if resp.status_code != 200 or any(m in resp.text.lower() for m in BLOCK_MARKERS):
+                continue
+            soup = BeautifulSoup(resp.text, "lxml")
+            for a in soup.find_all("a", href=True):
+                href = urllib.parse.urljoin(url, a.get("href"))
+                if host not in urllib.parse.urlparse(href).netloc.lower():
+                    continue
+                if not re.search(r"(title|film|serie|anime|stream|guarda|watch|\.html)", href, re.I):
+                    continue
+                name = " ".join(a.get_text(" ", strip=True).split())
+                if len(name) < 2 or len(name) > 90:
+                    title_attr = a.get("title") or ""
+                    name = " ".join(title_attr.split())
+                if not name or href in seen:
+                    continue
+                img = a.find("img")
+                cover = ""
+                if img:
+                    cover = img.get("data-src") or img.get("src") or ""
+                    if cover:
+                        cover = urllib.parse.urljoin(url, cover)
+                seen.add(href)
+                out.append({
+                    "id": "",
+                    "name": name,
+                    "slug": "",
+                    "id_and_slug": f"clone-{hashlib.md5(href.encode('utf-8')).hexdigest()[:12]}",
+                    "type": "",
+                    "score": None,
+                    "release_date": "",
+                    "genres": [],
+                    "cover": cover,
+                    "url": href,
+                    "is_clone": True,
+                    "source": host,
+                })
+                if len(out) >= limit:
+                    return out
+        except Exception:
+            continue
+    return out
 
 
 @app.get("/api/search")
@@ -1331,6 +1512,9 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None, type
             results.sort(key=lambda x: x.get("release_date") or "", reverse=True)
         elif sort == "oldest":
             results.sort(key=lambda x: x.get("release_date") or "9999")
+        if not wanted_genre:
+            for d in SETTINGS.get("source_domains", []):
+                results.extend(search_source_domain(d, q))
         return results
     except HTTPException:
         raise
@@ -1625,7 +1809,7 @@ def resolve_url(payload: ResolveUrlRequest):
             plot=("Video ospitato su VidxGo. Se l'estrazione automatica fallisce, "
                   "puoi incollare direttamente un link .m3u8/.mp4."),
         )
-        resp_obj["id_and_slug"] = f"vidxgo-{uuid.uuid4().hex[:8]}"
+        resp_obj["id_and_slug"] = f"vidxgo-{hashlib.md5(url.encode('utf-8')).hexdigest()[:12]}"
         return resp_obj
 
     # Parse query parameters to extract episode_id
@@ -1715,7 +1899,7 @@ def resolve_url(payload: ResolveUrlRequest):
                     cover=cover,
                     plot=plot or "Nessuna descrizione disponibile.",
                 )
-                resp_obj["id_and_slug"] = f"clone-{uuid.uuid4().hex[:8]}"
+                resp_obj["id_and_slug"] = f"clone-{hashlib.md5(url.encode('utf-8')).hexdigest()[:12]}"
                 return resp_obj
         except Exception as e:
             print(f"[-] Error parsing clone: {e}")

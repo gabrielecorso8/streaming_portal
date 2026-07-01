@@ -181,6 +181,24 @@
             </div>
         </section>
 
+        <!-- Upcoming releases inferred from the library -->
+        <section class="downloads-section card glass collapsible" id="upcoming-section">
+            <div class="downloads-header tool-toggle">
+                <h2>Uscite in arrivo</h2>
+                <div class="header-actions">
+                    <button id="refresh-upcoming-btn" class="secondary-btn small-btn" title="Aggiorna le uscite collegate alla libreria">Aggiorna</button>
+                    <button class="collapse-btn icon-btn" type="button" title="Espandi/Comprimi">
+                        <svg class="chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="tool-body">
+                <div id="upcoming-list" class="upcoming-list">
+                    <div class="no-downloads">Nessuna uscita futura trovata per ora.</div>
+                </div>
+            </div>
+        </section>
+
         <!-- Downloads Management Section -->
         <section class="downloads-section card glass">
             <div class="downloads-header">
@@ -216,6 +234,12 @@
                 <div id="domains-list" class="domains-list">
                     <div class="no-downloads">Nessun dominio salvato. Inseriscine uno nel campo in alto.</div>
                 </div>
+                <div class="domains-subtitle">Fonti extra per titoli mancanti</div>
+                <div class="source-add-row">
+                    <input type="text" id="source-domain-input" placeholder="dominio anime/catalogo compatibile">
+                    <button id="add-source-domain-btn" class="secondary-btn small-btn">Aggiungi fonte</button>
+                </div>
+                <div id="source-domains-list" class="domains-list"></div>
             </div>
         </section>
     </main>
@@ -241,10 +265,7 @@
 
                     <!-- Content actions (Movies) -->
                     <div id="movie-actions" class="actions-group hidden">
-                        <button id="stream-movie-btn" class="primary-btn">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Riproduci
-                        </button>
-                        <button id="download-movie-btn" class="secondary-btn">
+                        <button id="download-movie-btn" class="primary-btn">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Scarica
                         </button>
                     </div>
@@ -270,5 +291,3 @@
     <script src="app.js?v=38"></script>
 </body>
 </html>
-
-

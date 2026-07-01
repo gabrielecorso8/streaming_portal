@@ -858,6 +858,32 @@ video {
     margin-top: 0.25rem;
 }
 
+.download-group-head {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    margin: 1rem 0 .25rem;
+    padding: .5rem .65rem;
+    border-radius: 10px;
+    background: rgba(139, 92, 246, .12);
+    border: 1px solid rgba(139, 92, 246, .22);
+    font-weight: 700;
+}
+
+.download-group-cover {
+    width: 30px;
+    height: 42px;
+    border-radius: 5px;
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(255,255,255,.08);
+    flex: 0 0 auto;
+}
+
+.download-group-cover.placeholder::after {
+    content: "";
+}
+
 .download-item {
     transition: border-color var(--transition-fast), background var(--transition-fast);
 }
@@ -920,6 +946,59 @@ video {
 .domain-tag { font-size: .76rem; opacity: .6; flex: 0 0 auto; }
 .domain-actions { display: flex; gap: 4px; flex: 0 0 auto; }
 .domain-actions .icon-btn { font-size: .95rem; line-height: 1; padding: 5px 8px; }
+
+.source-add-row {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    margin-bottom: .6rem;
+}
+
+.source-add-row input {
+    min-width: 0;
+}
+
+.upcoming-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.upcoming-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 10px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.07);
+}
+
+.upcoming-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.upcoming-title {
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.upcoming-relation {
+    font-size: .78rem;
+    opacity: .65;
+}
+
+.upcoming-date {
+    color: var(--primary-hover);
+    font-weight: 800;
+    white-space: nowrap;
+}
 
 /* --- Favourite button inside the title modal ---------------------------- */
 .fav-modal-btn {

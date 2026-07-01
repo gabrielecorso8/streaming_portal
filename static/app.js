@@ -4,6 +4,17 @@ let lastTitleContext = ""; // Name of the title being opened (for domain-error m
 let currentLibKey = "";    // Library key of the title currently shown in the modal
 let libraryCache = [];     // Last known library list (to read favourite state)
 let openFolders = new Set(); // Folder ids currently expanded (kept across re-renders)
+let openGroups = new Set(); // categorie (saga/regista/genere) espanse
+let librarySel = new Map(); // key -> item: multi-selezione titoli in libreria
+let playbackCtx = null;    // {folderId, items:[...], index}: contesto prev/next
+let currentPlayTitle = "";  // titolo attualmente in riproduzione
+let downloadedKeys = new Set(); // chiavi dei titoli gia' scaricati
+let downloadByKey = {};    // key -> download_id (completati)
+let localByName = {};      // nome-normalizzato -> id file locale (/downloads)
+let localFiles = [];       // [{id,name,file}] file in /downloads
+let localDownloads = [];   // voci 'completate' dai file locali (per la lista download)
+let _bannerDismissed = false; // l'utente ha chiuso il banner 'prossimo'
+let _bannerReshown = false;   // gia' riproposto a 3/4
 let librarySearch = "";    // current library search query
 let lastLibraryData = null; // last folders payload (to re-render without refetch)
 let searchAll = [];        // all results from the last search (for pagination)
@@ -60,7 +71,18 @@ const el = {
     iframePlayer: document.getElementById("iframe-player"),
     playingTitle: document.getElementById("playing-title"),
     qualitySelect: document.getElementById("quality-select"),
+    refreshDownloadsBtn: document.getElementById("refresh-downloads-btn"),
+    castBtn: document.getElementById("cast-btn"),
+    headerSearchBtn: document.getElementById("header-search-btn"),
+    headerDownloadsBtn: document.getElementById("header-downloads-btn"),
+    headerLibraryBtn: document.getElementById("header-library-btn"),
+    prevTitleBtn: document.getElementById("prev-title-btn"),
+    nextTitleBtn: document.getElementById("next-title-btn"),
+    nextBanner: document.getElementById("next-banner"),
+    audioSelect: document.getElementById("audio-select"),
+    audioLabel: document.getElementById("audio-label"),
     qualityBar: document.querySelector(".player-controls-bar"),
+    qualityLabel: document.querySelector('label[for="quality-select"]'),
     
     // Domains
     domainsList: document.getElementById("domains-list"),
@@ -126,6 +148,37 @@ async function init() {
     el.seasonSelect.addEventListener("change", loadSeasonEpisodes);
     
     if (el.testDomainsBtn) el.testDomainsBtn.addEventListener("click", testDomains);
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && el.playerSection && !el.playerSection.classList.contains("hidden")) closePlayer();
+    });
+    if (el.refreshDownloadsBtn) el.refreshDownloadsBtn.addEventListener("click", refreshDownloads);
+    if (el.castBtn) el.castBtn.addEventListener("click", castToTV);
+    if (el.videoPlayer && "disableRemotePlayback" in el.videoPlayer) el.videoPlayer.disableRemotePlayback = false;
+    if (el.headerSearchBtn) el.headerSearchBtn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        setTimeout(() => { if (el.urlInput) el.urlInput.focus(); }, 300);
+    });
+    if (el.headerLibraryBtn) el.headerLibraryBtn.addEventListener("click", () => {
+        if (el.libraryList) el.libraryList.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    if (el.headerDownloadsBtn) el.headerDownloadsBtn.addEventListener("click", () => {
+        refreshDownloads();
+        if (el.downloadsList) el.downloadsList.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    window.addEventListener("scroll", () => {
+        const hide = window.scrollY < 250;
+        if (el.headerSearchBtn) el.headerSearchBtn.classList.toggle("hidden", hide);
+        if (el.headerLibraryBtn) el.headerLibraryBtn.classList.toggle("hidden", hide);
+        if (el.headerDownloadsBtn) el.headerDownloadsBtn.classList.toggle("hidden", hide);
+    });
+    if (el.prevTitleBtn) el.prevTitleBtn.addEventListener("click", () => navigatePlayback(-1));
+    if (el.nextTitleBtn) el.nextTitleBtn.addEventListener("click", () => navigatePlayback(1));
+    const logo = document.querySelector(".logo-container");
+    if (logo) {
+        logo.style.cursor = "pointer";
+        logo.title = "Ricarica SC Portal";
+        logo.addEventListener("click", () => location.reload());
+    }
     if (el.librarySearch) el.librarySearch.addEventListener("input", () => {
         librarySearch = el.librarySearch.value;
         if (lastLibraryData) renderLibrary(lastLibraryData);
@@ -153,6 +206,12 @@ async function init() {
     fetchLibrary();
     fetchDomains();
     setupCollapsibles();
+    refreshLocalDownloads();
+    if (el.videoPlayer) el.videoPlayer.addEventListener("timeupdate", checkNextBanner);
+    if (el.videoPlayer) el.videoPlayer.addEventListener("ended", () => {
+        const nx = currentNextItem();
+        if (nx && getPlayableId(nx)) navigatePlayback(1);
+    });
 }
 
 async function updateSettings() {
@@ -984,54 +1043,161 @@ function closeModal() {
     el.detailsModal.classList.add("hidden");
 }
 
-// 5. Streaming Player
+// 5. Streaming Player ---------------------------------------------------------
+let streamReloadAttempts = 0;
+let fragErrCount = 0;
+let netRetryCount = 0;
+
+function buildHls() {
+    return new Hls({
+        manifestLoadingMaxRetry: 4, manifestLoadingRetryDelay: 800,
+        levelLoadingMaxRetry: 4, levelLoadingRetryDelay: 800,
+        fragLoadingMaxRetry: 6, fragLoadingRetryDelay: 800,
+        maxBufferLength: 30, maxMaxBufferLength: 90, enableWorker: true,
+    });
+}
+
+function populateQuality() {
+    if (!activeHls || !el.qualitySelect) return;
+    const levels = activeHls.levels || [];
+    el.qualitySelect.innerHTML = "";
+    const auto = document.createElement("option");
+    auto.value = "-1"; auto.textContent = "Auto";
+    el.qualitySelect.appendChild(auto);
+    levels.forEach((lv, i) => {
+        const o = document.createElement("option");
+        o.value = String(i);
+        o.textContent = lv.height ? `${lv.height}p` : `${Math.round((lv.bitrate || 0) / 1000)}k`;
+        el.qualitySelect.appendChild(o);
+    });
+    el.qualitySelect.value = String(activeHls.currentLevel);
+    el.qualitySelect.onchange = () => { activeHls.currentLevel = parseInt(el.qualitySelect.value, 10); };
+    if (el.qualityBar) el.qualityBar.classList.remove("hidden");
+    setQualityControls(true);
+}
+
+function populateAudio() {
+    if (!activeHls || !el.audioSelect) return;
+    const tracks = activeHls.audioTracks || [];
+    const show = tracks.length > 1;
+    el.audioSelect.classList.toggle("hidden", !show);
+    if (el.audioLabel) el.audioLabel.classList.toggle("hidden", !show);
+    if (!show) return;
+    el.audioSelect.innerHTML = "";
+    tracks.forEach((t, i) => {
+        const o = document.createElement("option");
+        o.value = String(i);
+        o.textContent = t.name || t.lang || `Traccia ${i + 1}`;
+        el.audioSelect.appendChild(o);
+    });
+    el.audioSelect.value = String(activeHls.audioTrack);
+    el.audioSelect.onchange = () => { activeHls.audioTrack = parseInt(el.audioSelect.value, 10); };
+}
+
+function handleHlsError(data, onRefetch) {
+    if (!data) return;
+    if (!data.fatal) {
+        if (data.details === "fragLoadError" || data.details === "keyLoadError" || data.details === "fragParsingError") {
+            fragErrCount++;
+            if (fragErrCount >= 5 && onRefetch) { fragErrCount = 0; onRefetch(); }
+        }
+        return;
+    }
+    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        if (netRetryCount < 2 && activeHls) { netRetryCount++; try { activeHls.startLoad(); } catch (e) {} }
+        else if (onRefetch) { netRetryCount = 0; onRefetch(); }
+    } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+        try { activeHls.recoverMediaError(); } catch (e) { if (onRefetch) onRefetch(); }
+    } else if (onRefetch) {
+        onRefetch();
+    }
+}
+
+// Carica una sorgente HLS con recupero errori. getSrc() rifornisce un master
+// "fresco" (token rigenerati) quando lo stream cade per scadenza token o rete,
+// e la riproduzione riprende dalla stessa posizione.
+function playStream(streamSrc, getSrc, iframeFallback) {
+    streamReloadAttempts = 0; fragErrCount = 0; netRetryCount = 0;
+    el.videoPlayer.classList.remove("hidden");
+    if (el.iframePlayer) el.iframePlayer.classList.add("hidden");
+
+    // Watchdog: se la riproduzione non parte entro ~9s (proxy HLS bloccato),
+    // passa automaticamente al player embed ufficiale (che riproduce sempre).
+    let _started = false;
+    let _watchdog = null;
+    const _markStarted = () => { _started = true; if (_watchdog) clearTimeout(_watchdog); };
+    el.videoPlayer.addEventListener("playing", _markStarted, { once: true });
+    _watchdog = setTimeout(() => {
+        if (_started || (el.videoPlayer.currentTime > 0)) return;
+        if (el.playerSection.classList.contains("hidden")) return;
+        if (iframeFallback) {
+            showToast("Lo stream diretto non parte: passo al lettore integrato.");
+            if (activeHls) { try { activeHls.destroy(); } catch (e) {} activeHls = null; }
+            playIframe(iframeFallback);
+        } else {
+            showToast("Lo stream non parte. Prova a scaricare il titolo.");
+        }
+    }, 9000);
+
+    const onRefetch = async () => {
+        streamReloadAttempts++;
+        if (streamReloadAttempts > 3) {
+            if (iframeFallback) { showToast("Passo al lettore alternativo..."); playIframe(iframeFallback); }
+            else showToast("Stream interrotto. Riprova tra poco.");
+            return;
+        }
+        const t = el.videoPlayer.currentTime || 0;
+        showToast("Riconnessione allo stream...");
+        let src = null;
+        try { src = getSrc ? await getSrc() : streamSrc; } catch (e) { src = null; }
+        if (!src) { if (iframeFallback) playIframe(iframeFallback); return; }
+        if (activeHls) { try { activeHls.destroy(); } catch (e) {} activeHls = null; }
+        if (Hls.isSupported()) {
+            activeHls = buildHls();
+            activeHls.loadSource(src);
+            activeHls.attachMedia(el.videoPlayer);
+            activeHls.on(Hls.Events.MANIFEST_PARSED, () => {
+                try { if (t > 0) el.videoPlayer.currentTime = t; } catch (e) {}
+                el.videoPlayer.play().catch(() => {});
+                populateQuality(); populateAudio();
+            });
+            activeHls.on(Hls.Events.AUDIO_TRACKS_UPDATED, populateAudio);
+            activeHls.on(Hls.Events.ERROR, (e, d) => handleHlsError(d, onRefetch));
+        }
+    };
+
+    if (Hls.isSupported()) {
+        activeHls = buildHls();
+        activeHls.loadSource(streamSrc);
+        activeHls.attachMedia(el.videoPlayer);
+        activeHls.on(Hls.Events.MANIFEST_PARSED, () => {
+            streamReloadAttempts = 0;
+            el.videoPlayer.play().catch(() => {});
+            populateQuality(); populateAudio();
+        });
+        activeHls.on(Hls.Events.AUDIO_TRACKS_UPDATED, populateAudio);
+        activeHls.on(Hls.Events.ERROR, (e, d) => handleHlsError(d, onRefetch));
+    } else if (el.videoPlayer.canPlayType("application/vnd.apple.mpegurl")) {
+        el.videoPlayer.src = streamSrc;
+        el.videoPlayer.addEventListener("loadedmetadata", () => el.videoPlayer.play().catch(() => {}), { once: true });
+    } else if (iframeFallback) {
+        playIframe(iframeFallback);
+    } else {
+        showToast("Il tuo browser non supporta la riproduzione HLS.");
+    }
+}
+
 async function startStream(titleId, label, episodeId = null) {
     showToast("Generazione stream in corso...");
-    
-    // Hide previous players
     closePlayer();
-    
+
+    // Titoli clone: lo stream e' gia' risolto sull'oggetto title.
     if (currentTitle && currentTitle.is_clone && currentTitle.id === titleId) {
         el.playingTitle.textContent = `Riproduzione: ${label}`;
-        
-        // Show player
         el.playerSection.classList.remove("hidden");
-        el.playerSection.scrollIntoView({ behavior: 'smooth' });
-        
-        // Clear qualities and hide quality bar
-        el.qualitySelect.innerHTML = "";
-        if (el.qualityBar) {
-            el.qualityBar.classList.add("hidden");
-        }
-        
+        el.playerSection.scrollIntoView({ behavior: "smooth" });
         if (currentTitle.stream_url) {
-            el.videoPlayer.classList.remove("hidden");
-            if (el.iframePlayer) el.iframePlayer.classList.add("hidden");
-            
-            const streamSrc = currentTitle.stream_url;
-            
-            if (Hls.isSupported()) {
-                activeHls = new Hls();
-                activeHls.loadSource(streamSrc);
-                activeHls.attachMedia(el.videoPlayer);
-                activeHls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    el.videoPlayer.play();
-                });
-                activeHls.on(Hls.Events.ERROR, function (event, data) {
-                    console.warn("HLS error:", data);
-                });
-            } else if (el.videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
-                el.videoPlayer.src = streamSrc;
-                el.videoPlayer.addEventListener('loadedmetadata', () => {
-                    el.videoPlayer.play();
-                });
-            } else {
-                if (currentTitle.iframe_url) {
-                    playIframe(currentTitle.iframe_url);
-                } else {
-                    showToast("Il tuo browser non supporta la riproduzione HLS.");
-                }
-            }
+            playStream(currentTitle.stream_url, async () => currentTitle.stream_url, currentTitle.iframe_url || null);
         } else if (currentTitle.iframe_url) {
             playIframe(currentTitle.iframe_url);
         } else {
@@ -1039,12 +1205,10 @@ async function startStream(titleId, label, episodeId = null) {
         }
         return;
     }
-    
+
     let url = `/api/stream/url?id=${titleId}`;
-    if (episodeId) {
-        url += `&episode_id=${episodeId}`;
-    }
-    
+    if (episodeId) url += `&episode_id=${episodeId}`;
+
     try {
         const resp = await fetch(url);
         if (!resp.ok) {
@@ -1052,58 +1216,18 @@ async function startStream(titleId, label, episodeId = null) {
             showToast("Video non disponibile");
             return;
         }
-
         const data = await resp.json();
         el.playingTitle.textContent = `Riproduzione: ${label}`;
-        
-        // Show player
         el.playerSection.classList.remove("hidden");
-        el.playerSection.scrollIntoView({ behavior: 'smooth' });
-        
-        // Quality selector populating
-        el.qualitySelect.innerHTML = "";
-        data.qualities.forEach(q => {
-            const opt = document.createElement("option");
-            opt.value = q;
-            opt.textContent = q;
-            el.qualitySelect.appendChild(opt);
-        });
-        
-        // Change quality listener
-        el.qualitySelect.onchange = () => {
-            const selectedQuality = el.qualitySelect.value;
-            // Build sub-playlist URL or master playlist with default quality
-            let streamUrl = data.master_url;
-            
-            // To set default rendition, vixcloud requires type=video&rendition={quality}
-            // For proxy: we can query the master m3u8 directly and HLS.js will auto-detect,
-            // or we can select a specific quality from master playlist.
-            // Using standard master playlist works great in hls.js since it auto-switches.
-        };
+        el.playerSection.scrollIntoView({ behavior: "smooth" });
 
-        // Initialize player
-        const streamSrc = data.master_url;
-        
-        if (Hls.isSupported()) {
-            activeHls = new Hls();
-            activeHls.loadSource(streamSrc);
-            activeHls.attachMedia(el.videoPlayer);
-            activeHls.on(Hls.Events.MANIFEST_PARSED, () => {
-                el.videoPlayer.play();
-            });
-            activeHls.on(Hls.Events.ERROR, function (event, data) {
-                console.warn("HLS error:", data);
-            });
-        } else if (el.videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
-            // Native support (Safari / iOS)
-            el.videoPlayer.src = streamSrc;
-            el.videoPlayer.addEventListener('loadedmetadata', () => {
-                el.videoPlayer.play();
-            });
-        } else {
-            showToast("Il tuo browser non supporta la riproduzione HLS.");
-        }
-        
+        if (!data.master_url) { showToast("Stream non disponibile"); return; }
+        // getSrc rifetcha lo stesso endpoint -> master fresco con token nuovi
+        const getSrc = async () => {
+            try { const r = await fetch(url); if (!r.ok) return null; const d = await r.json(); return d.master_url || null; }
+            catch (e) { return null; }
+        };
+        playStream(data.master_url, getSrc, data.iframe_url || null);
     } catch (e) {
         showToast("Errore durante la configurazione dello streaming");
     }
@@ -1118,23 +1242,19 @@ function playIframe(url) {
 }
 
 function closePlayer() {
-    if (activeHls) {
-        activeHls.destroy();
-        activeHls = null;
-    }
+    if (activeHls) { try { activeHls.destroy(); } catch (e) {} activeHls = null; }
     el.videoPlayer.pause();
     el.videoPlayer.src = "";
     el.videoPlayer.classList.remove("hidden");
-    
-    if (el.iframePlayer) {
-        el.iframePlayer.src = "";
-        el.iframePlayer.classList.add("hidden");
-    }
-    
-    if (el.qualityBar) {
-        el.qualityBar.classList.remove("hidden");
-    }
-    
+    if (el.iframePlayer) { el.iframePlayer.src = ""; el.iframePlayer.classList.add("hidden"); }
+    if (el.audioSelect) el.audioSelect.classList.add("hidden");
+    if (el.audioLabel) el.audioLabel.classList.add("hidden");
+    streamReloadAttempts = 0; fragErrCount = 0; netRetryCount = 0;
+    playbackCtx = null;
+    hideNextBanner();
+    _bannerDismissed = false; _bannerReshown = false;
+    if (el.prevTitleBtn) el.prevTitleBtn.classList.add("hidden");
+    if (el.nextTitleBtn) el.nextTitleBtn.classList.add("hidden");
     el.playerSection.classList.add("hidden");
 }
 
@@ -1198,7 +1318,8 @@ async function triggerDownload(label, titleId, episodeId = null) {
                 key_info: null,
                 stream_headers: data.download.headers || null,
                 sc_id: titleId,
-                episode_id: episodeId || null
+                episode_id: episodeId || null,
+                lib_key: currentLibKey || ""
             };
             const dlResp = await fetch("/api/download", {
                 method: "POST",
@@ -1281,13 +1402,18 @@ function formatBytes(bytes) {
 }
 
 function renderDownloads(downloads) {
-    if (downloads.length === 0) {
-        el.downloadsList.innerHTML = '<div class="no-downloads">Nessun download ancora. Incolla un link qui sopra per iniziare.</div>';
+    downloadedKeys = new Set();
+    downloadByKey = {};
+    downloads.forEach(d => { if (d.status === "completed" && d.key) { downloadedKeys.add(d.key); downloadByKey[d.key] = d.id; } });
+    const activeTitles = new Set(downloads.map(d => (d.title || "").toLowerCase()));
+    const extra = (localDownloads || []).filter(l => !activeTitles.has((l.title || "").toLowerCase()));
+    if (downloads.length === 0 && extra.length === 0) {
+        el.downloadsList.innerHTML = '<div class="no-downloads">Nessun download. Usa 🔄 Aggiorna per mostrare i titoli già presenti in /downloads.</div>';
         return;
     }
 
-    // Newest first
-    const ordered = [...downloads].reverse();
+    // Attivi (più recenti prima) + file già presenti in /downloads
+    const ordered = [...downloads].reverse().concat(extra);
 
     el.downloadsList.innerHTML = "";
     ordered.forEach(dl => {
@@ -1306,11 +1432,20 @@ function renderDownloads(downloads) {
         const isActive = ["pending", "queued", "downloading", "merging"].includes(dl.status);
         const showBar = isActive;
 
+        const nextInfo = dl.status === "completed" ? nextTitleForDownload(dl) : null;
+        let nextBtn = "";
+        if (nextInfo) {
+            if (nextInfo.playId) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Riproduci: ${escapeHtml(nextInfo.name || "")}">▶ Prossimo</button>`;
+            else if (nextInfo.isEpisode && nextInfo.series) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Scarica il prossimo episodio">⬇ Scarica episodio ${nextInfo.episode + 1} stagione ${nextInfo.season}</button>`;
+            else if (!nextInfo.isEpisode && /^\d+-/.test(nextInfo.key || "")) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Scarica: ${escapeHtml(nextInfo.name || "")}">⬇ Scarica prossimo</button>`;
+        }
         const actions = dl.status === "completed"
             ? `<div class="download-actions">
-                   <button class="primary-btn small-btn open-file-btn">
-                       <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Apri
+                   <button class="primary-btn small-btn play-file-btn">
+                       <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Riproduci
                    </button>
+                   ${nextBtn}
+                   <button class="secondary-btn small-btn open-file-btn" title="Apri con il lettore del PC">Apri sul PC</button>
                    <button class="secondary-btn small-btn reveal-file-btn">
                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Cartella
                    </button>
@@ -1321,16 +1456,29 @@ function renderDownloads(downloads) {
                </div>`
             : "";
 
+        const info = libInfoForDownload(dl);
+        const cover = info && info.cover
+            ? `<img class="library-cover dl-cover" src="${info.cover}" alt="" loading="lazy">`
+            : `<div class="library-cover placeholder dl-cover"></div>`;
+        const typeBadge = info ? (info.type === "tv" ? "Serie" : (info.type === "movie" ? "Film" : "")) : "";
         item.innerHTML = `
-            <div class="download-info">
-                <span class="download-name" title="${dl.file || dl.title}">${dl.title}</span>
-                <span class="download-status status-${dl.status}">${statusText}</span>
+            ${cover}
+            <div class="download-meta">
+                <span class="download-name" title="${escapeHtml(dl.file || dl.title || "")}">${escapeHtml(dl.title || "")}</span>
+                <span class="download-status status-${dl.status}">${statusText}${typeBadge ? ` \u00b7 ${typeBadge}` : ""}</span>
+                ${showBar ? `<div class="progress-container"><div class="progress-bar" style="width: ${dl.progress}%"></div></div>` : ""}
             </div>
-            ${showBar ? `<div class="progress-container"><div class="progress-bar" style="width: ${dl.progress}%"></div></div>` : ""}
             ${actions}
         `;
 
         if (dl.status === "completed") {
+            item.querySelector(".play-file-btn").addEventListener("click", () => playDownloaded(dl.id, dl.title, dl.key));
+            const nb = item.querySelector(".dl-next-btn");
+            if (nb) nb.addEventListener("click", () => {
+                if (nextInfo && nextInfo.playId) playDownloaded(nextInfo.playId, nextInfo.name, nextInfo.key);
+                else if (nextInfo && nextInfo.isEpisode) downloadNextEpisode(nextInfo.series, nextInfo.season, nextInfo.episode);
+                else if (nextInfo) downloadTitles([{ key: nextInfo.key, name: nextInfo.name }]);
+            });
             item.querySelector(".open-file-btn").addEventListener("click", () => openDownloadFile(dl.id));
             item.querySelector(".reveal-file-btn").addEventListener("click", () => revealDownloadFile(dl.id));
         } else if (isActive) {
@@ -1351,6 +1499,280 @@ async function cancelDownload(id) {
         if (r.ok) showToast("Download annullato");
         else showToast("Impossibile annullare il download");
     } catch (e) { showToast("Errore durante l'annullamento"); }
+}
+
+function setQualityControls(show) {
+    if (el.qualitySelect) el.qualitySelect.classList.toggle("hidden", !show);
+    if (el.qualityLabel) el.qualityLabel.classList.toggle("hidden", !show);
+    if (!show) {
+        if (el.audioSelect) el.audioSelect.classList.add("hidden");
+        if (el.audioLabel) el.audioLabel.classList.add("hidden");
+    }
+}
+
+// Riproduce un file GIA' scaricato direttamente nel player (file locale: niente
+// HLS, niente selettori qualita'/audio). Funziona anche da telefono.
+function playDownloaded(id, title, key) {
+    closePlayer();
+    currentPlayTitle = title || "";
+    if (el.playingTitle) el.playingTitle.textContent = `Riproduzione: ${title || "download"}`;
+    el.playerSection.classList.remove("hidden");
+    if (el.qualityBar) el.qualityBar.classList.remove("hidden");
+    setQualityControls(false);
+    if (el.iframePlayer) el.iframePlayer.classList.add("hidden");
+    el.videoPlayer.classList.remove("hidden");
+    el.videoPlayer.src = `/api/download/play/${encodeURIComponent(id)}`;
+    el.videoPlayer.play().catch(() => {});
+    const ep = parseEpisode(title);
+    if (ep) {
+        playbackCtx = buildEpisodeContext(title);   // serie: naviga tra le puntate
+    } else {
+        const k = key || libKeyForName(title);      // film: ricava la chiave dal nome se manca
+        const fc = k ? folderContextForKey(k) : null;
+        playbackCtx = fc ? { folderId: fc.folderId, items: fc.items, index: fc.items.findIndex(it => it.key === k) } : null;
+    }
+    updatePlaybackNav();
+    _bannerDismissed = false; _bannerReshown = false;
+    showBannerIfAny();   // banner suggerimento subito all'avvio
+}
+
+// --- Precedente/Successivo dalla cartella -----------------------------------
+function castToTV() {
+    const v = el.videoPlayer;
+    if (v && v.remote && typeof v.remote.prompt === "function") {
+        v.remote.prompt().then(() => {
+            showToast("Trasmissione avviata: l'audio va sulla TV.");
+        }).catch(() => {
+            showToast("Trasmissione annullata o nessun dispositivo trovato.");
+        });
+    } else {
+        showToast("Il browser non supporta la trasmissione diretta. Usa Chrome (tasto Trasmetti).");
+    }
+}
+
+function normName(str) { return (str || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
+
+function getPlayableId(item) {
+    if (!item) return null;
+    if (item.key && downloadByKey[item.key]) return downloadByKey[item.key];
+    const n = normName(item.name);
+    if (n && localByName[n]) return localByName[n];
+    return null;
+}
+
+async function refreshLocalDownloads() {
+    try {
+        const r = await fetch("/api/downloads/local");
+        if (!r.ok) return;
+        localFiles = await r.json() || [];
+        localByName = {};
+        localFiles.forEach(f => { const n = normName(f.name); if (n) localByName[n] = f.id; });
+        // popola anche la lista download (così i titoli gia' scaricati compaiono
+        // automaticamente all'avvio, con la locandina)
+        localDownloads = localFiles.map(f => ({ id: f.id, title: f.name, status: "completed", progress: 100, local: true }));
+    } catch (e) {}
+}
+
+async function refreshDownloads() {
+    showToast("Aggiorno i download…");
+    await refreshLocalDownloads();
+    localDownloads = (localFiles || []).map(f => ({ id: f.id, title: f.name, status: "completed", progress: 100, local: true }));
+    try { const sresp = await fetch("/api/download/status"); renderDownloads(sresp.ok ? await sresp.json() : []); }
+    catch (e) { renderDownloads([]); }
+    showToast(`Trovati ${localDownloads.length} titoli scaricati in /downloads`);
+}
+
+// --- Riconoscimento episodi (serie) dai nomi file --------------------------
+function parseEpisode(name) {
+    const s = name || "";
+    const m = s.match(/^(.*?)[\s._-]*s(\d{1,2})[\s._-]*e(\d{1,3})/i)
+        || s.match(/^(.*?)[\s._-]*(\d{1,2})x(\d{1,3})/i)
+        || s.match(/^(.*?)stagione\s*(\d{1,3}).*?(?:episodio|ep\.?|puntata)\s*(\d{1,3})/i);
+    if (!m) return null;
+    return { series: (m[1] || "").trim(), season: parseInt(m[2], 10), episode: parseInt(m[3], 10) };
+}
+
+function buildEpisodeContext(currentName) {
+    const cur = parseEpisode(currentName);
+    if (!cur) return null;
+    const sk = normName(cur.series);
+    const eps = (localFiles || []).map(f => ({ f, p: parseEpisode(f.name) }))
+        .filter(x => x.p && normName(x.p.series) === sk)
+        .sort((a, b) => (a.p.season - b.p.season) || (a.p.episode - b.p.episode));
+    if (!eps.length) return null;
+    let items = eps.map(x => ({ name: x.f.name, key: "" }));
+    let idx = eps.findIndex(x => x.p.season === cur.season && x.p.episode === cur.episode);
+    if (idx < 0) { items = [{ name: currentName, key: "" }]; idx = 0; }
+    return { folderId: "", items, index: idx, isEpisode: true, ep: cur };
+}
+
+// --- Banner "prossimo titolo" oltre i 3/4 della durata ---------------------
+function hideNextBanner() { if (el.nextBanner) el.nextBanner.classList.add("hidden"); }
+
+function currentNextItem() {
+    if (!playbackCtx || !playbackCtx.items) return null;
+    const ni = playbackCtx.index + 1;
+    return ni < playbackCtx.items.length ? playbackCtx.items[ni] : null;
+}
+
+function showBannerIfAny() {
+    const next = currentNextItem();
+    if (next) showNextBanner(next); else hideNextBanner();
+}
+
+function checkNextBanner() {
+    // Il suggerimento viene mostrato SOLO all'avvio del titolo (non ai 3/4).
+}
+
+function showNextBanner(next) {
+    const b = el.nextBanner; if (!b) return;
+    const has = !!getPlayableId(next);
+    b.innerHTML = `<span class="nb-text">Prossimo: <b>${escapeHtml(next.name || "titolo")}</b></span>`
+        + `<button class="primary-btn small-btn nb-go">${has ? "▶ Riproduci prossimo" : "⬇ Scarica prossimo"}</button>`
+        + `<button class="icon-btn nb-close" title="Chiudi">✕</button>`;
+    b.classList.remove("hidden");
+    b.querySelector(".nb-go").addEventListener("click", () => {
+        if (getPlayableId(next)) navigatePlayback(1);
+        else { downloadTitles([next]); hideNextBanner(); }
+    });
+    b.querySelector(".nb-close").addEventListener("click", () => { _bannerDismissed = true; hideNextBanner(); });
+}
+
+function libKeyForName(name) {
+    const n = normName(name);
+    if (!n) return "";
+    const hit = (libraryCache || []).find(it => normName(it.name) === n);
+    return hit ? hit.key : "";
+}
+
+function libInfoForDownload(dl) {
+    if (!dl) return null;
+    if (dl.key) { const it = (libraryCache || []).find(x => x.key === dl.key); if (it) return it; }
+    const n = normName(dl.title);
+    if (!n) return null;
+    let it = (libraryCache || []).find(x => normName(x.name) === n);
+    if (it) return it;
+    const ep = parseEpisode(dl.title);
+    if (ep) { const sn = normName(ep.series); it = (libraryCache || []).find(x => normName(x.name) === sn); if (it) return it; }
+    it = (libraryCache || []).find(x => { const xn = normName(x.name); return xn.length > 2 && (n.includes(xn) || xn.includes(n)); });
+    return it || null;
+}
+
+// Determina il "prossimo" per un download completato: puntata successiva (serie)
+// o titolo successivo nella cartella (film). Ritorna {name, playId, key, isEpisode}.
+function nextTitleForDownload(dl) {
+    const title = (dl && dl.title) || "";
+    const ep = parseEpisode(title);
+    if (ep) {
+        const octx = buildEpisodeContext(title);
+        if (octx && octx.index + 1 < octx.items.length) {
+            const nx = octx.items[octx.index + 1];
+            const pid = getPlayableId(nx);
+            if (pid) return { name: nx.name, playId: pid, key: "", isEpisode: true };
+        }
+        // prossimo episodio non presente: proponi il download (risoluzione online)
+        return { name: `${ep.series} S${ep.season}E${ep.episode + 1}`, playId: null, isEpisode: true,
+                 series: ep.series, season: ep.season, episode: ep.episode };
+    }
+    const k = (dl && dl.key) || libKeyForName(title);
+    const fc = k ? folderContextForKey(k) : null;
+    if (!fc) return null;
+    const idx = fc.items.findIndex(it => it.key === k);
+    if (idx < 0 || idx + 1 >= fc.items.length) return null;
+    const nx = fc.items[idx + 1];
+    return { name: nx.name, playId: getPlayableId(nx), key: nx.key, isEpisode: false };
+}
+
+function folderContextForKey(key) {
+    const data = lastLibraryData;
+    if (!data || !key) return null;
+    for (const f of (data.folders || [])) {
+        const items = f.items || [];
+        if (items.some(it => it.key === key)) return { folderId: f.id, items };
+    }
+    return null;
+}
+
+function updatePlaybackNav() {
+    const has = !!(playbackCtx && playbackCtx.items && (playbackCtx.items.length > 1 || playbackCtx.isEpisode));
+    if (el.prevTitleBtn) { el.prevTitleBtn.classList.toggle("hidden", !has); if (has) el.prevTitleBtn.disabled = (!playbackCtx.isEpisode && playbackCtx.index <= 0); }
+    if (el.nextTitleBtn) { el.nextTitleBtn.classList.toggle("hidden", !has); if (has) el.nextTitleBtn.disabled = (!playbackCtx.isEpisode && playbackCtx.index >= playbackCtx.items.length - 1); }
+}
+
+function navigatePlayback(delta) {
+    if (!playbackCtx || !playbackCtx.items) return;
+    const ni = playbackCtx.index + delta;
+    const next = (ni >= 0 && ni < playbackCtx.items.length) ? playbackCtx.items[ni] : null;
+    if (next) {
+        const pid = getPlayableId(next);
+        if (pid) { playbackCtx.index = ni; playDownloaded(pid, next.name, next.key); return; }
+    }
+    if (playbackCtx.isEpisode) {
+        const cur = parseEpisode((playbackCtx.items[playbackCtx.index] || {}).name || "") || playbackCtx.ep;
+        if (cur) { downloadAdjEpisode(cur.series, cur.season, cur.episode, delta > 0 ? "next" : "prev"); return; }
+    }
+    if (next && next.key && /^\d+-/.test(next.key)) { downloadTitles([{ key: next.key, name: next.name }]); return; }
+    showToast(delta > 0 ? "Nessun successivo" : "Nessun precedente");
+}
+
+function promptDownloadFrom(startIndex) {
+    const items = playbackCtx.items;
+    const remaining = items.slice(startIndex).filter(it => !getPlayableId(it) && /^\d+-/.test(it.key || ""));
+    if (!remaining.length) { showToast("Da qui non c'e' nulla da scaricare (gia' scaricati o non validi)"); return; }
+    const first = items[startIndex];
+    const ans = prompt(`"${first.name}" non e' ancora scaricato.\nQuanti titoli scaricare da qui in poi? (max ${remaining.length}, 0 = annulla)`, "1");
+    if (ans === null) return;
+    const n = Math.max(0, Math.min(remaining.length, parseInt(ans, 10) || 0));
+    if (!n) return;
+    downloadTitles(remaining.slice(0, n));
+}
+
+async function downloadTitles(items) {
+    let started = 0;
+    for (const it of items) {
+        const m = /^(\d+)-/.exec(it.key || "");
+        if (!m) continue;
+        try {
+            const r = await fetch("/api/download/title", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: parseInt(m[1], 10), title: it.name || "Video", key: it.key })
+            });
+            if (r.ok) started++;
+        } catch (e) {}
+    }
+    showToast(started ? `Avviati ${started} download. Riproducibili quando pronti.` : "Impossibile avviare i download");
+}
+
+async function downloadNextEpisode(series, season, episode) {
+    showToast("Cerco il prossimo episodio…");
+    try {
+        const r = await fetch("/api/download/next-episode", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ series, season, episode })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (r.ok) showToast(`Scarico: ${d.label || "prossimo episodio"}`);
+        else showToast(d.detail || "Prossimo episodio non trovato");
+    } catch (e) { showToast("Errore nel download del prossimo episodio"); }
+}
+
+async function downloadAdjEpisode(series, season, episode, direction) {
+    showToast(direction === "prev" ? "Cerco l'episodio precedente…" : "Cerco il prossimo episodio…");
+    try {
+        const r = await fetch("/api/download/next-episode", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ series, season, episode, direction })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (r.ok) showToast(`Scarico: ${d.label || "episodio"}`);
+        else showToast(d.detail || "Episodio non trovato");
+    } catch (e) { showToast("Errore nel download dell'episodio"); }
+}
+
+function playLibraryTitle(item) {
+    const pid = getPlayableId(item);
+    if (pid) playDownloaded(pid, item.name, item.key);
+    else openFromLibrary(item);
 }
 
 async function openDownloadFile(id) {
@@ -1438,14 +1860,14 @@ async function addToLibrary(url, data) {
 
 function titleRow(item, ctx) {
     const row = document.createElement("div");
-    row.className = "library-item" + (item.favorite ? " is-fav" : "");
+    row.className = "library-item" + (item.favorite ? " is-fav" : "") + (librarySel.has(item.key) ? " selected" : "");
     const typeBadge = item.type === "tv" ? "Serie" : (item.type === "movie" ? "Film" : "");
     const cover = item.cover
         ? `<img class="library-cover" src="${item.cover}" alt="" loading="lazy">`
         : `<div class="library-cover placeholder"></div>`;
     const name = item.name && item.name.trim() ? item.name : "Senza titolo";
     // Up/down reorder controls only inside a folder (ctx provided).
-    const moveBtns = ctx ? `
+    const moveBtns = (ctx && !ctx.noReorder) ? `
             <button class="icon-btn moveup-btn" title="Sposta su"${ctx.index === 0 ? " disabled" : ""}>⬆</button>
             <button class="icon-btn movedown-btn" title="Sposta giù"${ctx.index === ctx.keys.length - 1 ? " disabled" : ""}>⬇</button>` : "";
     row.innerHTML = `
@@ -1454,20 +1876,32 @@ function titleRow(item, ctx) {
             <span class="library-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
             <span class="library-sub">${typeBadge}${item.is_clone ? " · clone" : ""}</span>
         </div>
-        <div class="library-actions">${moveBtns}
+        <div class="library-actions"><label class="lib-select" title="Seleziona"><input type="checkbox" ${librarySel.has(item.key) ? "checked" : ""}></label>${moveBtns}
+            <button class="icon-btn play-title-btn" title="Riproduci">▶</button>
             <button class="icon-btn tofolder-btn" title="Metti in cartelle">📂</button>
             <label class="icon-btn" title="Cambia locandina">🖼️<input type="file" accept="image/*" class="libcover-input" hidden></label>
             <button class="icon-btn ren-title-btn" title="Rinomina titolo">✎</button>
             <button class="icon-btn fav-btn" title="${item.favorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}">${item.favorite ? "★" : "☆"}</button>
             <button class="icon-btn del-btn" title="Rimuovi dalla libreria">✕</button>
         </div>`;
-    row.addEventListener("click", (e) => { if (e.target.closest(".library-actions")) return; openFromLibrary(item); });
+    row.addEventListener("click", (e) => { if (e.target.closest(".library-actions") || e.target.closest(".lib-select")) return; openFromLibrary(item); });
+    const _selWrap = row.querySelector(".lib-select");
+    if (_selWrap) {
+        _selWrap.addEventListener("click", (e) => e.stopPropagation());
+        _selWrap.querySelector("input").addEventListener("change", (e) => {
+            e.stopPropagation();
+            if (e.target.checked) librarySel.set(item.key, item); else librarySel.delete(item.key);
+            row.classList.toggle("selected", e.target.checked);
+            updateLibrarySelBar();
+        });
+    }
     row.querySelector(".tofolder-btn").addEventListener("click", (e) => { e.stopPropagation(); openTitleFolderPicker(item); });
+    row.querySelector(".play-title-btn").addEventListener("click", (e) => { e.stopPropagation(); playLibraryTitle(item); });
     row.querySelector(".libcover-input").addEventListener("change", (e) => { e.stopPropagation(); uploadTitleCover(item.key, e.target); });
-    row.querySelector(".ren-title-btn").addEventListener("click", (e) => { e.stopPropagation(); renameTitle(item.key, item.name); });
+    row.querySelector(".ren-title-btn").addEventListener("click", (e) => { e.stopPropagation(); if (ctx && ctx.folderId) renameInFolder(ctx.folderId, item.key, item.name); else renameTitle(item.key, item.name); });
     row.querySelector(".fav-btn").addEventListener("click", (e) => { e.stopPropagation(); toggleFavorite(item.key); });
     row.querySelector(".del-btn").addEventListener("click", (e) => { e.stopPropagation(); removeFromLibrary(item.key, item.name); });
-    if (ctx) {
+    if (ctx && !ctx.noReorder) {
         const up = row.querySelector(".moveup-btn");
         const dn = row.querySelector(".movedown-btn");
         if (up && !up.disabled) up.addEventListener("click", (e) => { e.stopPropagation(); moveInFolder(ctx.folderId, ctx.keys, ctx.index, -1); });
@@ -1486,7 +1920,7 @@ function titleRow(item, ctx) {
         row.classList.add("dragging");
     });
     row.addEventListener("dragend", () => row.classList.remove("dragging"));
-    if (ctx) {
+    if (ctx && !ctx.noReorder) {
         row.addEventListener("dragover", (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; row.classList.add("drop-target"); });
         row.addEventListener("dragleave", () => row.classList.remove("drop-target"));
         row.addEventListener("drop", (e) => { e.preventDefault(); e.stopPropagation(); row.classList.remove("drop-target"); handleRowDrop(e, ctx); });
@@ -1506,6 +1940,98 @@ async function moveInFolder(folderId, keys, index, delta) {
         });
         if (r.ok) renderLibrary(await r.json());
     } catch (e) { showToast("Errore riordino titoli"); }
+}
+
+async function reorderFolder(id, beforeId) {
+    try {
+        const r = await fetch("/api/folders/reorder", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, before: beforeId })
+        });
+        if (r.ok) { renderLibrary(await r.json()); showToast("Cartelle riordinate"); }
+        else showToast("Errore riordino cartelle");
+    } catch (e) { showToast("Errore riordino cartelle"); }
+}
+
+function updateLibrarySelBar() {
+    let bar = document.getElementById("library-selbar");
+    const n = librarySel.size;
+    if (!n) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement("div"); bar.id = "library-selbar"; bar.className = "selbar"; document.body.appendChild(bar); }
+    bar.innerHTML = `<span class="selbar-count">${n} selezionati</span>`
+        + `<button class="primary-btn lsel-folder">📂 Sposta in cartella</button>`
+        + `<button class="secondary-btn lsel-new">📁+ Nuova cartella</button>`
+        + `<button class="secondary-btn lsel-clear">Deseleziona</button>`;
+    bar.querySelector(".lsel-folder").addEventListener("click", () => openKeysFolderPicker([...librarySel.keys()]));
+    bar.querySelector(".lsel-new").addEventListener("click", () => bulkNewFolderKeys([...librarySel.keys()]));
+    bar.querySelector(".lsel-clear").addEventListener("click", () => { librarySel.clear(); if (lastLibraryData) renderLibrary(lastLibraryData); updateLibrarySelBar(); });
+}
+
+async function openKeysFolderPicker(keys) {
+    if (!keys.length) return;
+    let data;
+    try { data = await (await fetch("/api/folders")).json(); }
+    catch (e) { showToast("Errore caricamento cartelle"); return; }
+    const folders = data.folders || [];
+    const overlay = document.createElement("div");
+    overlay.className = "picker-overlay";
+    const rows = folders.map(f => `<label class="picker-row"><input type="checkbox" data-fid="${f.id}"><span>${escapeHtml(f.name || "Cartella")}</span>${f.kind ? ` <span class="picker-note">${escapeHtml(f.kind)}</span>` : ""}</label>`).join("");
+    overlay.innerHTML = `
+        <div class="picker-panel glass">
+            <h3>Sposta ${keys.length} titoli in…</h3>
+            <p class="picker-hint">Spunta una o più cartelle (anche sottocartelle) dove aggiungere i titoli selezionati.</p>
+            <input type="text" class="picker-search" placeholder="Cerca una cartella…" autocomplete="off" spellcheck="false">
+            <div class="picker-list">${rows || '<div class="no-downloads">Nessuna cartella. Usa Nuova cartella.</div>'}</div>
+            <div class="picker-actions">
+                <button class="secondary-btn picker-cancel">Annulla</button>
+                <button class="primary-btn picker-confirm">Conferma</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    overlay.querySelector(".picker-cancel").addEventListener("click", close);
+    const ps = overlay.querySelector(".picker-search");
+    if (ps) ps.addEventListener("input", () => {
+        const q = ps.value.trim().toLowerCase();
+        overlay.querySelectorAll(".picker-row").forEach(r => { r.style.display = r.textContent.toLowerCase().includes(q) ? "" : "none"; });
+    });
+    overlay.querySelector(".picker-confirm").addEventListener("click", async () => {
+        const fids = Array.from(overlay.querySelectorAll('input[type="checkbox"]:checked')).map(c => c.dataset.fid);
+        if (!fids.length) { showToast("Seleziona almeno una cartella"); return; }
+        let payload = null;
+        try {
+            for (const fid of fids) {
+                const r = await fetch("/api/folders/add-items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: fid, keys }) });
+                if (r.ok) { payload = await r.json(); openFolders.add(fid); }
+            }
+            librarySel.clear();
+            if (payload) renderLibrary(payload); else if (lastLibraryData) renderLibrary(lastLibraryData);
+            updateLibrarySelBar();
+            showToast(`${keys.length} titoli aggiunti a ${fids.length} cartella/e`);
+        } catch (e) { showToast("Errore spostamento"); }
+        close();
+    });
+}
+
+async function bulkNewFolderKeys(keys) {
+    if (!keys.length) return;
+    const name = prompt(`Nome della nuova cartella per ${keys.length} titoli:`, "");
+    if (name === null || !name.trim()) return;
+    try {
+        const r = await fetch("/api/folders/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name.trim() }) });
+        if (!r.ok) { showToast("Errore creazione cartella"); return; }
+        const data = await r.json();
+        const folder = (data.folders || [])[(data.folders || []).length - 1];
+        if (folder) {
+            await fetch("/api/folders/add-items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: folder.id, keys }) });
+            openFolders.add(folder.id);
+        }
+        librarySel.clear();
+        await fetchLibrary();
+        updateLibrarySelBar();
+        showToast(`Cartella "${name.trim()}" creata con ${keys.length} titoli`);
+    } catch (e) { showToast("Errore creazione cartella"); }
 }
 
 async function nestFolder(childId, parentId) {
@@ -1651,7 +2177,31 @@ function renderLibrary(data) {
         const coverStyle = f.cover ? `style="background-image:url('${f.cover}')"` : "";
         const childFolders = allFolders.filter(c => (c.parent || "") === f.id);
         const subCount = childFolders.length;
-        const countTxt = `${(f.items || []).length} titoli${subCount ? ` \u00b7 ${subCount} sottocartelle` : ""}`;
+        const countTitlesDeep = (fld) => {
+            const keys = new Set();
+            const visited = new Set();
+            const walk = (x) => {
+                if (!x || visited.has(x.id)) return;
+                visited.add(x.id);
+                (x.items || []).forEach(it => { if (it && it.key) keys.add(it.key); });
+                allFolders.filter(c => (c.parent || "") === x.id).forEach(walk);
+            };
+            walk(fld);
+            return keys.size;
+        };
+        const oldestDateDeep = (fld) => {
+            let best = "";
+            const seen = new Set();
+            const walk = (x) => {
+                if (!x || seen.has(x.id)) return;
+                seen.add(x.id);
+                (x.items || []).forEach(it => { const d = (it && it.release_date) || ""; if (d && (!best || d < best)) best = d; });
+                allFolders.filter(c => (c.parent || "") === x.id).forEach(walk);
+            };
+            walk(fld);
+            return best;
+        };
+        const countTxt = `${countTitlesDeep(f)} titoli${subCount ? ` \u00b7 ${subCount} sottocartelle` : ""}`;
         const parentOpts = ['<option value="">\u2014 in radice \u2014</option>'].concat(
             allFolders.filter(o => o.id !== f.id)
                       .map(o => `<option value="${o.id}"${(f.parent || "") === o.id ? " selected" : ""}>${escapeHtml(o.name)}</option>`)
@@ -1687,6 +2237,7 @@ function renderLibrary(data) {
             const fbar = document.createElement("div");
             fbar.className = "folder-filterbar";
             fbar.innerHTML = `
+                <input type="text" class="ff-search" placeholder="Cerca in questa cartella…" autocomplete="off" spellcheck="false">
                 <select class="ff-type custom-select" title="Filtra per tipo">
                     <option value="">Tutti</option>
                     <option value="movie">Film</option>
@@ -1702,6 +2253,20 @@ function renderLibrary(data) {
             const oSel = fbar.querySelector(".ff-order"); oSel.value = _fst.order;
             tSel.addEventListener("change", () => { const st = folderFilters.get(f.id) || { type: "", order: "" }; st.type = tSel.value; folderFilters.set(f.id, st); renderLibrary(lastLibraryData); });
             oSel.addEventListener("change", () => { const st = folderFilters.get(f.id) || { type: "", order: "" }; st.order = oSel.value; folderFilters.set(f.id, st); renderLibrary(lastLibraryData); });
+            const fsr = fbar.querySelector(".ff-search");
+            if (fsr) fsr.addEventListener("input", () => {
+                const q = fsr.value.trim().toLowerCase();
+                body.querySelectorAll(":scope > .library-item").forEach(r => {
+                    const nm = r.querySelector(".library-name");
+                    r.style.display = (!q || (nm && nm.textContent.toLowerCase().includes(q))) ? "" : "none";
+                });
+                body.querySelectorAll(":scope > .folder-card").forEach(fcard => {
+                    const nm = fcard.querySelector(".folder-name");
+                    let match = !q || (nm && nm.textContent.toLowerCase().includes(q));
+                    if (!match) fcard.querySelectorAll(".library-name").forEach(t => { if (t.textContent.toLowerCase().includes(q)) match = true; });
+                    fcard.style.display = match ? "" : "none";
+                });
+            });
             body.appendChild(fbar);
         }
         const toggleFolder = () => {
@@ -1709,21 +2274,39 @@ function renderLibrary(data) {
             if (body.classList.contains("hidden")) openFolders.delete(f.id);
             else openFolders.add(f.id);
         };
-        if (recurse) childFolders.forEach(c => body.appendChild(buildFolderCard(c, true)));
-        if ((f.items || []).length === 0) {
-            if (!subCount || !recurse) {
-                const empty = document.createElement("div");
-                empty.className = "no-downloads";
-                empty.textContent = "Cartella vuota. Usa \u2795 per i titoli o \uD83D\uDCC1+ per una sottocartella.";
-                body.appendChild(empty);
-            }
+        // Sottocartelle + titoli MISCHIATI e ordinati insieme secondo i filtri.
+        const subEntries = (recurse ? childFolders : []).map(c => ({ kind: "folder", date: oldestDateDeep(c), c }));
+        let titleItems = f.items || [];
+        if (_fst.type) titleItems = titleItems.filter(it => (it.type || "") === _fst.type);
+        const keys = (f.items || []).map(i => i.key);
+        const defaultView = !_fst.type && !_fst.order;
+        const titleEntries = titleItems.map(it => ({ kind: "title", date: (it.release_date || ""), it }));
+        let merged;
+        if (_fst.order === "recent") {
+            merged = subEntries.concat(titleEntries).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+        } else if (_fst.order === "oldest") {
+            merged = subEntries.concat(titleEntries).sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
         } else {
-            const keys = f.items.map(i => i.key);
-            const view = applyFolderView(f.items, _fst);
-            const defaultView = !_fst.type && !_fst.order;
-            view.forEach((it) => {
-                if (defaultView) body.appendChild(titleRow(it, { folderId: f.id, keys, index: keys.indexOf(it.key) }));
-                else body.appendChild(titleRow(it));
+            // default: titoli in ordine manuale, sottocartelle interpolate per data (più vecchia dentro)
+            const subs = subEntries.slice().sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
+            merged = []; let si = 0;
+            titleEntries.forEach(te => {
+                const td = te.date || "9999";
+                while (si < subs.length && (subs[si].date || "9999") <= td) merged.push(subs[si++]);
+                merged.push(te);
+            });
+            while (si < subs.length) merged.push(subs[si++]);
+        }
+        if (!merged.length) {
+            const empty = document.createElement("div");
+            empty.className = "no-downloads";
+            empty.textContent = "Cartella vuota. Usa \u2795 per i titoli o \uD83D\uDCC1+ per una sottocartella.";
+            body.appendChild(empty);
+        } else {
+            merged.forEach(e => {
+                if (e.kind === "folder") body.appendChild(buildFolderCard(e.c, true));
+                else if (defaultView) body.appendChild(titleRow(e.it, { folderId: f.id, keys, index: keys.indexOf(e.it.key) }));
+                else body.appendChild(titleRow(e.it, { folderId: f.id, noReorder: true }));
             });
         }
         card.querySelector(".folder-head").addEventListener("click", (e) => {
@@ -1759,7 +2342,11 @@ function renderLibrary(data) {
             e.preventDefault(); e.stopPropagation(); card.classList.remove("folder-drag-over");
             let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
             if (data.src === "folder") {
-                if (data.id && data.id !== f.id) await nestFolder(data.id, f.id);
+                if (data.id && data.id !== f.id) {
+                    const dragged = allFolders.find(x => x.id === data.id);
+                    if (dragged && (dragged.parent || "") === (f.parent || "")) await reorderFolder(data.id, f.id);
+                    else await nestFolder(data.id, f.id);
+                }
             } else {
                 await handleFolderAdd(f.id, data);
             }
@@ -1845,25 +2432,56 @@ function renderLibrary(data) {
     }
 
     const rootFolders = folders.filter(f => !(f.parent || ""));
-    if (rootFolders.length) {
+
+    // Tre gruppi collassabili che raccolgono le cartelle per tipologia (kind).
+    const buildCategoryGroup = (label, kindKey, list, icon) => {
+        const wrap = document.createElement("div");
+        wrap.className = "cat-group";
+        const open = openGroups.has(kindKey);
+        const head = document.createElement("div");
+        head.className = "cat-head" + (open ? " open" : "");
+        head.innerHTML = `<span class="cat-title">${icon} ${label}</span>`
+            + `<span class="cat-count">${list.length}</span><span class="cat-chevron">▾</span>`;
+        const body = document.createElement("div");
+        body.className = "cat-body" + (open ? "" : " hidden");
+        if (!list.length) {
+            const none = document.createElement("div");
+            none.className = "no-downloads";
+            none.textContent = "Nessuna cartella qui. Imposta il tipo di una cartella per raccoglierla in questo gruppo.";
+            body.appendChild(none);
+        } else {
+            list.forEach(f => body.appendChild(buildFolderCard(f)));
+        }
+        head.addEventListener("click", () => {
+            const hidden = body.classList.toggle("hidden");
+            head.classList.toggle("open", !hidden);
+            if (hidden) openGroups.delete(kindKey); else openGroups.add(kindKey);
+        });
+        wrap.appendChild(head);
+        wrap.appendChild(body);
+        return wrap;
+    };
+
+    const byKind = (k) => rootFolders.filter(f => (f.kind || "") === k);
+    [["Saghe", "saga", "🎬"], ["Registi", "regista", "🎥"], ["Generi", "genere", "🏷️"]]
+        .forEach(([label, key, icon]) => el.libraryList.appendChild(buildCategoryGroup(label, key, byKind(key), icon)));
+
+    const uncategorized = rootFolders.filter(f => !["saga", "regista", "genere"].includes(f.kind || ""));
+    if (uncategorized.length) {
         const restTitle = document.createElement("div");
         restTitle.className = "domains-subtitle lib-rest-title";
-        restTitle.textContent = "Cartelle";
+        restTitle.textContent = "Altre cartelle";
         el.libraryList.appendChild(restTitle);
-        rootFolders.forEach(f => el.libraryList.appendChild(buildFolderCard(f)));
+        uncategorized.forEach(f => el.libraryList.appendChild(buildFolderCard(f)));
     }
 
-    const unTitle = document.createElement("div");
-    unTitle.className = "domains-subtitle";
-    unTitle.textContent = "Senza cartella";
-    el.libraryList.appendChild(unTitle);
-    if (unassigned.length === 0) {
+    // La libreria mostra SOLO preferiti e cartelle: i titoli solo aperti non
+    // vengono ricordati. Se non c'e' nulla di salvato, mostra un suggerimento.
+    if (!favs.length && !favFolders.length && !rootFolders.length) {
         const none = document.createElement("div");
         none.className = "no-downloads";
-        none.textContent = folders.length ? "Tutti i titoli sono in una cartella." : "Nessun titolo salvato. Apri un link: comparirà qui.";
+        none.textContent = "Libreria vuota. Salva i titoli nei preferiti (★) o in una cartella per ritrovarli qui.";
         el.libraryList.appendChild(none);
-    } else {
-        unassigned.forEach(it => el.libraryList.appendChild(titleRow(it)));
     }
 
     // Restore the scroll position so actions don't feel like a page reload.
@@ -1888,6 +2506,20 @@ async function removeFromLibrary(key, name) {
         const r = await fetch("/api/library/remove", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) });
         if (r.ok) await fetchLibrary();
     } catch (e) { showToast("Errore rimozione dalla libreria"); }
+}
+
+async function renameInFolder(folderId, key, current) {
+    const name = prompt("Nome del titolo in QUESTA cartella (vuoto = nome originale):", current || "");
+    if (name === null) return;
+    try {
+        const r = await fetch("/api/folders/rename-item", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: folderId, key, name: name.trim() })
+        });
+        if (r.ok) { renderLibrary(await r.json()); showToast("Rinominato in questa cartella"); }
+        else if (r.status === 404) showToast("Funzione non disponibile: chiudi e RIAVVIA SC Portal (versione vecchia in esecuzione).");
+        else showToast("Errore rinomina (" + r.status + ")");
+    } catch (e) { showToast("Errore rinomina"); }
 }
 
 async function renameTitle(key, current) {

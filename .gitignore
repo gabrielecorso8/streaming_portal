@@ -24,3 +24,6 @@ dist/
 
 # File locali dell'agente (non vanno nel repo)
 .claude/
+
+# Backup locali della migrazione link
+*.bak_link_migration

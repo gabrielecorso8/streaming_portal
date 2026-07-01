@@ -133,4 +133,15 @@ streaming_portal/
 └── static/                        # Interfaccia (index.html, styles.css, app.js, favicon)
 ```
 
-> `settings.json`, `library.json` e `covers/` sono **inclusi** nella repo, così la collezione curata (titoli, cartelle, locandine) vi
+> `settings.json`, `library.json` e `covers/` sono **inclusi** nella repo, così la collezione curata (titoli, cartelle, locandine) viene condivisa con chi scarica il progetto. Sono invece ignorati: `venv/`, `bin/` (ffmpeg), `downloads/`, `build/`, `dist/`, `*.exe`, `server.log`.
+
+---
+
+## ✅ Requisiti
+
+- **Windows** per i launcher `.bat`/`.vbs` e l'`.exe` (il resto è multipiattaforma).
+- **Python 3.11+** (solo per le opzioni A e C; non serve per usare l'`.exe` già creato).
+
+---
+
+*Nota: progetto a scopo esclusivamente educativo e dimostrativo.*

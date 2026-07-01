@@ -101,7 +101,7 @@ async def no_cache_static(request, call_next):
     effect immediately instead of being served from a stale cache."""
     response = await call_next(request)
     path = request.url.path
-    if path == "/" or path.endswith((".js", ".css", ".html")):
+    if path == "/" or path.endswith((".js", ".css", ".html")) or path.startswith("/covers/"):
         response.headers["Cache-Control"] = "no-cache, must-revalidate"
     return response
 
@@ -501,6 +501,26 @@ def detect_active_domain():
 
 SETTINGS = load_settings()
 
+
+def _prune_library():
+    """Mantiene in libreria SOLO i titoli preferiti o presenti in una cartella;
+    quelli semplicemente aperti non vengono ricordati tra le sessioni."""
+    global LIBRARY
+    folder_keys = set()
+    for f in SETTINGS.get("folders", []):
+        for k in f.get("items", []):
+            folder_keys.add(k)
+    kept = [e for e in LIBRARY if e.get("favorite") or e.get("key") in folder_keys]
+    if len(kept) != len(LIBRARY):
+        removed = len(LIBRARY) - len(kept)
+        LIBRARY = kept
+        save_library(LIBRARY)
+        print(f"[i] Libreria: dimenticati {removed} titoli non salvati (solo preferiti/cartelle restano).")
+
+
+_prune_library()
+
+
 @app.on_event("startup")
 def startup_event():
     # Honour settings.json "proxy" / SC_PROXY before serving any request.
@@ -705,6 +725,7 @@ class DownloadRequest(BaseModel):
     vidxgo: Optional[dict] = None
     sc_id: Optional[int] = None        # StreamingCommunity title id (for token refresh)
     episode_id: Optional[int] = None
+    lib_key: Optional[str] = ""        # library key (per collegare il file al titolo)
 
 @app.get("/api/settings")
 def get_settings():
@@ -894,10 +915,14 @@ def _folders_payload():
     folders_out = []
     for f in _folders():
         items = []
+        names = f.get("names", {})
         for k in f.get("items", []):
             e = libmap.get(k)
             if e:
-                items.append(_title_view(e))
+                tv = _title_view(e)
+                if names.get(k):
+                    tv["name"] = names[k]   # nome specifico per QUESTA cartella
+                items.append(tv)
                 assigned.add(k)
         cover = f.get("cover", "")
         if not cover and items:
@@ -1002,6 +1027,55 @@ def add_items_to_folder(payload: FolderItems):
     for k in payload.keys:
         if k in libkeys and k not in items:
             items.append(k)
+    save_settings(SETTINGS)
+    return _folders_payload()
+
+
+class FolderItemName(BaseModel):
+    id: str
+    key: str
+    name: Optional[str] = ""
+
+
+class FolderReorder(BaseModel):
+    id: str
+    before: str   # id della cartella prima della quale posizionare
+
+
+@app.post("/api/folders/reorder")
+def reorder_folders(payload: FolderReorder):
+    """Riordina le cartelle: sposta `id` subito PRIMA di `before` rendendole
+    sorelle (stesso genitore). Usato dal drag&drop tra cartelle dello stesso
+    livello."""
+    folders = _folders()
+    src = next((x for x in folders if x["id"] == payload.id), None)
+    tgt = next((x for x in folders if x["id"] == payload.before), None)
+    if not src or not tgt:
+        raise HTTPException(status_code=404, detail="Cartella non trovata")
+    if src is tgt:
+        return _folders_payload()
+    src["parent"] = tgt.get("parent", "")   # stesso livello del target
+    folders.remove(src)
+    idx = folders.index(tgt)
+    folders.insert(idx, src)
+    save_settings(SETTINGS)
+    return _folders_payload()
+
+
+@app.post("/api/folders/rename-item")
+def rename_folder_item(payload: FolderItemName):
+    """Nome del titolo SPECIFICO per questa cartella (override locale). Vuoto =
+    ripristina il nome di libreria. Lo stesso titolo puo' avere nomi diversi in
+    cartelle diverse."""
+    f = next((x for x in _folders() if x["id"] == payload.id), None)
+    if not f:
+        raise HTTPException(status_code=404, detail="Cartella non trovata")
+    names = f.setdefault("names", {})
+    nm = (payload.name or "").strip()
+    if nm:
+        names[payload.key] = nm
+    else:
+        names.pop(payload.key, None)
     save_settings(SETTINGS)
     return _folders_payload()
 
@@ -1796,6 +1870,7 @@ def resolve_stream_info(id, episode_id=None):
             "title": video_json.get("name") or "video",
             "qualities": qualities,
             "master_url": master_proxy_url,
+            "iframe_url": vix_embed_url,
             "params": params_json,
             "download": download_info,
         }
@@ -1828,22 +1903,23 @@ def get_master_playlist(url: Optional[str] = None, video_id: Optional[int] = Non
         
         for line in lines:
             line = line.strip()
-            if line.startswith("https://"):
-                # Rewrite sub-playlist URL to point to our proxy
-                encoded_url = urllib.parse.quote(line, safe="")
-                rewritten_url = f"/api/stream/subplaylist.m3u8?url={encoded_url}&video_id={video_id or 0}"
-                rewritten_lines.append(rewritten_url)
-            elif "URI=\"" in line and "https://" in line:
-                # Rewrite subtitles/audio playlists in EXT-X-MEDIA if absolute URLs are present
-                uri_match = re.search(r'URI="([^"]+)"', line)
-                if uri_match:
-                    abs_uri = uri_match.group(1)
-                    encoded_url = urllib.parse.quote(abs_uri, safe="")
-                    rewritten_uri = f"/api/stream/subplaylist.m3u8?url={encoded_url}&video_id={video_id or 0}"
-                    line = line.replace(abs_uri, rewritten_uri)
+            if not line:
+                rewritten_lines.append(line)
+            elif line.startswith("#"):
+                # EXT-X-MEDIA (audio/sottotitoli): riscrive l'URI (assoluto O relativo)
+                if 'URI="' in line:
+                    uri_match = re.search(r'URI="([^"]+)"', line)
+                    if uri_match:
+                        abs_uri = urllib.parse.urljoin(url, uri_match.group(1))
+                        encoded_url = urllib.parse.quote(abs_uri, safe="")
+                        rewritten_uri = f"/api/stream/subplaylist.m3u8?url={encoded_url}&video_id={video_id or 0}"
+                        line = line.replace(uri_match.group(1), rewritten_uri)
                 rewritten_lines.append(line)
             else:
-                rewritten_lines.append(line)
+                # URI della variante video: puo' essere ASSOLUTO o RELATIVO -> risolvi e proxa
+                abs_url = urllib.parse.urljoin(url, line)
+                encoded_url = urllib.parse.quote(abs_url, safe="")
+                rewritten_lines.append(f"/api/stream/subplaylist.m3u8?url={encoded_url}&video_id={video_id or 0}")
                 
         return Response(content="\n".join(rewritten_lines), media_type="application/vnd.apple.mpegurl")
     except Exception as e:
@@ -1933,6 +2009,8 @@ def download_media(payload: DownloadRequest):
     download_id = str(uuid.uuid4())
     
     vixcloud_meta = {"sc_id": payload.sc_id, "episode_id": payload.episode_id} if payload.sc_id else None
+    if payload.lib_key:
+        DOWNLOAD_KEYS[download_id] = payload.lib_key
     start_download_task(
         download_id=download_id,
         title=payload.title,
@@ -1948,6 +2026,110 @@ def download_media(payload: DownloadRequest):
     return {"download_id": download_id}
 
 
+class DownloadTitle(BaseModel):
+    id: int                              # StreamingCommunity title id
+    episode_id: Optional[int] = None
+    title: str = "Video"
+    key: Optional[str] = ""              # library key
+
+
+@app.post("/api/download/title")
+def download_title(payload: DownloadTitle):
+    """Risolve lo stream e avvia il download di un titolo della libreria (usato
+    dal player per scaricare i titoli connessi: precedente/successivo)."""
+    info = resolve_stream_info(payload.id, payload.episode_id)
+    dl = info.get("download") or {}
+    if not dl.get("video_url"):
+        raise HTTPException(status_code=400, detail="Stream non disponibile per il download")
+    download_id = str(uuid.uuid4())
+    if payload.key:
+        DOWNLOAD_KEYS[download_id] = payload.key
+    vixcloud_meta = {"sc_id": payload.id, "episode_id": payload.episode_id}
+    start_download_task(
+        download_id=download_id,
+        title=payload.title or info.get("title") or "Video",
+        m3u8_video=dl["video_url"],
+        m3u8_audio=dl.get("audio_url"),
+        key_info=None,
+        extra_headers=dl.get("headers"),
+        vidxgo_meta=None,
+        vixcloud_meta=vixcloud_meta,
+        proxies=get_proxies(),
+    )
+    return {"download_id": download_id}
+
+
+class NextEpisode(BaseModel):
+    series: str
+    season: int
+    episode: int
+    direction: Optional[str] = "next"
+
+
+@app.post("/api/download/next-episode")
+def download_next_episode(payload: NextEpisode):
+    """Scarica la puntata SUCCESSIVA a quella indicata (ep+1 stessa stagione, o
+    prima della stagione dopo). Risolve online serie/episodio a partire dal nome."""
+    q = (payload.series or "").strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="Serie non specificata")
+    results = search(q)
+    match = next((r for r in results if r.get("type") == "tv" and r.get("id_and_slug")), None) \
+        or next((r for r in results if r.get("id_and_slug")), None)
+    if not match:
+        raise HTTPException(status_code=404, detail=f"Serie '{q}' non trovata")
+    id_and_slug = match["id_and_slug"]
+    details = get_details(id_and_slug)
+    version = details.get("version")
+    seasons = {s.get("number"): s.get("episodes_count") for s in details.get("seasons", [])}
+    direction = (payload.direction or "next").lower()
+    if direction == "prev":
+        next_season, next_ep = payload.season, payload.episode - 1
+        if next_ep < 1:
+            next_season = payload.season - 1
+            if next_season < 1 or (seasons and next_season not in seasons):
+                raise HTTPException(status_code=404, detail="Nessun episodio precedente")
+            cnt = seasons.get(next_season)
+            if not cnt:
+                prev_eps = get_season_episodes(id_and_slug, next_season, version)
+                cnt = max((e.get("number") or 0 for e in prev_eps), default=0)
+            if not cnt:
+                raise HTTPException(status_code=404, detail="Nessun episodio precedente")
+            next_ep = cnt
+    else:
+        next_season, next_ep = payload.season, payload.episode + 1
+        cur_count = seasons.get(payload.season)
+        if cur_count and next_ep > cur_count:
+            next_season, next_ep = payload.season + 1, 1
+        if seasons and next_season not in seasons:
+            raise HTTPException(status_code=404, detail="Non ci sono altri episodi (serie terminata)")
+    eps = get_season_episodes(id_and_slug, next_season, version)
+    epobj = next((e for e in eps if e.get("number") == next_ep), None)
+    if not epobj and next_ep == 1 and eps:
+        epobj = eps[0]
+    if not epobj:
+        raise HTTPException(status_code=404, detail=f"Episodio S{next_season}E{next_ep} non trovato")
+    try:
+        numeric_id = int(match.get("id") or id_and_slug.split("-")[0])
+    except Exception:
+        numeric_id = match.get("id")
+    info = resolve_stream_info(numeric_id, epobj["id"])
+    dl = info.get("download") or {}
+    if not dl.get("video_url"):
+        raise HTTPException(status_code=400, detail="Stream dell'episodio non disponibile")
+    label = f"{details.get('name') or q} S{next_season:02d}E{next_ep:02d}"
+    download_id = str(uuid.uuid4())
+    DOWNLOAD_KEYS[download_id] = ""
+    start_download_task(
+        download_id=download_id, title=label,
+        m3u8_video=dl["video_url"], m3u8_audio=dl.get("audio_url"),
+        key_info=None, extra_headers=dl.get("headers"), vidxgo_meta=None,
+        vixcloud_meta={"sc_id": numeric_id, "episode_id": epobj["id"]},
+        proxies=get_proxies(),
+    )
+    return {"ok": True, "label": label, "season": next_season, "episode": next_ep}
+
+
 @app.get("/api/stream/url")
 def get_stream_details(id: int, episode_id: Optional[int] = None):
     return resolve_stream_info(id, episode_id)
@@ -1957,9 +2139,17 @@ def get_stream_details(id: int, episode_id: Optional[int] = None):
 import downloader as _dl
 _dl.set_stream_resolver(resolve_stream_info)
 
+DOWNLOAD_KEYS = {}  # download_id -> library key (collega i file ai titoli)
+
+
 @app.get("/api/download/status")
 def get_download_status():
-    return list(active_downloads.values())
+    out = []
+    for d in active_downloads.values():
+        item = dict(d)
+        item["key"] = DOWNLOAD_KEYS.get(item.get("id"))
+        out.append(item)
+    return out
 
 
 @app.post("/api/download/cancel")
@@ -2168,17 +2358,51 @@ def reveal_download(payload: dict):
     return {"ok": True, "path": path}
 
 
+@app.get("/api/download/play/{download_id}")
+def play_download(download_id: str):
+    """Serve il file scaricato per la riproduzione nel player (anche da telefono).
+    FileResponse gestisce le richieste Range, quindi il video e' navigabile."""
+    path = _resolve_download_path(download_id)
+    ext = os.path.splitext(path)[1].lower()
+    mt = {".mp4": "video/mp4", ".m4v": "video/mp4", ".mkv": "video/x-matroska",
+          ".webm": "video/webm"}.get(ext, "video/mp4")
+    return FileResponse(path, media_type=mt, content_disposition_type="inline")
+
+
+@app.get("/api/downloads/local")
+def list_local_downloads():
+    """Elenca i file gia' presenti nella cartella /downloads (anche di sessioni
+    precedenti) e li registra come riproducibili, cosi' la libreria puo'
+    aprirli direttamente."""
+    os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+    out = []
+    for fn in os.listdir(DOWNLOADS_DIR):
+        p = os.path.join(DOWNLOADS_DIR, fn)
+        if not os.path.isfile(p):
+            continue
+        ext = os.path.splitext(fn)[1].lower()
+        if ext not in (".mp4", ".mkv", ".webm", ".m4v"):
+            continue
+        did = "local:" + hashlib.md5(fn.encode("utf-8")).hexdigest()[:12]
+        download_paths[did] = p   # abilita /api/download/play/{id}
+        out.append({"id": did, "name": os.path.splitext(fn)[0], "file": fn})
+    return out
+
+
 @app.post("/api/downloads/open-folder")
 def open_downloads_folder():
     """Open the downloads directory in the OS file manager."""
     os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+    target = os.path.normpath(DOWNLOADS_DIR)
     try:
         if sys.platform.startswith("win"):
-            os.startfile(DOWNLOADS_DIR)  # type: ignore[attr-defined]
+            # explorer apre la cartella in modo affidabile (os.startfile a volte
+            # non porta la finestra in primo piano da un processo in background).
+            subprocess.Popen(["explorer", target])
         elif sys.platform == "darwin":
-            subprocess.Popen(["open", DOWNLOADS_DIR])
+            subprocess.Popen(["open", target])
         else:
-            subprocess.Popen(["xdg-open", DOWNLOADS_DIR])
+            subprocess.Popen(["xdg-open", target])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {"ok": True, "path": DOWNLOADS_DIR}

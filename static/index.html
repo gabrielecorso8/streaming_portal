@@ -11,9 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- HLS.js for streaming -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
-    <link rel="icon" type="image/x-icon" href="favicon.ico?v=17">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=37">
     <link rel="apple-touch-icon" href="app-icon.png">
-    <link rel="stylesheet" href="styles.css?v=17">
+    <link rel="stylesheet" href="styles.css?v=37">
 </head>
 <body>
     <header class="app-header">
@@ -23,6 +23,15 @@
             </svg>
             <h1 class="app-title">SC<span>Portal</span></h1>
         </div>
+        <button id="header-search-btn" class="icon-btn header-search-btn hidden" type="button" title="Cerca">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+        <button id="header-library-btn" class="icon-btn header-search-btn hidden" type="button" title="Vai alla libreria">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        </button>
+        <button id="header-downloads-btn" class="icon-btn header-search-btn hidden" type="button" title="Vai ai tuoi download">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        </button>
 
         <div class="settings-box" title="StreamingCommunity cambia spesso dominio: qui imposti quello attivo (puoi incollare anche l'URL completo). Per i link clone non serve.">
             <span class="settings-label">dominio</span>
@@ -51,8 +60,8 @@
         <!-- Hero: paste link -->
         <section class="hero">
             <div class="hero-heading">
-                <h2>Incolla un link, scaricalo in locale</h2>
-                <p>Privato e senza pubblicità. Film ed episodi salvati direttamente sul tuo computer.</p>
+                <h2>Cerca film, serie tv, registi, attori…</h2>
+                <p>Crea la tua cartella velocemente: dividi fino a 50 titoli con (;) per inserirli istantaneamente in una cartella nuova o già esistente. Imposta l'immagine che preferisci e organizza la cartella come meglio credi.</p>
             </div>
 
             <div class="card glass url-card">
@@ -121,18 +130,22 @@
                     <button id="close-player-btn" class="close-btn">&times;</button>
                 </div>
                 <div class="video-container">
-                    <video id="video-player" controls></video>
+                    <video id="video-player" controls playsinline webkit-playsinline></video>
                     <iframe id="iframe-player" src="" frameborder="0" allowfullscreen class="hidden" style="width:100%; height:100%; display:block;"></iframe>
                 </div>
                 <div class="player-controls-bar">
+                    <button id="prev-title-btn" class="secondary-btn small-btn hidden">◀ Precedente</button>
+                    <button id="next-title-btn" class="secondary-btn small-btn hidden">Successivo ▶</button>
                     <label for="quality-select">Qualità:</label>
                     <select id="quality-select" class="custom-select"></select>
+                    <label for="audio-select" id="audio-label" class="hidden">Audio:</label>
+                    <select id="audio-select" class="custom-select hidden"></select>
+                    <button id="cast-btn" class="secondary-btn small-btn" title="Trasmetti alla TV (audio sulla TV, non sul PC)">📺 Trasmetti alla TV</button>
                 </div>
+                <div id="next-banner" class="next-banner hidden"></div>
             </div>
         </section>
 
-        <!-- Dashboard: Libreria (sinistra) + Domini salvati (destra) -->
-        <div class="dashboard-grid">
         <!-- Library: saved & recent titles -->
         <section class="downloads-section card glass collapsible" id="library-section">
             <div class="downloads-header tool-toggle">
@@ -167,6 +180,24 @@
                 </div>
             </div>
         </section>
+
+        <!-- Downloads Management Section -->
+        <section class="downloads-section card glass">
+            <div class="downloads-header">
+                <h2>I tuoi download</h2>
+                <div class="header-actions">
+                <button id="refresh-downloads-btn" class="secondary-btn small-btn" title="Mostra i titoli già scaricati in /downloads">🔄 Aggiorna</button>
+                <button id="open-folder-btn" class="secondary-btn small-btn" title="Apri la cartella dei download">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    <span>Cartella</span>
+                </button>
+                </div>
+            </div>
+            <div id="downloads-list" class="downloads-list">
+                <div class="no-downloads">Nessun download ancora. Incolla un link qui sopra per iniziare.</div>
+            </div>
+        </section>
+
         <!-- Saved domains (remembered across sessions, tested at startup) -->
         <section class="downloads-section card glass collapsible" id="domains-section">
             <div class="downloads-header tool-toggle">
@@ -185,21 +216,6 @@
                 <div id="domains-list" class="domains-list">
                     <div class="no-downloads">Nessun dominio salvato. Inseriscine uno nel campo in alto.</div>
                 </div>
-            </div>
-        </section>
-        </div>
-
-        <!-- Downloads Management Section -->
-        <section class="downloads-section card glass downloads-wide">
-            <div class="downloads-header">
-                <h2>I tuoi download</h2>
-                <button id="open-folder-btn" class="secondary-btn small-btn" title="Apri la cartella dei download">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-                    <span>Cartella</span>
-                </button>
-            </div>
-            <div id="downloads-list" class="downloads-list">
-                <div class="no-downloads">Nessun download ancora. Incolla un link qui sopra per iniziare.</div>
             </div>
         </section>
     </main>
@@ -251,7 +267,7 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=17"></script>
+    <script src="app.js?v=37"></script>
 </body>
 </html>
 

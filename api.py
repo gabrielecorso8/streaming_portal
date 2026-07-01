@@ -1009,16 +1009,74 @@ def _folders_payload():
 
 UPCOMING_SEEDS = [
     {
-        "match": ["anelli del potere", "terra di mezzo", "signore degli anelli"],
-        "title": "Gli Anelli del Potere - Stagione 3",
-        "date": "2026-11-11",
-        "relation": "Serie collegata alla Terra di Mezzo",
-    },
-    {
+        "always": True,
         "match": ["christopher nolan", "nolan", "oppenheimer", "interstellar", "inception"],
         "title": "The Odyssey (Christopher Nolan)",
         "date": "2026-07-16",
-        "relation": "Nuovo film collegato al regista",
+        "relation": "Cinema - nuovo film di Christopher Nolan",
+    },
+    {
+        "always": True,
+        "match": ["anelli del potere", "terra di mezzo", "signore degli anelli"],
+        "title": "Gli Anelli del Potere - Stagione 3",
+        "date": "2026-11-11",
+        "relation": "Prime Video - nuova stagione",
+    },
+    {
+        "always": True,
+        "match": ["avengers", "marvel", "mcu", "fantastic four", "x-men"],
+        "title": "Avengers: Doomsday",
+        "date": "2026-12-18",
+        "relation": "Cinema - Marvel Studios",
+    },
+    {
+        "always": True,
+        "match": ["harry potter", "hogwarts", "wizarding world"],
+        "title": "Harry Potter - Stagione 1",
+        "date": "2026-12-25",
+        "relation": "HBO / HBO Max - nuova serie",
+    },
+    {
+        "always": True,
+        "match": ["spider-man", "spiderman", "marvel"],
+        "title": "Spider-Man: Brand New Day",
+        "date": "2026-07-31",
+        "relation": "Cinema - Marvel / Sony",
+    },
+    {
+        "always": True,
+        "match": ["dune", "denis villeneuve"],
+        "title": "Dune: Part Three",
+        "date": "2026-12-18",
+        "relation": "Cinema - saga Dune",
+    },
+    {
+        "always": True,
+        "match": ["avatar", "james cameron"],
+        "title": "Avatar 4",
+        "date": "2029-12-21",
+        "relation": "Cinema - saga Avatar",
+    },
+    {
+        "always": True,
+        "match": ["batman", "dc"],
+        "title": "The Batman: Part II",
+        "date": "2027-10-01",
+        "relation": "Cinema - DC",
+    },
+    {
+        "always": True,
+        "match": ["avengers", "marvel", "mcu"],
+        "title": "Avengers: Secret Wars",
+        "date": "2027-12-17",
+        "relation": "Cinema - Marvel Studios",
+    },
+    {
+        "always": True,
+        "match": ["frozen", "disney"],
+        "title": "Frozen 3",
+        "date": "2027-11-24",
+        "relation": "Cinema - Disney",
     },
 ]
 
@@ -1054,10 +1112,13 @@ def get_upcoming():
                 "key": e.get("key", ""),
             })
     for seed in UPCOMING_SEEDS:
-        if any(m in joined for m in seed["match"]):
+        if seed.get("always") or any(m in joined for m in seed["match"]):
             key = seed["title"] + seed["date"]
             if key not in seen and seed["date"] >= today:
-                out.append(dict(seed))
+                item = dict(seed)
+                item.pop("always", None)
+                item.pop("match", None)
+                out.append(item)
                 seen.add(key)
     out.sort(key=lambda x: x.get("date") or "9999")
     return out

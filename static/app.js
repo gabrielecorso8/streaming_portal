@@ -5,6 +5,7 @@ let currentLibKey = "";    // Library key of the title currently shown in the mo
 let libraryCache = [];     // Last known library list (to read favourite state)
 let openFolders = new Set(); // Folder ids currently expanded (kept across re-renders)
 let openGroups = new Set(); // categorie (saga/regista/genere) espanse
+let openDownloadGroups = new Set(); // cartelle/sottocartelle download espanse
 let librarySel = new Map(); // key -> item: multi-selezione titoli in libreria
 let playbackCtx = null;    // {folderId, items:[...], index}: contesto prev/next
 let currentPlayTitle = "";  // titolo attualmente in riproduzione
@@ -1418,46 +1419,11 @@ function renderDownloads(downloads) {
         return;
     }
 
-    // Attivi in cima; completati raggruppati per cartella/libreria.
     const allRows = [...downloads].reverse().concat(extra);
-    const groupCounts = new Map();
-    allRows.forEach(dl => {
-        if (dl.status !== "completed") return;
-        const g = downloadGroupFor(dl);
-        if (!g || !g.id) return;
-        const k = downloadGroupKey(g);
-        groupCounts.set(k, (groupCounts.get(k) || 0) + 1);
-    });
-    const visibleGroupFor = (dl) => {
-        if (!dl || dl.status !== "completed") return null;
-        const g = downloadGroupFor(dl);
-        if (!g || !g.id) return null;
-        return (groupCounts.get(downloadGroupKey(g)) || 0) >= 2 ? g : null;
-    };
-    const ordered = allRows.slice().sort((a, b) => {
-        const aa = ["pending", "queued", "downloading", "merging"].includes(a.status);
-        const bb = ["pending", "queued", "downloading", "merging"].includes(b.status);
-        if (aa !== bb) return aa ? -1 : 1;
-        const ga = visibleGroupFor(a);
-        const gb = visibleGroupFor(b);
-        return ((ga && ga.name) || "").localeCompare((gb && gb.name) || "");
-    });
+    const isActiveRow = (dl) => ["pending", "queued", "downloading", "merging"].includes(dl.status);
 
     el.downloadsList.innerHTML = "";
-    let lastGroup = "";
-    ordered.forEach(dl => {
-        const group = visibleGroupFor(dl);
-        if (group && group.name !== lastGroup) {
-            const head = document.createElement("div");
-            head.className = "download-group-head";
-            const cover = `<div class="download-group-cover${group.cover ? "" : " placeholder"}"></div>`;
-            head.innerHTML = `${cover}<span>${escapeHtml(group.name)}</span>`;
-            if (group.cover) head.querySelector(".download-group-cover").style.backgroundImage = `url("${String(group.cover).replace(/"/g, "%22")}")`;
-            el.downloadsList.appendChild(head);
-            lastGroup = group.name;
-        } else if (!group) {
-            lastGroup = "";
-        }
+    const buildDownloadItem = (dl) => {
         const item = document.createElement("div");
         item.className = `download-item state-${dl.status}`;
 
@@ -1470,7 +1436,7 @@ function renderDownloads(downloads) {
         else if (dl.status === "failed") statusText = `Fallito: ${dl.error || "errore sconosciuto"}`;
         else if (dl.status === "cancelled") statusText = "Annullato";
 
-        const isActive = ["pending", "queued", "downloading", "merging"].includes(dl.status);
+        const isActive = isActiveRow(dl);
         const showBar = isActive;
 
         const nextInfo = dl.status === "completed" ? nextTitleForDownload(dl) : null;
@@ -1526,8 +1492,50 @@ function renderDownloads(downloads) {
             item.querySelector(".cancel-dl-btn").addEventListener("click", () => cancelDownload(dl.id));
         }
 
-        el.downloadsList.appendChild(item);
+        return item;
+    };
+
+    const activeRows = allRows.filter(isActiveRow);
+    activeRows.forEach(dl => el.downloadsList.appendChild(buildDownloadItem(dl)));
+
+    const completedRows = allRows.filter(dl => !isActiveRow(dl));
+    const rootMap = new Map();
+    completedRows.forEach(dl => {
+        const placement = downloadPlacementFor(dl);
+        if (!placement.root || !placement.sub) {
+            el.downloadsList.appendChild(buildDownloadItem(dl));
+            return;
+        }
+        const rootKey = downloadGroupKey(placement.root);
+        if (!rootMap.has(rootKey)) rootMap.set(rootKey, { meta: placement.root, subs: new Map() });
+        const root = rootMap.get(rootKey);
+        const subKey = downloadGroupKey(placement.sub);
+        if (!root.subs.has(subKey)) root.subs.set(subKey, { meta: placement.sub, rows: [] });
+        root.subs.get(subKey).rows.push(dl);
     });
+
+    [...rootMap.values()]
+        .sort((a, b) => (a.meta.name || "").localeCompare(b.meta.name || ""))
+        .forEach(root => {
+            const rootCount = [...root.subs.values()].reduce((n, s) => n + s.rows.length, 0);
+            if (rootCount < 2) {
+                [...root.subs.values()].forEach(sub => sub.rows.forEach(dl => el.downloadsList.appendChild(buildDownloadItem(dl))));
+                return;
+            }
+            const rootNode = buildDownloadFolderNode(root.meta, rootCount, "root");
+            el.downloadsList.appendChild(rootNode.wrap);
+            [...root.subs.values()]
+                .sort((a, b) => (a.meta.name || "").localeCompare(b.meta.name || ""))
+                .forEach(sub => {
+                    if (sub.rows.length < 2) {
+                        sub.rows.forEach(dl => rootNode.body.appendChild(buildDownloadItem(dl)));
+                        return;
+                    }
+                    const subNode = buildDownloadFolderNode(sub.meta, sub.rows.length, "sub");
+                    rootNode.body.appendChild(subNode.wrap);
+                    sub.rows.forEach(dl => subNode.body.appendChild(buildDownloadItem(dl)));
+                });
+        });
 }
 
 async function cancelDownload(id) {
@@ -1723,6 +1731,75 @@ function libKeyForName(name) {
 
 function downloadGroupKey(group) {
     return group && (group.id || group.name || "");
+}
+
+function buildDownloadFolderNode(meta, count, level) {
+    const key = `dl:${level}:${downloadGroupKey(meta)}`;
+    if (!openDownloadGroups.has(key)) openDownloadGroups.add(key);
+    const wrap = document.createElement("div");
+    wrap.className = `download-folder download-folder-${level}`;
+    const head = document.createElement("div");
+    head.className = "download-folder-head";
+    const cover = document.createElement("div");
+    cover.className = `download-group-cover${meta.cover ? "" : " placeholder"}`;
+    if (meta.cover) cover.style.backgroundImage = `url("${String(meta.cover).replace(/"/g, "%22")}")`;
+    const title = document.createElement("div");
+    title.className = "download-folder-title";
+    title.innerHTML = `<span>${escapeHtml(meta.name || "Cartella")}</span><small>${count} download</small>`;
+    const toggle = document.createElement("button");
+    toggle.className = "icon-btn download-folder-toggle";
+    toggle.type = "button";
+    toggle.title = "Apri/chiudi";
+    toggle.textContent = openDownloadGroups.has(key) ? "▾" : "▸";
+    head.appendChild(cover);
+    head.appendChild(title);
+    head.appendChild(toggle);
+    const body = document.createElement("div");
+    body.className = "download-folder-body";
+    body.classList.toggle("hidden", !openDownloadGroups.has(key));
+    head.addEventListener("click", () => {
+        const open = body.classList.toggle("hidden");
+        if (open) openDownloadGroups.delete(key); else openDownloadGroups.add(key);
+        toggle.textContent = body.classList.contains("hidden") ? "▸" : "▾";
+    });
+    wrap.appendChild(head);
+    wrap.appendChild(body);
+    return { wrap, body };
+}
+
+function downloadPlacementFor(dl) {
+    const actual = downloadGroupFor(dl);
+    const info = libInfoForDownload(dl);
+    if (!actual || !actual.id || !lastLibraryData) {
+        const single = info ? { id: `single:${info.key || normName(info.name)}`, name: info.name, cover: info.cover || "" } : null;
+        return { root: null, sub: single };
+    }
+    const folders = lastLibraryData.folders || [];
+    const byId = {};
+    folders.forEach(f => { if (f && f.id) byId[f.id] = f; });
+    let root = actual;
+    let cur = byId[actual.id];
+    while (cur && cur.parent && byId[cur.parent]) {
+        cur = byId[cur.parent];
+        root = { id: cur.id, name: cur.name || "Cartella", cover: cur.cover || "" };
+    }
+    let sub = null;
+    if (root.id !== actual.id) {
+        sub = actual;
+    } else {
+        const ep = parseEpisode(dl.title);
+        if (ep) {
+            const seriesInfo = (libraryCache || []).find(x => normName(x.name) === normName(ep.series));
+            sub = {
+                id: `series:${normName(ep.series)}`,
+                name: ep.series || (info && info.name) || "Serie",
+                cover: (seriesInfo && seriesInfo.cover) || (info && info.cover) || "",
+            };
+        } else if (info) {
+            sub = { id: `title:${info.key || normName(info.name)}`, name: info.name || dl.title, cover: info.cover || "" };
+        }
+    }
+    return { root, sub };
 }
 
 function downloadGroupFor(dl) {
@@ -2656,6 +2733,11 @@ function renderLibrary(data) {
     const byKind = (k) => rootFolders.filter(f => (f.kind || "") === k);
     [["Saghe", "saga", "🎬"], ["Registi", "regista", "🎥"], ["Generi", "genere", "🏷️"]]
         .forEach(([label, key, icon]) => el.libraryList.appendChild(buildCategoryGroup(label, key, byKind(key), icon)));
+    const customFilterBtn = document.createElement("button");
+    customFilterBtn.className = "secondary-btn small-btn custom-filter-btn";
+    customFilterBtn.textContent = "+ Nuovo filtro";
+    customFilterBtn.addEventListener("click", createCustomFilter);
+    el.libraryList.appendChild(customFilterBtn);
     [...new Set(rootFolders.map(f => f.kind || "").filter(k => k && !["saga", "regista", "genere"].includes(k)))]
         .sort()
         .forEach(k => el.libraryList.appendChild(buildCategoryGroup(k.charAt(0).toUpperCase() + k.slice(1), k, byKind(k), "▣")));
@@ -2747,6 +2829,27 @@ async function createFolder() {
         const r = await fetch("/api/folders/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
         if (r.ok) renderLibrary(await r.json());
     } catch (e) { showToast("Errore creazione cartella"); }
+}
+
+async function createCustomFilter() {
+    const kind = prompt("Nome del nuovo filtro personalizzato:");
+    if (kind === null || !kind.trim()) return;
+    const name = prompt(`Nome della prima raccolta per "${kind.trim()}":`, kind.trim());
+    if (name === null) return;
+    try {
+        const r = await fetch("/api/folders/create", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: (name || kind).trim(), kind: kind.trim() })
+        });
+        if (r.ok) {
+            openGroups.add(kind.trim().toLowerCase());
+            renderLibrary(await r.json());
+            showToast("Filtro personalizzato creato");
+        } else {
+            const e = await r.json().catch(() => ({}));
+            showToast(e.detail || "Errore creazione filtro");
+        }
+    } catch (e) { showToast("Errore creazione filtro"); }
 }
 
 async function createSubfolder(parentId) {

@@ -884,6 +884,71 @@ video {
     content: "";
 }
 
+.download-folder {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: .45rem 0;
+}
+
+.download-folder-sub {
+    margin-left: 20px;
+}
+
+.download-folder-head {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .55rem .7rem;
+    border-radius: 12px;
+    background: rgba(255,255,255,.045);
+    border: 1px solid rgba(255,255,255,.08);
+    cursor: pointer;
+}
+
+.download-folder-root > .download-folder-head {
+    background: rgba(139, 92, 246, .12);
+    border-color: rgba(139, 92, 246, .24);
+}
+
+.download-folder-head:hover {
+    border-color: rgba(255,255,255,.18);
+}
+
+.download-folder-title {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.download-folder-title span {
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.download-folder-title small {
+    opacity: .6;
+    font-size: .76rem;
+}
+
+.download-folder-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.download-folder-root > .download-folder-body {
+    padding-left: 8px;
+}
+
+.download-folder-toggle {
+    flex: 0 0 auto;
+}
+
 .download-item {
     transition: border-color var(--transition-fast), background var(--transition-fast);
 }
@@ -1131,6 +1196,7 @@ video {
 /* --- Filtri dentro le cartelle --- */
 .folder-filterbar { display: flex; flex-wrap: wrap; gap: .4rem; padding: .5rem .25rem .25rem; }
 .folder-filterbar .custom-select { font-size: .8rem; padding: .3rem .55rem; }
+.custom-filter-btn { align-self: flex-start; margin: 4px 0 10px; }
 
 /* --- Drag & drop --- */
 .media-card[draggable="true"] { cursor: grab; }

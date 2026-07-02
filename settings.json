@@ -49,6 +49,58 @@
             "favorite": false
         },
         {
+            "id": "048a1c59",
+            "name": "BREAKING BED SAGA",
+            "kind": "saga",
+            "cover": "/covers/048a1c59.png",
+            "items": [
+                "3-breaking-bad-reazioni-collaterali",
+                "64-better-call-saul",
+                "240-el-camino-il-film-di-breaking-bad"
+            ],
+            "parent": ""
+        },
+        {
+            "id": "28807726",
+            "name": "MARVEL",
+            "kind": "saga",
+            "parent": "",
+            "cover": "/covers/28807726.jpg",
+            "items": [],
+            "favorite": false
+        },
+        {
+            "id": "678a6e16",
+            "name": "PIRATI DEI CARAIBI",
+            "kind": "saga",
+            "cover": "/covers/678a6e16.jpg",
+            "items": [
+                "90-pirati-dei-caraibi-la-maledizione-della-prima-luna",
+                "282-pirati-dei-caraibi-la-maledizione-del-forziere-fantasma",
+                "281-pirati-dei-caraibi-ai-confini-del-mondo",
+                "280-pirati-dei-caraibi-oltre-i-confini-del-mare",
+                "279-pirati-dei-caraibi-la-vendetta-di-salazar"
+            ],
+            "parent": "",
+            "favorite": false
+        },
+        {
+            "id": "e1c98e63",
+            "name": "SAGA DELLA TERRA DI MEZZO",
+            "kind": "saga",
+            "cover": "/covers/e1c98e63.jpg",
+            "items": [
+                "5369-il-signore-degli-anelli-gli-anelli-del-potere",
+                "2280-lo-hobbit-un-viaggio-inaspettato",
+                "2281-lo-hobbit-la-desolazione-di-smaug",
+                "2279-lo-hobbit-la-battaglia-delle-cinque-armate",
+                "2282-il-signore-degli-anelli-la-compagnia-dellanello",
+                "1136-il-signore-degli-anelli-le-due-torri",
+                "1139-il-signore-degli-anelli-il-ritorno-del-re"
+            ],
+            "parent": ""
+        },
+        {
             "id": "76e67349",
             "name": "DUNE",
             "kind": "saga",
@@ -77,21 +129,6 @@
             "parent": ""
         },
         {
-            "id": "678a6e16",
-            "name": "PIRATI DEI CARAIBI",
-            "kind": "saga",
-            "cover": "/covers/678a6e16.jpg",
-            "items": [
-                "90-pirati-dei-caraibi-la-maledizione-della-prima-luna",
-                "282-pirati-dei-caraibi-la-maledizione-del-forziere-fantasma",
-                "281-pirati-dei-caraibi-ai-confini-del-mondo",
-                "280-pirati-dei-caraibi-oltre-i-confini-del-mare",
-                "279-pirati-dei-caraibi-la-vendetta-di-salazar"
-            ],
-            "parent": "",
-            "favorite": false
-        },
-        {
             "id": "97ad1e0b",
             "name": "SAGA DI WESTEROS",
             "kind": "saga",
@@ -105,22 +142,6 @@
             "favorite": false
         },
         {
-            "id": "e1c98e63",
-            "name": "SAGA DELLA TERRA DI MEZZO",
-            "kind": "saga",
-            "cover": "/covers/e1c98e63.jpg",
-            "items": [
-                "5369-il-signore-degli-anelli-gli-anelli-del-potere",
-                "2280-lo-hobbit-un-viaggio-inaspettato",
-                "2281-lo-hobbit-la-desolazione-di-smaug",
-                "2279-lo-hobbit-la-battaglia-delle-cinque-armate",
-                "2282-il-signore-degli-anelli-la-compagnia-dellanello",
-                "1136-il-signore-degli-anelli-le-due-torri",
-                "1139-il-signore-degli-anelli-il-ritorno-del-re"
-            ],
-            "parent": ""
-        },
-        {
             "id": "4b398859",
             "name": "VIKINGS",
             "kind": "saga",
@@ -132,14 +153,14 @@
             "parent": ""
         },
         {
-            "id": "048a1c59",
-            "name": "BREAKING BED SAGA",
+            "id": "41bd012d",
+            "name": "AVATAR",
             "kind": "saga",
-            "cover": "/covers/048a1c59.png",
+            "cover": "/covers/41bd012d.jpg",
             "items": [
-                "3-breaking-bad-reazioni-collaterali",
-                "64-better-call-saul",
-                "240-el-camino-il-film-di-breaking-bad"
+                "429-avatar",
+                "2518-avatar-la-via-dellacqua",
+                "12943-avatar-fuoco-e-cenere"
             ],
             "parent": ""
         },
@@ -174,18 +195,6 @@
                 "161-star-wars-il-risveglio-della-forza-episodio-vii",
                 "160-star-wars-gli-ultimi-jedi-episodio-viii",
                 "291-star-wars-lascesa-di-skywalker-episodio-ix"
-            ],
-            "parent": ""
-        },
-        {
-            "id": "41bd012d",
-            "name": "AVATAR",
-            "kind": "saga",
-            "cover": "/covers/41bd012d.jpg",
-            "items": [
-                "429-avatar",
-                "2518-avatar-la-via-dellacqua",
-                "12943-avatar-fuoco-e-cenere"
             ],
             "parent": ""
         },
@@ -227,27 +236,25 @@
         {
             "id": "38768a27",
             "name": "SKY",
-            "kind": "genere",
+            "kind": "",
             "cover": "/covers/38768a27.jpg",
             "items": [
                 "7289-alessandro-borghese-4-ristoranti",
                 "5494-bruno-barbieri-4-hotel",
                 "1955-masterchef-italia",
                 "12374-money-road-ogni-tentazione-ha-un-prezzo",
-                "4739-pechino-express"
+                "4739-pechino-express",
+                "52091-masterchef",
+                "3401-celebrity-masterchef-italia",
+                "8180-gialappashow",
+                "5370-cucine-da-incubo-italia",
+                "8473-antonino-chef-academy",
+                "7953-italia-shore",
+                "7907-alessandro-borghese-celebrity-chef",
+                "50487-alessandro-borghese-4-ristoranti-estate",
+                "8181-4-matrimoni"
             ],
-            "parent": ""
-        },
-        {
-            "id": "d464dddb",
-            "name": "SPIDER-VERSE",
-            "kind": "saga",
-            "parent": "",
-            "cover": "",
-            "items": [
-                "391-spider-man-un-nuovo-universo",
-                "6239-spider-man-across-the-spider-verse"
-            ]
+            "parent": "02b875b8"
         },
         {
             "id": "166d9ac7",
@@ -279,15 +286,6 @@
                 "272-harry-potter-e-i-doni-della-morte-parte-1",
                 "271-harry-potter-e-i-doni-della-morte-parte-2"
             ],
-            "favorite": false
-        },
-        {
-            "id": "28807726",
-            "name": "MARVEL",
-            "kind": "saga",
-            "parent": "",
-            "cover": "/covers/28807726.jpg",
-            "items": [],
             "favorite": false
         },
         {
@@ -516,6 +514,15 @@
             ]
         },
         {
+            "id": "02b875b8",
+            "name": "SERIE NIGHT",
+            "kind": "genere",
+            "parent": "",
+            "cover": "/covers/02b875b8.png",
+            "items": [],
+            "favorite": true
+        },
+        {
             "id": "04a4ff20",
             "name": "PIXAR",
             "kind": "genere",
@@ -532,10 +539,10 @@
                 "1372-onward-oltre-la-magia",
                 "2641-soul",
                 "3373-luca",
-                "1356-red",
                 "6421-elemental",
                 "12659-elio",
-                "55244-jumpers-un-salto-tra-gli-animali"
+                "55244-jumpers-un-salto-tra-gli-animali",
+                "4748-red"
             ],
             "favorite": true
         },
@@ -1242,25 +1249,14 @@
             ]
         },
         {
-            "id": "a8c9d284",
-            "name": "ALDO GIOVANNI E GIACOMO",
-            "kind": "genere",
+            "id": "d464dddb",
+            "name": "SPIDER-VERSE",
+            "kind": "saga",
             "parent": "",
             "cover": "",
             "items": [
-                "1922-tre-uomini-e-una-gamba",
-                "471-cosi-e-la-vita",
-                "54617-tutti-gli-uomini-del-deficiente",
-                "2337-chiedimi-se-sono-felice",
-                "1660-la-leggenda-di-al-john-e-jack",
-                "1669-tu-la-conosci-claudia",
-                "1656-il-cosmo-sul-como",
-                "1440-la-banda-dei-babbi-natale",
-                "634-il-ricco-il-povero-e-il-maggiordomo",
-                "10611-fuga-da-reuma-park",
-                "1316-odio-lestate",
-                "6219-il-grande-giorno",
-                "49163-attitudini-nessuna"
+                "391-spider-man-un-nuovo-universo",
+                "6239-spider-man-across-the-spider-verse"
             ]
         },
         {
@@ -1280,7 +1276,7 @@
             "name": "SITCOM",
             "kind": "",
             "parent": "02b875b8",
-            "cover": "",
+            "cover": "/covers/b21b4352.png",
             "items": [
                 "3625-ted-lasso",
                 "1469-modern-family",
@@ -1326,7 +1322,7 @@
             "name": "ANIMAZIONE",
             "kind": "",
             "parent": "02b875b8",
-            "cover": "",
+            "cover": "/covers/01c03fef.png",
             "items": [
                 "115-rick-and-morty",
                 "1369-futurama",
@@ -1369,7 +1365,7 @@
             "name": "COMEDY / CRIME",
             "kind": "",
             "parent": "02b875b8",
-            "cover": "",
+            "cover": "/covers/df946172.png",
             "items": [
                 "5299-psych",
                 "8236-detective-monk",
@@ -1415,7 +1411,7 @@
             "name": "SCI-FI / FANTASY",
             "kind": "",
             "parent": "02b875b8",
-            "cover": "",
+            "cover": "/covers/c92129c1.png",
             "items": [
                 "1941-upload",
                 "5381-mythic-quest",
@@ -1459,7 +1455,7 @@
             "name": "RELAX",
             "kind": "",
             "parent": "02b875b8",
-            "cover": "",
+            "cover": "/covers/22cea2c4.png",
             "items": [
                 "3625-ted-lasso",
                 "1310-the-good-place",
@@ -1499,13 +1495,36 @@
             ]
         },
         {
-            "id": "02b875b8",
-            "name": "SERIE NIGHT",
+            "id": "a8c9d284",
+            "name": "ALDO GIOVANNI E GIACOMO",
             "kind": "genere",
             "parent": "",
-            "cover": "/covers/02b875b8.png",
-            "items": [],
-            "favorite": true
+            "cover": "",
+            "items": [
+                "1922-tre-uomini-e-una-gamba",
+                "471-cosi-e-la-vita",
+                "54617-tutti-gli-uomini-del-deficiente",
+                "2337-chiedimi-se-sono-felice",
+                "1660-la-leggenda-di-al-john-e-jack",
+                "1669-tu-la-conosci-claudia",
+                "1656-il-cosmo-sul-como",
+                "1440-la-banda-dei-babbi-natale",
+                "634-il-ricco-il-povero-e-il-maggiordomo",
+                "10611-fuga-da-reuma-park",
+                "1316-odio-lestate",
+                "6219-il-grande-giorno",
+                "49163-attitudini-nessuna"
+            ]
+        },
+        {
+            "id": "3c30b322",
+            "name": "ALESSANDRO BORGHESE",
+            "kind": "",
+            "parent": "38768a27",
+            "cover": "",
+            "items": []
         }
-    ]
+    ],
+    "source_domains": [],
+    "custom_filters": []
 }

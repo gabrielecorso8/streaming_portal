@@ -1430,10 +1430,12 @@ function renderDownloads(downloads) {
     const isActiveRow = (dl) => ["pending", "queued", "downloading", "merging"].includes(dl.status);
 
     el.downloadsList.innerHTML = "";
-    const buildDownloadItem = (dl) => {
+    const buildDownloadItem = (dl, full = false) => {
         const item = document.createElement("div");
         const isActive = isActiveRow(dl);
-        const posterOnly = dl.status === "completed";
+        // Dentro le cartelle (full) mostriamo la riga completa (locandina + nome +
+        // azioni rapide); solo in cima resta la griglia a sole locandine.
+        const posterOnly = dl.status === "completed" && !full;
         item.className = `download-item state-${dl.status}${posterOnly ? " poster-only" : ""}`;
 
         let statusText = dl.status;
@@ -1550,12 +1552,12 @@ function renderDownloads(downloads) {
                 .sort((a, b) => (a.meta.name || "").localeCompare(b.meta.name || ""))
                 .forEach(sub => {
                     if (sub.rows.length < 2) {
-                        sub.rows.forEach(dl => rootNode.body.appendChild(buildDownloadItem(dl)));
+                        sub.rows.forEach(dl => rootNode.body.appendChild(buildDownloadItem(dl, true)));
                         return;
                     }
                     const subNode = buildDownloadFolderNode(sub.meta, sub.rows.length, "sub");
                     rootNode.body.appendChild(subNode.wrap);
-                    sub.rows.forEach(dl => subNode.body.appendChild(buildDownloadItem(dl)));
+                    sub.rows.forEach(dl => subNode.body.appendChild(buildDownloadItem(dl, true)));
                 });
         });
 }

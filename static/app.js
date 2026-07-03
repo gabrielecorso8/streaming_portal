@@ -181,13 +181,9 @@ async function init() {
         refreshDownloads();
         if (el.downloadsList) el.downloadsList.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-    window.addEventListener("scroll", () => {
-        const hide = window.scrollY < 250;
-        if (el.headerSearchBtn) el.headerSearchBtn.classList.toggle("hidden", hide);
-        if (el.headerFavoritesBtn) el.headerFavoritesBtn.classList.toggle("hidden", hide);
-        if (el.headerLibraryBtn) el.headerLibraryBtn.classList.toggle("hidden", hide);
-        if (el.headerDownloadsBtn) el.headerDownloadsBtn.classList.toggle("hidden", hide);
-    });
+    // Le icone di navigazione in cima sono SEMPRE visibili (non solo scorrendo).
+    [el.headerSearchBtn, el.headerFavoritesBtn, el.headerLibraryBtn, el.headerDownloadsBtn]
+        .forEach(b => { if (b) b.classList.remove("hidden"); });
     if (el.prevTitleBtn) el.prevTitleBtn.addEventListener("click", () => navigatePlayback(-1));
     if (el.nextTitleBtn) el.nextTitleBtn.addEventListener("click", () => navigatePlayback(1));
     const logo = document.querySelector(".logo-container");

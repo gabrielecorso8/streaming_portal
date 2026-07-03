@@ -2428,10 +2428,27 @@ DOWNLOAD_KEYS = {}  # download_id -> library key (collega i file ai titoli)
 @app.get("/api/download/status")
 def get_download_status():
     out = []
-    for d in active_downloads.values():
+    stale = []
+    for d in list(active_downloads.values()):
         item = dict(d)
-        item["key"] = DOWNLOAD_KEYS.get(item.get("id"))
+        did = item.get("id")
+        item["key"] = DOWNLOAD_KEYS.get(did)
+        # Un download completato il cui file e' stato ELIMINATO dal disco non deve
+        # piu' comparire (altrimenti resta una voce "morta" che non si riproduce):
+        # lo togliamo dallo stato in memoria cosi' sparisce dalla lista.
+        if item.get("status") == "completed":
+            path = download_paths.get(did) or item.get("file")
+            if not path or not os.path.exists(path):
+                stale.append(did)
+                continue
         out.append(item)
+    for did in stale:
+        active_downloads.pop(did, None)
+        download_paths.pop(did, None)
+        try:
+            DOWNLOAD_KEYS.pop(did, None)
+        except Exception:
+            pass
     return out
 
 

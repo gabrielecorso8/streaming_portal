@@ -2394,6 +2394,7 @@ function renderLibrary(data) {
     const folders = (data && data.folders) || [];
     const unassigned = (data && data.unassigned) || [];
     const customFilters = [...new Set([].concat((data && data.custom_filters) || [], [...localCustomFilters]))];
+    const filterCovers = (data && data.filter_covers) || {};
     // de-duplicated list of every title (for search + favourites + modal star)
     const allTitles = [];
     const seen = new Set();
@@ -2713,12 +2714,20 @@ function renderLibrary(data) {
         const open = openGroups.has(kindKey);
         const head = document.createElement("div");
         head.className = "cat-head" + (open ? " open" : "");
+        const coverThumb = options.custom
+            ? (options.cover
+                ? `<span class="cat-cover" style="background-image:url('${options.cover}')"></span>`
+                : `<span class="cat-cover placeholder"></span>`)
+            : "";
+        const coverBtn = options.custom
+            ? `<label class="icon-btn cat-cover-btn" title="Locandina filtro">🖼️<input type="file" accept="image/*" class="cat-cover-input" hidden></label>`
+            : "";
         const editBtn = options.custom
             ? `<button class="icon-btn cat-edit-btn" title="Rinomina filtro" type="button">✎</button>`
               + `<button class="icon-btn cat-del-btn" title="Elimina filtro" type="button">🗑</button>`
             : "";
-        head.innerHTML = `<span class="cat-title">${icon} ${label}</span>`
-            + `<span class="cat-count">${list.length}</span>${editBtn}<span class="cat-chevron">▾</span>`;
+        head.innerHTML = `<span class="cat-title">${coverThumb}${icon} ${label}</span>`
+            + `<span class="cat-count">${list.length}</span>${coverBtn}${editBtn}<span class="cat-chevron">▾</span>`;
         const body = document.createElement("div");
         body.className = "cat-body" + (open ? "" : " hidden");
         if (!list.length) {
@@ -2744,6 +2753,10 @@ function renderLibrary(data) {
             e.stopPropagation();
             deleteCustomFilter(kindKey, list.length);
         });
+        const coverLbl = head.querySelector(".cat-cover-btn");
+        if (coverLbl) coverLbl.addEventListener("click", (e) => e.stopPropagation());
+        const coverInput = head.querySelector(".cat-cover-input");
+        if (coverInput) coverInput.addEventListener("change", (e) => { e.stopPropagation(); uploadFilterCover(kindKey, e.target); });
         wrap.appendChild(head);
         wrap.appendChild(body);
         return wrap;
@@ -2752,15 +2765,16 @@ function renderLibrary(data) {
     const byKind = (k) => rootFolders.filter(f => (f.kind || "") === k);
     [["Saghe", "saga", "🎬"], ["Registi", "regista", "🎥"], ["Generi", "genere", "🏷️"]]
         .forEach(([label, key, icon]) => el.libraryList.appendChild(buildCategoryGroup(label, key, byKind(key), icon)));
+    // Filtri personalizzati: subito SOTTO i tre gruppi predefiniti (come 4°, 5°…).
+    [...new Set([...(customFilters || []), ...rootFolders.map(f => f.kind || "")]
+        .filter(k => k && !["saga", "regista", "genere"].includes(k)))]
+        .sort()
+        .forEach(k => el.libraryList.appendChild(buildCategoryGroup(k.charAt(0).toUpperCase() + k.slice(1), k, byKind(k), "▣", { custom: true, cover: filterCovers[k] || "" })));
     const customFilterBtn = document.createElement("button");
     customFilterBtn.className = "secondary-btn small-btn custom-filter-btn";
     customFilterBtn.textContent = "+ Nuovo filtro";
     customFilterBtn.addEventListener("click", createCustomFilter);
     el.libraryList.appendChild(customFilterBtn);
-    [...new Set([...(customFilters || []), ...rootFolders.map(f => f.kind || "")]
-        .filter(k => k && !["saga", "regista", "genere"].includes(k)))]
-        .sort()
-        .forEach(k => el.libraryList.appendChild(buildCategoryGroup(k.charAt(0).toUpperCase() + k.slice(1), k, byKind(k), "▣", { custom: true })));
 
     const uncategorized = rootFolders.filter(f => !(f.kind || ""));
     if (uncategorized.length) {
@@ -2933,11 +2947,32 @@ async function deleteCustomFilter(kind, count) {
             }
             renderLibrary(await r.json());
             showToast("Filtro eliminato");
+        } else if (r.status === 404) {
+            showToast("Funzione non disponibile: chiudi e RIAVVIA SC Portal (versione vecchia in esecuzione).");
         } else {
             const e = await r.json().catch(() => ({}));
             showToast(e.detail || "Errore eliminazione filtro");
         }
     } catch (e) { showToast("Errore eliminazione filtro"); }
+}
+
+function uploadFilterCover(kind, input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) { showToast("Immagine troppo grande (max 8MB)"); return; }
+    const reader = new FileReader();
+    reader.onload = async () => {
+        try {
+            const r = await fetch("/api/filters/cover", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: kind, filename: file.name, data: reader.result })
+            });
+            if (r.ok) { renderLibrary(await r.json()); showToast("Locandina del filtro aggiornata"); }
+            else if (r.status === 404) showToast("Funzione non disponibile: chiudi e RIAVVIA SC Portal.");
+            else { const e = await r.json().catch(() => ({})); showToast(e.detail || "Errore caricamento immagine"); }
+        } catch (e) { showToast("Errore caricamento immagine"); }
+    };
+    reader.readAsDataURL(file);
 }
 
 async function createSubfolder(parentId) {

@@ -939,6 +939,9 @@ def rename_custom_filter(payload: CustomFilterRenamePayload):
     for f in _folders():
         if (f.get("kind") or "") == old:
             f["kind"] = name
+    fc = SETTINGS.setdefault("filter_covers", {})
+    if old in fc:
+        fc[name] = fc.pop(old)
     save_settings(SETTINGS)
     return _folders_payload()
 
@@ -955,6 +958,49 @@ def delete_custom_filter(payload: CustomFilterPayload):
     for f in _folders():
         if (f.get("kind") or "") == name:
             f["kind"] = ""
+    fc = SETTINGS.setdefault("filter_covers", {})
+    old_cover = fc.pop(name, None)
+    if isinstance(old_cover, str) and old_cover.startswith("/covers/filter_"):
+        try:
+            os.remove(os.path.join(COVERS_DIR, os.path.basename(old_cover)))
+        except OSError:
+            pass
+    save_settings(SETTINGS)
+    return _folders_payload()
+
+
+@app.post("/api/filters/cover")
+def set_custom_filter_cover(payload: FilterCover):
+    """Imposta/cambia la locandina di un filtro personalizzato (come le cartelle)."""
+    name = normalize_filter_name(payload.name)
+    if not name or name in ("saga", "regista", "genere"):
+        raise HTTPException(status_code=400, detail="Filtro non valido")
+    raw = payload.data or ""
+    if raw.strip().startswith("data:") and "," in raw:
+        raw = raw.split(",", 1)[1]
+    try:
+        blob = base64.b64decode(raw)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Immagine non valida")
+    if not blob:
+        raise HTTPException(status_code=400, detail="Immagine vuota")
+    if len(blob) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Immagine troppo grande (max 8MB)")
+    ext = os.path.splitext(payload.filename or "")[1].lower()
+    if ext not in (".png", ".jpg", ".jpeg", ".webp", ".gif"):
+        ext = ".png"
+    h = hashlib.md5(name.encode("utf-8")).hexdigest()[:12]
+    fc = SETTINGS.setdefault("filter_covers", {})
+    old = fc.get(name, "")
+    if isinstance(old, str) and old.startswith("/covers/filter_" + h):
+        try:
+            os.remove(os.path.join(COVERS_DIR, os.path.basename(old)))
+        except OSError:
+            pass
+    fname = f"filter_{h}{ext}"
+    with open(os.path.join(COVERS_DIR, fname), "wb") as fh:
+        fh.write(blob)
+    fc[name] = f"/covers/{fname}"
     save_settings(SETTINGS)
     return _folders_payload()
 
@@ -1020,6 +1066,12 @@ class FolderCover(BaseModel):
     data: str                # base64 (a "data:" prefix is accepted and stripped)
 
 
+class FilterCover(BaseModel):
+    name: str                # nome del filtro personalizzato (kind)
+    filename: Optional[str] = ""
+    data: str                # base64 (a "data:" prefix is accepted and stripped)
+
+
 def _folders():
     return SETTINGS.setdefault("folders", [])
 
@@ -1077,7 +1129,8 @@ def _folders_payload():
     unassigned = [_title_view(e) for e in _sorted_library(LIBRARY)
                   if e.get("key") and e["key"] not in assigned]
     return {"folders": folders_out, "unassigned": unassigned,
-            "custom_filters": list(SETTINGS.get("custom_filters") or [])}
+            "custom_filters": list(SETTINGS.get("custom_filters") or []),
+            "filter_covers": dict(SETTINGS.get("filter_covers") or {})}
 
 
 @app.get("/api/folders")

@@ -1381,3 +1381,13 @@ body {
     outline: 2px solid var(--primary-color);
     outline-offset: 3px;
 }
+
+/* Locandina dei filtri personalizzati (accanto al nome, come le cartelle) */
+.cat-title { display: flex; align-items: center; gap: .5rem; flex: 1; }
+.cat-cover {
+    width: 34px; height: 34px; flex: 0 0 auto; border-radius: 7px;
+    background-size: cover; background-position: center;
+    background-color: rgba(255,255,255,.06); box-shadow: 0 2px 6px rgba(0,0,0,.3);
+}
+.cat-cover.placeholder { background-image: linear-gradient(135deg, rgba(139,92,246,.35), rgba(139,92,246,.1)); }
+.cat-cover-btn, .cat-del-btn { width: 30px; height: 30px; flex: 0 0 auto; }

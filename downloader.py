@@ -28,6 +28,19 @@ download_paths = {}
 # {"download": {video_url, audio_url, ...}} used to re-sign expired Vixcloud URLs.
 STREAM_RESOLVER = None
 
+# Su Windows, lanciare ffmpeg farebbe LAMPEGGIARE una finestra di console (anche
+# se l'app gira nascosta con pythonw). Questi kwargs la sopprimono del tutto.
+_HIDDEN_PROC = {}
+if os.name == "nt":
+    _HIDDEN_PROC["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+    try:
+        _si = subprocess.STARTUPINFO()
+        _si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        _si.wShowWindow = 0  # SW_HIDE
+        _HIDDEN_PROC["startupinfo"] = _si
+    except Exception:
+        pass
+
 def set_stream_resolver(fn):
     global STREAM_RESOLVER
     STREAM_RESOLVER = fn
@@ -517,7 +530,7 @@ class DownloadTask:
                     "-y",
                     final_output_path
                 ]
-                subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **_HIDDEN_PROC)
             else:
                 # Direct move video to final path
                 shutil.move(temp_video_mp4, final_output_path)
@@ -582,7 +595,7 @@ class DownloadTask:
             output_mp4
         ]
         try:
-            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **_HIDDEN_PROC)
         finally:
             # Always drop the large intermediate file.
             if os.path.exists(joined_ts):

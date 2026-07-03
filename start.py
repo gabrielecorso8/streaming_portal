@@ -112,7 +112,9 @@ def start_server():
         
     # Test if ffmpeg is now executable
     try:
-        subprocess.run(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        _cf = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name == "nt" else 0
+        subprocess.run(["ffmpeg", "-version"], stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL, creationflags=_cf)
         print("[+] FFmpeg verified and ready.")
     except FileNotFoundError:
         print("[!] Warning: FFmpeg could not be found. Downloads will fail unless FFmpeg is installed globally.")

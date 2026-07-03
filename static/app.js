@@ -2714,7 +2714,8 @@ function renderLibrary(data) {
         const head = document.createElement("div");
         head.className = "cat-head" + (open ? " open" : "");
         const editBtn = options.custom
-            ? `<button class="icon-btn cat-edit-btn" title="Modifica filtro" type="button">✎</button>`
+            ? `<button class="icon-btn cat-edit-btn" title="Rinomina filtro" type="button">✎</button>`
+              + `<button class="icon-btn cat-del-btn" title="Elimina filtro" type="button">🗑</button>`
             : "";
         head.innerHTML = `<span class="cat-title">${icon} ${label}</span>`
             + `<span class="cat-count">${list.length}</span>${editBtn}<span class="cat-chevron">▾</span>`;
@@ -2737,6 +2738,11 @@ function renderLibrary(data) {
         if (edit) edit.addEventListener("click", (e) => {
             e.stopPropagation();
             renameCustomFilter(kindKey);
+        });
+        const del = head.querySelector(".cat-del-btn");
+        if (del) del.addEventListener("click", (e) => {
+            e.stopPropagation();
+            deleteCustomFilter(kindKey, list.length);
         });
         wrap.appendChild(head);
         wrap.appendChild(body);
@@ -2907,6 +2913,31 @@ async function renameCustomFilter(oldKind) {
             showToast(e.detail || "Errore modifica filtro");
         }
     } catch (e) { showToast("Errore modifica filtro"); }
+}
+
+async function deleteCustomFilter(kind, count) {
+    const msg = count
+        ? `Eliminare il filtro "${kind}"? Le ${count} cartelle che lo usano non verranno cancellate: torneranno in "Altre cartelle".`
+        : `Eliminare il filtro "${kind}"?`;
+    if (!confirm(msg)) return;
+    try {
+        const r = await fetch("/api/filters/delete", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: kind })
+        });
+        if (r.ok) {
+            localCustomFilters.delete(kind);
+            openGroups.delete(kind);
+            if (lastLibraryData) {
+                lastLibraryData.custom_filters = (lastLibraryData.custom_filters || []).filter(k => k !== kind);
+            }
+            renderLibrary(await r.json());
+            showToast("Filtro eliminato");
+        } else {
+            const e = await r.json().catch(() => ({}));
+            showToast(e.detail || "Errore eliminazione filtro");
+        }
+    } catch (e) { showToast("Errore eliminazione filtro"); }
 }
 
 async function createSubfolder(parentId) {

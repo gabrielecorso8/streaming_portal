@@ -3,12 +3,12 @@
     "key": "5431-house-of-the-dragon",
     "url": "https://streamingcommunityz.tech/it/titles/5431-house-of-the-dragon",
     "name": "House of the Dragon",
-    "cover": "https://cdn.streamingcommunityz.tech/images/8c1c1491-77d1-49bc-9905-4136e448c969.webp",
+    "cover": "https://cdn.streamingcommunityz.pl/images/8c1c1491-77d1-49bc-9905-4136e448c969.webp",
     "type": "tv",
     "is_clone": false,
     "favorite": true,
     "added_at": 1782627800,
-    "last_opened": 1782824322,
+    "last_opened": 1783072393,
     "release_date": ""
   },
   {
@@ -280,7 +280,7 @@
     "is_clone": false,
     "favorite": false,
     "added_at": 1782627800,
-    "last_opened": 1782929648,
+    "last_opened": 1783072485,
     "release_date": "2026-05-21"
   },
   {
@@ -340,7 +340,7 @@
     "is_clone": false,
     "favorite": true,
     "added_at": 1782627800,
-    "last_opened": 1782913327,
+    "last_opened": 1783072401,
     "release_date": "2026-05-25"
   },
   {
@@ -7051,9 +7051,9 @@
     "type": "tv",
     "release_date": "2023-01-01",
     "is_clone": false,
-    "favorite": false,
+    "favorite": true,
     "added_at": 1782913331,
-    "last_opened": 1782913331
+    "last_opened": 1783073001
   },
   {
     "key": "14820-common-side-effects",
@@ -7077,7 +7077,7 @@
     "is_clone": false,
     "favorite": false,
     "added_at": 1782913331,
-    "last_opened": 1782913331
+    "last_opened": 1783073017
   },
   {
     "key": "8997-unicorn-academy",
@@ -8169,7 +8169,7 @@
     "is_clone": false,
     "favorite": false,
     "added_at": 1782929647,
-    "last_opened": 1782929647
+    "last_opened": 1783072428
   },
   {
     "key": "3401-celebrity-masterchef-italia",

@@ -943,6 +943,22 @@ def rename_custom_filter(payload: CustomFilterRenamePayload):
     return _folders_payload()
 
 
+@app.post("/api/filters/delete")
+def delete_custom_filter(payload: CustomFilterPayload):
+    """Elimina un filtro personalizzato. Le cartelle che lo usavano NON vengono
+    perse: tornano semplicemente senza tipologia (finiscono in 'Altre cartelle')."""
+    name = normalize_filter_name(payload.name)
+    if name in ("saga", "regista", "genere"):
+        raise HTTPException(status_code=400, detail="Filtro riservato")
+    filters = SETTINGS.setdefault("custom_filters", [])
+    SETTINGS["custom_filters"] = [x for x in filters if x != name]
+    for f in _folders():
+        if (f.get("kind") or "") == name:
+            f["kind"] = ""
+    save_settings(SETTINGS)
+    return _folders_payload()
+
+
 @app.post("/api/domain/refresh")
 def refresh_domain():
     """Probe known suffixes for a brand-new live StreamingCommunity domain and

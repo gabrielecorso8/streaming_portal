@@ -168,7 +168,7 @@
             "id": "12be67e8",
             "name": "STAR WARS",
             "kind": "saga",
-            "cover": "/covers/12be67e8.jpeg",
+            "cover": "/covers/12be67e8.jpg",
             "items": [
                 "8585-the-acolyte-la-seguace",
                 "163-star-wars-la-minaccia-fantasma-episodio-i",
@@ -254,7 +254,24 @@
                 "50487-alessandro-borghese-4-ristoranti-estate",
                 "8181-4-matrimoni"
             ],
-            "parent": "02b875b8"
+            "parent": "02b875b8",
+            "order": [
+                "5494-bruno-barbieri-4-hotel",
+                "7289-alessandro-borghese-4-ristoranti",
+                "7907-alessandro-borghese-celebrity-chef",
+                "50487-alessandro-borghese-4-ristoranti-estate",
+                "1955-masterchef-italia",
+                "3401-celebrity-masterchef-italia",
+                "52091-masterchef",
+                "8473-antonino-chef-academy",
+                "5370-cucine-da-incubo-italia",
+                "4739-pechino-express",
+                "12374-money-road-ogni-tentazione-ha-un-prezzo",
+                "8180-gialappashow",
+                "7953-italia-shore",
+                "8181-4-matrimoni",
+                "f:3c30b322"
+            ]
         },
         {
             "id": "166d9ac7",
@@ -1358,6 +1375,42 @@
                 "9548-ducktales-avventure-di-paperi",
                 "3439-gravity-falls",
                 "36358-hilda"
+            ],
+            "order": [
+                "115-rick-and-morty",
+                "6426-the-midnight-gospel",
+                "1369-futurama",
+                "976-i-griffin",
+                "1478-american-dad",
+                "7507-bobs-burgers",
+                "3273-solar-opposites",
+                "2053-disincanto",
+                "32219-harley-quinn",
+                "8151-the-great-north",
+                "5471-adventure-time",
+                "8309-regular-show",
+                "4800-south-park",
+                "109-bojack-horseman",
+                "31172-smiling-friends",
+                "7253-archer",
+                "2057-final-space",
+                "1168-paradise-police",
+                "1348-brickleberry",
+                "10943-f-is-for-family",
+                "4792-human-resources",
+                "2050-big-mouth",
+                "9053-exploding-kittens",
+                "7540-hazbin-hotel",
+                "13065-helluva-boss",
+                "1214-love-death-robots",
+                "6944-invincibile",
+                "14820-common-side-effects",
+                "2773-star-trek-lower-decks",
+                "8997-unicorn-academy",
+                "7254-capitano-fall",
+                "9548-ducktales-avventure-di-paperi",
+                "3439-gravity-falls",
+                "36358-hilda"
             ]
         },
         {
@@ -1515,16 +1568,10 @@
                 "6219-il-grande-giorno",
                 "49163-attitudini-nessuna"
             ]
-        },
-        {
-            "id": "3c30b322",
-            "name": "ALESSANDRO BORGHESE",
-            "kind": "",
-            "parent": "38768a27",
-            "cover": "",
-            "items": []
         }
     ],
     "source_domains": [],
-    "custom_filters": []
+    "custom_filters": [
+        "attori"
+    ]
 }

@@ -8,6 +8,8 @@ import hashlib
 import threading
 import urllib.parse
 import ipaddress
+import socket
+from functools import lru_cache
 import uuid
 import requests
 import urllib3
@@ -138,6 +140,52 @@ def _host_allowed(host_header):
         return ip.is_loopback or ip.is_private
     except ValueError:
         return False  # rifiuta nomi di dominio arbitrari
+
+
+@lru_cache(maxsize=1024)
+def _host_is_public(host, port):
+    """True se TUTTI gli IP a cui risolve `host` sono pubblici. Cache per non
+    rifare la risoluzione DNS a ogni segmento."""
+    try:
+        infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
+    except Exception:
+        return False
+    if not infos:
+        return False
+    for info in infos:
+        ip = info[4][0]
+        try:
+            addr = ipaddress.ip_address(ip)
+        except ValueError:
+            return False
+        if (addr.is_private or addr.is_loopback or addr.is_link_local
+                or addr.is_reserved or addr.is_multicast or addr.is_unspecified):
+            return False
+    return True
+
+
+def _is_safe_remote_url(url):
+    """Anti-SSRF: consente SOLO http/https verso host che risolvono a IP
+    PUBBLICI. Blocca loopback, reti private/LAN, link-local (169.254.x =
+    metadati cloud) e nomi ovviamente interni. Usato dai proxy di streaming e
+    dal download, che scaricano URL potenzialmente forniti dall'esterno."""
+    try:
+        pr = urllib.parse.urlparse(url or "")
+    except Exception:
+        return False
+    if pr.scheme not in ("http", "https"):
+        return False
+    host = pr.hostname
+    if not host:
+        return False
+    low = host.lower().rstrip(".")
+    if low == "localhost" or low.endswith((".localhost", ".local", ".internal", ".lan", ".home")):
+        return False
+    try:
+        port = pr.port or (443 if pr.scheme == "https" else 80)
+    except ValueError:
+        return False
+    return _host_is_public(low, port)
 
 
 def _same_origin(request):
@@ -2174,7 +2222,8 @@ def get_master_playlist(url: Optional[str] = None, video_id: Optional[int] = Non
         m = re.search(r"/playlist/(\d+)", url)
         if m:
             video_id = int(m.group(1))
-    
+    if not _is_safe_remote_url(url):
+        raise HTTPException(status_code=400, detail="URL non consentito")
     try:
         resp = requests.get(url, headers=get_headers(), timeout=10, verify=False, proxies=get_proxies())
         if resp.status_code != 200:
@@ -2210,6 +2259,8 @@ def get_master_playlist(url: Optional[str] = None, video_id: Optional[int] = Non
 
 @app.get("/api/stream/subplaylist.m3u8")
 def get_sub_playlist(url: str, video_id: int):
+    if not _is_safe_remote_url(url):
+        raise HTTPException(status_code=400, detail="URL non consentito")
     try:
         resp = requests.get(url, headers=get_headers(), timeout=10, verify=False, proxies=get_proxies())
         if resp.status_code != 200:
@@ -2259,6 +2310,8 @@ def get_sub_playlist(url: str, video_id: int):
 
 @app.get("/api/stream/segment")
 def get_stream_segment(url: str, referer: str):
+    if not _is_safe_remote_url(url):
+        raise HTTPException(status_code=400, detail="URL non consentito")
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Referer": referer,
@@ -2274,6 +2327,8 @@ def get_stream_segment(url: str, referer: str):
 
 @app.get("/api/stream/key")
 def get_stream_key(url: str, referer: str):
+    if not _is_safe_remote_url(url):
+        raise HTTPException(status_code=400, detail="URL non consentito")
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Referer": referer
@@ -2289,6 +2344,9 @@ def get_stream_key(url: str, referer: str):
 
 @app.post("/api/download")
 def download_media(payload: DownloadRequest):
+    for _u in (payload.m3u8_video, payload.m3u8_audio):
+        if _u and not _is_safe_remote_url(_u):
+            raise HTTPException(status_code=400, detail="URL di download non consentito")
     download_id = str(uuid.uuid4())
     
     vixcloud_meta = {"sc_id": payload.sc_id, "episode_id": payload.episode_id} if payload.sc_id else None

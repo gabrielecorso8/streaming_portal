@@ -164,6 +164,15 @@ Non essendoci autenticazione, l'API locale è protetta a più livelli
   nomi dei file locandina derivano da un hash della chiave (estensione validata,
   max 8 MB) e i percorsi di download sono verificati con `os.path.commonpath`
   contro la directory dei download.
+- **Anti-SSRF**: i proxy di streaming (`/api/stream/master.m3u8`,
+  `subplaylist.m3u8`, `segment`, `key`) e gli URL di download accettano solo
+  `http`/`https` verso host che risolvono a IP **pubblici**; loopback, reti
+  private/LAN e link-local (169.254.x, metadati cloud) sono bloccati, così gli
+  endpoint non possono essere usati come proxy verso la rete interna.
+- **Nomi file di download**: il titolo è sanificato (rimozione separatori e
+  caratteri di controllo, niente nomi riservati Windows, lunghezza massima) e il
+  file risultante è confinato con `os.path.commonpath` alla cartella dei
+  download.
 
 ---
 

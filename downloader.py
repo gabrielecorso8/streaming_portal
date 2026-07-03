@@ -41,6 +41,27 @@ if os.name == "nt":
     except Exception:
         pass
 
+
+# Nomi di file reserved su Windows: non usabili nemmeno con estensione.
+_WIN_RESERVED = {"CON", "PRN", "AUX", "NUL"} | {f"COM{i}" for i in range(1, 10)} | {f"LPT{i}" for i in range(1, 10)}
+
+
+def safe_filename(title, default="video", maxlen=150):
+    """Trasforma un titolo in un nome file SICURO (niente path traversal, niente
+    separatori, niente nomi riservati Windows), troncato a lunghezza ragionevole."""
+    name = str(title or "")
+    # rimuove separatori di percorso, caratteri vietati e di controllo
+    name = re.sub(r'[\\/*?:"<>|\x00-\x1f]', "", name)
+    name = name.replace("\r", "").replace("\n", "")
+    # niente punti/spazi iniziali o finali (evita "..", nomi nascosti, ecc.)
+    name = name.strip().strip(".").strip()
+    name = re.sub(r"\s+", " ", name)
+    if len(name) > maxlen:
+        name = name[:maxlen].rstrip()
+    if not name or name.upper() in _WIN_RESERVED:
+        name = default
+    return name
+
 def set_stream_resolver(fn):
     global STREAM_RESOLVER
     STREAM_RESOLVER = fn
@@ -460,9 +481,13 @@ class DownloadTask:
             
             # Create download output path
             os.makedirs(self.output_dir, exist_ok=True)
-            safe_title = re.sub(r'[\\/*?:"<>|]', "", self.title)
+            safe_title = safe_filename(self.title)
             final_output_path = os.path.join(self.output_dir, f"{safe_title}.mp4")
             self.output_path = os.path.abspath(final_output_path)
+            # Difesa in profondita': il file DEVE restare dentro output_dir.
+            _base = os.path.abspath(self.output_dir)
+            if os.path.commonpath([self.output_path, _base]) != _base:
+                raise Exception("Percorso di output non valido")
 
             parsed_video_url = urllib.parse.urlparse(self.m3u8_video_url)
             is_direct_mp4 = parsed_video_url.path.lower().endswith(".mp4")

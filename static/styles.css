@@ -1391,3 +1391,9 @@ body {
 }
 .cat-cover.placeholder { background-image: linear-gradient(135deg, rgba(139,92,246,.35), rgba(139,92,246,.1)); }
 .cat-cover-btn, .cat-del-btn { width: 30px; height: 30px; flex: 0 0 auto; }
+
+/* Download: livello "stagione" e righe complete impilate in verticale */
+.download-folder-season { margin-left: 20px; }
+.download-folder-season > .download-folder-head { background: rgba(255,255,255,.03); }
+.download-folder-body { flex-flow: column nowrap; align-items: stretch; }
+.download-folder-body > .download-item { width: 100%; }

@@ -1451,9 +1451,9 @@ function renderDownloads(downloads) {
 
         const nextInfo = dl.status === "completed" ? nextTitleForDownload(dl) : null;
         let nextBtn = "";
-        if (nextInfo) {
-            if (nextInfo.playId) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Riproduci: ${escapeHtml(nextInfo.name || "")}">Prossimo</button>`;
-            else if (nextInfo.isEpisode && nextInfo.series) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Scarica il seguente">Scarica il seguente</button>`;
+        // Solo "Scarica il seguente": se la puntata successiva c'e' gia' (playId), niente pulsante.
+        if (nextInfo && !nextInfo.playId) {
+            if (nextInfo.isEpisode && nextInfo.series) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Scarica il seguente">Scarica il seguente</button>`;
             else if (!nextInfo.isEpisode && /^\d+-/.test(nextInfo.key || "")) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Scarica: ${escapeHtml(nextInfo.name || "")}">Scarica il seguente</button>`;
         }
         const actions = dl.status === "completed"
@@ -1462,7 +1462,7 @@ function renderDownloads(downloads) {
                        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Riproduci
                    </button>
                    ${nextBtn}
-                   <button class="secondary-btn small-btn open-file-btn" title="Apri con il lettore del PC">Apri sul PC</button>
+                   <button class="secondary-btn small-btn open-card-btn" title="Apri la scheda del titolo">Scheda</button>
                    <button class="secondary-btn small-btn reveal-file-btn">
                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Cartella
                    </button>
@@ -1478,13 +1478,15 @@ function renderDownloads(downloads) {
             ? `<img class="library-cover dl-cover" src="${escapeHtml(info.cover)}" alt="" loading="lazy">`
             : `<div class="library-cover placeholder dl-cover"></div>`;
         const typeBadge = info ? (info.type === "tv" ? "Serie" : (info.type === "movie" ? "Film" : "")) : "";
+        const _ep = parseEpisode(dl.title);
+        const displayName = _ep ? episodeLabel(dl.title) : ((info && info.name) || dl.title || "");
         item.title = dl.file || dl.title || "";
         item.innerHTML = posterOnly
             ? `${cover}`
             : `
                 ${cover}
                 <div class="download-meta">
-                    <span class="download-name" title="${escapeHtml(dl.file || dl.title || "")}">${escapeHtml(dl.title || "")}</span>
+                    <span class="download-name" title="${escapeHtml(dl.file || dl.title || "")}">${escapeHtml(displayName)}</span>
                     <span class="download-status status-${dl.status}">${statusText}${typeBadge ? ` \u00b7 ${typeBadge}` : ""}</span>
                     ${showBar ? `<div class="progress-container"><div class="progress-bar" style="width: ${dl.progress}%"></div></div>` : ""}
                 </div>
@@ -1502,16 +1504,23 @@ function renderDownloads(downloads) {
             item.tabIndex = 0;
             item.setAttribute("role", "button");
             item.setAttribute("aria-label", dl.title ? `Riproduci ${dl.title}` : "Riproduci download");
+            const pf = item.querySelector(".play-file-btn");
+            if (pf) pf.addEventListener("click", (e) => { e.stopPropagation(); playDownloaded(dl.id, dl.title, dl.key); });
             const nb = item.querySelector(".dl-next-btn");
-            if (nb) nb.addEventListener("click", () => {
-                if (nextInfo && nextInfo.playId) playDownloaded(nextInfo.playId, nextInfo.name, nextInfo.key);
-                else if (nextInfo && nextInfo.isEpisode) downloadNextEpisode(nextInfo.series, nextInfo.season, nextInfo.episode);
+            if (nb) nb.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (nextInfo && nextInfo.isEpisode) downloadNextEpisode(nextInfo.series, nextInfo.season, nextInfo.episode);
                 else if (nextInfo) downloadTitles([{ key: nextInfo.key, name: nextInfo.name }]);
             });
-            const openBtn = item.querySelector(".open-file-btn");
-            if (openBtn) openBtn.addEventListener("click", () => openDownloadFile(dl.id));
+            const cardBtn = item.querySelector(".open-card-btn");
+            if (cardBtn) cardBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const inf = libInfoForDownload(dl);
+                if (inf && inf.url) openFromLibrary(inf);
+                else showToast("Scheda non disponibile per questo titolo");
+            });
             const revealBtn = item.querySelector(".reveal-file-btn");
-            if (revealBtn) revealBtn.addEventListener("click", () => revealDownloadFile(dl.id));
+            if (revealBtn) revealBtn.addEventListener("click", (e) => { e.stopPropagation(); revealDownloadFile(dl.id); });
         } else if (isActive) {
             item.querySelector(".cancel-dl-btn").addEventListener("click", () => cancelDownload(dl.id));
         }
@@ -1526,39 +1535,69 @@ function renderDownloads(downloads) {
     const rootMap = new Map();
     completedRows.forEach(dl => {
         const placement = downloadPlacementFor(dl);
-        if (!placement.root || !placement.sub) {
-            el.downloadsList.appendChild(buildDownloadItem(dl));
-            return;
-        }
-        const rootKey = downloadGroupKey(placement.root);
+        const rootKey = placement.root ? downloadGroupKey(placement.root) : "__noroot__";
         if (!rootMap.has(rootKey)) rootMap.set(rootKey, { meta: placement.root, subs: new Map() });
-        const root = rootMap.get(rootKey);
-        const subKey = downloadGroupKey(placement.sub);
-        if (!root.subs.has(subKey)) root.subs.set(subKey, { meta: placement.sub, rows: [] });
-        root.subs.get(subKey).rows.push(dl);
+        const rootEntry = rootMap.get(rootKey);
+        const sub = placement.sub || { id: `single:${normName(dl.title)}`, name: dl.title, cover: "" };
+        const subKey = downloadGroupKey(sub);
+        if (!rootEntry.subs.has(subKey)) rootEntry.subs.set(subKey, { meta: sub, rows: [] });
+        rootEntry.subs.get(subKey).rows.push(dl);
     });
 
-    [...rootMap.values()]
-        .sort((a, b) => (a.meta.name || "").localeCompare(b.meta.name || ""))
-        .forEach(root => {
+    // Rende una "serie" spezzata per stagione; il resto come righe/cartelle.
+    const renderSub = (sub, parentBody) => {
+        const isSeries = String(sub.meta.id || "").startsWith("series:")
+            && sub.rows.some(dl => parseEpisode(dl.title));
+        if (isSeries) {
+            const subNode = buildDownloadFolderNode(sub.meta, sub.rows.length, "sub");
+            parentBody.appendChild(subNode.wrap);
+            const seasons = new Map();
+            sub.rows.forEach(dl => {
+                const ep = parseEpisode(dl.title);
+                const sN = ep ? ep.season : 0;
+                if (!seasons.has(sN)) seasons.set(sN, []);
+                seasons.get(sN).push(dl);
+            });
+            [...seasons.keys()].sort((a, b) => a - b).forEach(sN => {
+                const rows = seasons.get(sN).sort((a, b) => {
+                    const ea = parseEpisode(a.title), eb = parseEpisode(b.title);
+                    return (ea && eb) ? (ea.episode - eb.episode) : 0;
+                });
+                const seasonMeta = { id: `${sub.meta.id}:s${sN}`, name: `Stagione ${sN}`, cover: sub.meta.cover };
+                const seasonNode = buildDownloadFolderNode(seasonMeta, rows.length, "season");
+                subNode.body.appendChild(seasonNode.wrap);
+                rows.forEach(dl => seasonNode.body.appendChild(buildDownloadItem(dl, true)));
+            });
+            return;
+        }
+        if (sub.rows.length < 2) {
+            sub.rows.forEach(dl => parentBody.appendChild(buildDownloadItem(dl, true)));
+            return;
+        }
+        const subNode = buildDownloadFolderNode(sub.meta, sub.rows.length, "sub");
+        parentBody.appendChild(subNode.wrap);
+        sub.rows.forEach(dl => subNode.body.appendChild(buildDownloadItem(dl, true)));
+    };
+
+    [...rootMap.entries()]
+        .sort((a, b) => ((a[1].meta && a[1].meta.name) || "").localeCompare((b[1].meta && b[1].meta.name) || ""))
+        .forEach(([rootKey, root]) => {
+            if (rootKey === "__noroot__" || !root.meta) {
+                [...root.subs.values()]
+                    .sort((a, b) => (a.meta.name || "").localeCompare(b.meta.name || ""))
+                    .forEach(sub => renderSub(sub, el.downloadsList));
+                return;
+            }
             const rootCount = [...root.subs.values()].reduce((n, s) => n + s.rows.length, 0);
             if (rootCount < 2) {
-                [...root.subs.values()].forEach(sub => sub.rows.forEach(dl => el.downloadsList.appendChild(buildDownloadItem(dl))));
+                [...root.subs.values()].forEach(sub => renderSub(sub, el.downloadsList));
                 return;
             }
             const rootNode = buildDownloadFolderNode(root.meta, rootCount, "root");
             el.downloadsList.appendChild(rootNode.wrap);
             [...root.subs.values()]
                 .sort((a, b) => (a.meta.name || "").localeCompare(b.meta.name || ""))
-                .forEach(sub => {
-                    if (sub.rows.length < 2) {
-                        sub.rows.forEach(dl => rootNode.body.appendChild(buildDownloadItem(dl, true)));
-                        return;
-                    }
-                    const subNode = buildDownloadFolderNode(sub.meta, sub.rows.length, "sub");
-                    rootNode.body.appendChild(subNode.wrap);
-                    sub.rows.forEach(dl => subNode.body.appendChild(buildDownloadItem(dl, true)));
-                });
+                .forEach(sub => renderSub(sub, rootNode.body));
         });
 }
 
@@ -1665,6 +1704,18 @@ function parseEpisode(name) {
     return { series: (m[1] || "").trim(), season: parseInt(m[2], 10), episode: parseInt(m[3], 10) };
 }
 
+// Etichetta breve di un episodio: "N · Titolo puntata" (o "Episodio N").
+function episodeLabel(title) {
+    const s = (title || "").replace(/\.(mp4|mkv|webm|m4v)$/i, "");
+    const ep = parseEpisode(s);
+    if (!ep) return s;
+    const m = s.match(/s\d{1,2}[\s._-]*e\d{1,3}/i) || s.match(/\d{1,2}x\d{1,3}/i)
+        || s.match(/(?:episodio|ep\.?|puntata)\s*\d{1,3}/i);
+    let rest = m ? s.slice(s.indexOf(m[0]) + m[0].length) : "";
+    rest = rest.replace(/^[\s._\-\u2013\u2014]+/, "").trim();
+    return rest ? `${ep.episode} \u00b7 ${rest}` : `Episodio ${ep.episode}`;
+}
+
 function buildEpisodeContext(currentName) {
     const cur = parseEpisode(currentName);
     if (!cur) return null;
@@ -1759,7 +1810,16 @@ function buildDownloadFolderNode(meta, count, level) {
 function downloadPlacementFor(dl) {
     const actual = downloadGroupFor(dl);
     const info = libInfoForDownload(dl);
+    const epEarly = parseEpisode(dl.title);
     if (!actual || !actual.id || !lastLibraryData) {
+        if (epEarly) {
+            const si = (libraryCache || []).find(x => normName(x.name) === normName(epEarly.series));
+            return { root: null, sub: {
+                id: `series:${normName(epEarly.series)}`,
+                name: epEarly.series || (info && info.name) || "Serie",
+                cover: (si && si.cover) || (info && info.cover) || "",
+            } };
+        }
         const single = info ? { id: `single:${info.key || normName(info.name)}`, name: info.name, cover: info.cover || "" } : null;
         return { root: null, sub: single };
     }

@@ -8,6 +8,8 @@
   var title = p.get("title") || "SC Portal";
   document.title = title;
   if (msg) msg.textContent = title;
+  var browse = document.getElementById("browse");
+  if (browse) browse.href = "/?t=" + encodeURIComponent(tok);
   if (!src) { if (msg) msg.textContent = "Nessun media da riprodurre."; return; }
   function withTok(u) {
     if (!tok) return u;

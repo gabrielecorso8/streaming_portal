@@ -1825,36 +1825,52 @@ async function openPhoneCast() {
     }
     const base = "http://" + info.lan_ip + ":" + info.port;
     const tok = encodeURIComponent(info.token || "");
+    const appUrl = base + "/?t=" + tok;
     const m = currentMediaForCast;
-    let url, hasMedia = !!(m && m.src);
-    if (hasMedia) {
-        url = base + "/phone.html?src=" + encodeURIComponent(m.src) + "&hls=" + (m.hls ? "1" : "0")
+    let mediaUrl = null;
+    if (m && m.src) {
+        mediaUrl = base + "/phone.html?src=" + encodeURIComponent(m.src) + "&hls=" + (m.hls ? "1" : "0")
             + "&title=" + encodeURIComponent(m.title || "SC Portal") + "&t=" + tok;
-    } else {
-        url = base + "/?t=" + tok;
     }
-    showPhoneCastOverlay(url, hasMedia);
+    showPhoneCastOverlay(appUrl, mediaUrl);
 }
 
-function showPhoneCastOverlay(url, hasMedia) {
+function showPhoneCastOverlay(appUrl, mediaUrl) {
+    const modes = [];
+    if (mediaUrl) modes.push({ label: "\u25b6 Questo video", url: mediaUrl, hint: "Apre e riproduce SUBITO questo titolo sul dispositivo." });
+    modes.push({ label: "\u2630 Naviga SC Portal", url: appUrl, hint: "Apre l'app completa sul telefono/tablet: cerca, sfoglia e riproduci qualsiasi cosa." });
+    let cur = 0;
     const overlay = document.createElement("div");
     overlay.className = "picker-overlay";
     overlay.innerHTML = `
       <div class="picker-panel glass phonecast-panel">
         <h3>\ud83d\udcf1 Trasmetti a telefono/tablet</h3>
-        <p class="picker-hint">${hasMedia ? "Inquadra il QR col telefono o tablet (anche Apple) per aprire QUESTO video." : "Inquadra il QR per aprire SC Portal sul telefono/tablet."} Devono essere sulla stessa rete Wi-Fi di questo PC.</p>
-        <div class="phonecast-qr"><img alt="QR" src="/api/cast/qr?data=${encodeURIComponent(url)}"></div>
-        <input type="text" class="phonecast-link" readonly value="${escapeHtml(url)}">
+        ${modes.length > 1 ? `<div class="phonecast-tabs">${modes.map((mo, i) => `<button class="secondary-btn small-btn pc-tab" data-i="${i}">${mo.label}</button>`).join("")}</div>` : ""}
+        <p class="picker-hint pc-hint"></p>
+        <div class="phonecast-qr"><img alt="QR" class="pc-qr"></div>
+        <input type="text" class="phonecast-link pc-link" readonly>
         <div class="picker-actions">
           <button class="secondary-btn phonecast-copy">Copia link</button>
           <button class="secondary-btn picker-cancel">Chiudi</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
+    const img = overlay.querySelector(".pc-qr");
+    const inp = overlay.querySelector(".pc-link");
+    const hint = overlay.querySelector(".pc-hint");
+    const tabs = overlay.querySelectorAll(".pc-tab");
+    function render() {
+        const mo = modes[cur];
+        img.src = "/api/cast/qr?data=" + encodeURIComponent(mo.url);
+        inp.value = mo.url;
+        hint.textContent = mo.hint + " Stessa rete Wi-Fi di questo PC.";
+        tabs.forEach((t, i) => t.classList.toggle("active", i === cur));
+    }
+    tabs.forEach((t) => t.addEventListener("click", () => { cur = parseInt(t.getAttribute("data-i"), 10) || 0; render(); }));
+    render();
     const close = () => overlay.remove();
     overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
     overlay.querySelector(".picker-cancel").addEventListener("click", close);
-    const inp = overlay.querySelector(".phonecast-link");
     overlay.querySelector(".phonecast-copy").addEventListener("click", () => {
         try { inp.select(); } catch (e) {}
         try { navigator.clipboard.writeText(inp.value); }

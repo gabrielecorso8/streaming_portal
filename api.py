@@ -106,6 +106,9 @@ async def no_cache_static(request, call_next):
     path = request.url.path
     if path == "/" or path.endswith((".js", ".css", ".html")) or path.startswith("/covers/"):
         response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    elif path.startswith(("/api/folders", "/api/library", "/api/settings", "/api/downloads", "/api/domains")):
+        # dati personali: mai salvati su disco dal browser
+        response.headers["Cache-Control"] = "no-store"
     return response
 
 
@@ -116,11 +119,11 @@ async def no_cache_static(request, call_next):
 # --------------------------------------------------------------------------- #
 _CSP = (
     "default-src 'self'; "
-    "script-src 'self' https://cdn.jsdelivr.net; "
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-    "font-src 'self' https://fonts.gstatic.com; "
-    "img-src 'self' data: https:; "
-    "media-src 'self' blob: https:; "
+    "script-src 'self'; "                       # niente CDN esterni (no tracking)
+    "style-src 'self' 'unsafe-inline'; "        # niente Google Fonts
+    "font-src 'self'; "
+    "img-src 'self' data: https:; "             # locandine remote
+    "media-src 'self' blob: https:; "           # stream/mp4 remoti
     "connect-src 'self' https:; "
     "worker-src 'self' blob:; "
     "frame-src https:; "
@@ -214,6 +217,8 @@ async def security_headers(request, call_next):
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
     response.headers["Content-Security-Policy"] = _CSP
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
     return response
 
 if getattr(sys, "frozen", False):

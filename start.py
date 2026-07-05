@@ -103,6 +103,22 @@ def download_ffmpeg():
         print(f"[-] Failed to download FFmpeg: {e}")
         print("[-] Make sure you have an active internet connection or install FFmpeg manually.")
 
+def download_hls():
+    """Scarica hls.js UNA VOLTA in static/ (self-hosting), cosi' la pagina non
+    contatta piu' una CDN esterna a ogni apertura (privacy: nessun tracker)."""
+    dest = os.path.join(PROJECT_DIR, "static", "hls.min.js")
+    try:
+        if os.path.exists(dest) and os.path.getsize(dest) > 50000:
+            return
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        url = "https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"
+        print("[*] Scarico hls.js in locale (una volta sola)...")
+        urllib.request.urlretrieve(url, dest)
+        print("[+] hls.js self-hosted: nessun caricamento da CDN a runtime.")
+    except Exception as e:
+        print(f"[!] Impossibile scaricare hls.js ora: {e}")
+
+
 def start_server():
     """Starts the FastAPI application using uvicorn."""
     # Add bin/ directory to PATH so subprocesses can find ffmpeg
@@ -199,6 +215,10 @@ if __name__ == "__main__":
                 download_ffmpeg()
             except Exception as e:
                 print(f"[!] FFmpeg non disponibile ora: {e}")
+            try:
+                download_hls()
+            except Exception as e:
+                print(f"[!] hls.js non scaricato ora: {e}")
             start_server()
     except Exception:
         import traceback

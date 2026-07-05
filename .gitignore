@@ -30,3 +30,4 @@ dist/
 *.bak_link_migration
 *.bak_nullfix
 *.bak_truncated
+static/hls.min.js

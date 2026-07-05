@@ -220,8 +220,7 @@ async function init() {
     if (el.srcSc) el.srcSc.addEventListener("change", rerunSearchIfAny);
     if (el.srcAw) el.srcAw.addEventListener("change", rerunSearchIfAny);
     var _dismissPrivacy = function () {
-        try { localStorage.setItem("privacy_dismissed", "1"); } catch (e) {}
-        _proxyWarned = true;
+        _proxyWarned = true;   // solo per questa sessione: riappare al prossimo avvio
         if (el.privacyBanner) el.privacyBanner.classList.add("hidden");
     };
     if (el.privacyDismiss) el.privacyDismiss.addEventListener("click", _dismissPrivacy);
@@ -844,9 +843,10 @@ async function checkEgressIp() {
 
 function showPrivacyBannerIfNeeded() {
     if (!el.privacyBanner) return;
-    let dismissed = false;
-    try { dismissed = localStorage.getItem("privacy_dismissed") === "1"; } catch (e) {}
-    el.privacyBanner.classList.toggle("hidden", proxyConfigured || dismissed);
+    // Nessuna persistenza: l'avviso ricompare a OGNI avvio dell'app (a meno che
+    // non sia impostato un proxy nel campo dedicato). La chiusura vale solo per
+    // la sessione corrente.
+    el.privacyBanner.classList.toggle("hidden", proxyConfigured);
 }
 
 function refreshProxyState() {
@@ -858,7 +858,6 @@ function refreshProxyState() {
 
 function warnNoProxyOnce() {
     if (proxyConfigured || _proxyWarned) return;
-    try { if (localStorage.getItem("privacy_dismissed") === "1") return; } catch (e) {}
     _proxyWarned = true;
     showToast("⚠ Nessun proxy/VPN: il tuo IP e visibile ai siti. Valuta una VPN o imposta un proxy.", 6000);
 }

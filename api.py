@@ -1603,85 +1603,88 @@ def search_source_domain(domain, q, limit=12):
 
 
 @app.get("/api/search")
-def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None, type: Optional[str] = None):
+def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None,
+           type: Optional[str] = None, sources: Optional[str] = None):
     base_url = get_base_url()
     query = urllib.parse.quote(q)
+    # Fonti attive: "sc" = StreamingCommunity, "aw" = AnimeWorld/fonti extra.
+    # Default = entrambe. La UI passa le spunte selezionate dall'utente.
+    srcs = {x.strip().lower() for x in (sources or "sc,aw").split(",") if x.strip()} or {"sc", "aw"}
+    wanted_type = (type or "").strip().lower()
+    wanted_genre = (genre or "").strip().lower()
+    results = []
     try:
-        resp, url = sc_get_first(
-            [f"/it/search?q={query}", f"/search?q={query}", f"/api/search?q={query}"],
-            headers=get_headers(),
-            timeout=10,
-        )
-        if resp.status_code != 200:
-            raise HTTPException(status_code=resp.status_code, detail="Failed search request")
+        if "sc" in srcs:
+            resp, url = sc_get_first(
+                [f"/it/search?q={query}", f"/search?q={query}", f"/api/search?q={query}"],
+                headers=get_headers(),
+                timeout=10,
+            )
+            if resp.status_code != 200:
+                raise HTTPException(status_code=resp.status_code, detail="Failed search request")
 
-        content_type = resp.headers.get("content-type", "")
-        if "application/json" in content_type:
-            try:
-                data = resp.json().get("data", [])
-            except ValueError:
-                raise _domain_error("La risposta non e valida.")
-            cdn_url = None
-        else:
-            soup = BeautifulSoup(resp.text, "lxml")
-            app_div = soup.find("div", {"id": "app"})
-            if not app_div:
-                raise HTTPException(status_code=500, detail="Unable to extract search results")
-            page_data = json.loads(app_div.get("data-page"))
-            data = page_data.get("props", {}).get("titles", [])
-            cdn_url = get_cdn_url(page_data)
-
-        results = []
-        for item in data:
-            if not isinstance(item, dict):
-                continue
-            title_id = item.get("id")
-            slug = item.get("slug")
-            id_and_slug = f"{title_id}-{slug}" if title_id and slug else ""
-            results.append({
-                "id": title_id,
-                "name": item.get("name") or item.get("title") or "Senza titolo",
-                "slug": slug,
-                "id_and_slug": id_and_slug,
-                "type": item.get("type") or "",
-                "score": item.get("score"),
-                "release_date": item.get("last_air_date_it") or item.get("last_air_date") or item.get("release_date"),
-                "genres": [],
-                "cover": image_url(item.get("images"), cdn_url=cdn_url),
-                "url": f"{base_url}/it/titles/{id_and_slug}" if id_and_slug else "",
-            })
-
-        wanted_type = (type or "").strip().lower()
-        if wanted_type in ("movie", "tv"):
-            results = [r for r in results if (r.get("type") or "") == wanted_type]
-
-        wanted_genre = (genre or "").strip().lower()
-        if wanted_genre:
-            filtered = []
-            for item in results:
-                if not item.get("id_and_slug"):
-                    continue
+            content_type = resp.headers.get("content-type", "")
+            if "application/json" in content_type:
                 try:
-                    details = get_details(item["id_and_slug"])
-                    item["genres"] = details.get("genres", [])
-                    if any(wanted_genre in (g or "").lower() for g in item["genres"]):
-                        filtered.append(item)
-                except Exception:
-                    pass
-            results = filtered
+                    data = resp.json().get("data", [])
+                except ValueError:
+                    raise _domain_error("La risposta non e valida.")
+                cdn_url = None
+            else:
+                soup = BeautifulSoup(resp.text, "lxml")
+                app_div = soup.find("div", {"id": "app"})
+                if not app_div:
+                    raise HTTPException(status_code=500, detail="Unable to extract search results")
+                page_data = json.loads(app_div.get("data-page"))
+                data = page_data.get("props", {}).get("titles", [])
+                cdn_url = get_cdn_url(page_data)
 
-        if sort == "score":
-            results.sort(key=lambda x: float(x.get("score") or 0), reverse=True)
-        elif sort == "recent":
-            results.sort(key=lambda x: x.get("release_date") or "", reverse=True)
-        elif sort == "oldest":
-            results.sort(key=lambda x: x.get("release_date") or "9999")
-        # Le fonti EXTRA (AnimeWorld ecc.) sono gia' filtrate per rilevanza, quindi
-        # vanno messe IN CIMA: per un titolo anime StreamingCommunity restituisce
-        # spesso molti risultati fuzzy/sbagliati, che finirebbero sopra a quelli
-        # giusti di AnimeWorld. Le fonti extra prima, poi StreamingCommunity.
+            for item in data:
+                if not isinstance(item, dict):
+                    continue
+                title_id = item.get("id")
+                slug = item.get("slug")
+                id_and_slug = f"{title_id}-{slug}" if title_id and slug else ""
+                results.append({
+                    "id": title_id,
+                    "name": item.get("name") or item.get("title") or "Senza titolo",
+                    "slug": slug,
+                    "id_and_slug": id_and_slug,
+                    "type": item.get("type") or "",
+                    "score": item.get("score"),
+                    "release_date": item.get("last_air_date_it") or item.get("last_air_date") or item.get("release_date"),
+                    "genres": [],
+                    "cover": image_url(item.get("images"), cdn_url=cdn_url),
+                    "url": f"{base_url}/it/titles/{id_and_slug}" if id_and_slug else "",
+                })
+
+            if wanted_type in ("movie", "tv"):
+                results = [r for r in results if (r.get("type") or "") == wanted_type]
+
+            if wanted_genre:
+                filtered = []
+                for item in results:
+                    if not item.get("id_and_slug"):
+                        continue
+                    try:
+                        details = get_details(item["id_and_slug"])
+                        item["genres"] = details.get("genres", [])
+                        if any(wanted_genre in (g or "").lower() for g in item["genres"]):
+                            filtered.append(item)
+                    except Exception:
+                        pass
+                results = filtered
+
+            if sort == "score":
+                results.sort(key=lambda x: float(x.get("score") or 0), reverse=True)
+            elif sort == "recent":
+                results.sort(key=lambda x: x.get("release_date") or "", reverse=True)
+            elif sort == "oldest":
+                results.sort(key=lambda x: x.get("release_date") or "9999")
+
+        # Fonti EXTRA (AnimeWorld ecc.): gia' filtrate per rilevanza -> messe IN CIMA.
         extra = []
-        if not wanted_genre:
+        if "aw" in srcs and not wanted_genre:
             for d in SETTINGS.get("source_domains", []):
                 if "animeworld" in (d or "").lower():
                     try:

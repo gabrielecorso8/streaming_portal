@@ -1409,3 +1409,8 @@ body {
 .aw-ep:hover { background: rgba(139,92,246,.12); }
 .aw-epn { font-weight: 700; }
 .aw-ep-actions { display: flex; gap: .35rem; flex: 0 0 auto; }
+
+/* Spunte fonte nella barra di ricerca */
+.src-check { display: inline-flex; align-items: center; gap: .35rem; font-size: .85rem; color: var(--text-secondary); cursor: pointer; user-select: none; padding: .25rem .5rem; border-radius: 8px; }
+.src-check:hover { background: rgba(255,255,255,.05); }
+.src-check input { accent-color: var(--accent, #8b5cf6); cursor: pointer; }

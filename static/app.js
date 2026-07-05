@@ -45,6 +45,8 @@ const el = {
     searchSort: document.getElementById("search-sort"),
     searchGenre: document.getElementById("search-genre"),
     searchType: document.getElementById("search-type"),
+    srcSc: document.getElementById("src-sc"),
+    srcAw: document.getElementById("src-aw"),
     searchClear: document.getElementById("search-clear"),
     openFolderBtn: document.getElementById("open-folder-btn"),
     shutdownBtn: document.getElementById("shutdown-btn"),
@@ -208,6 +210,8 @@ async function init() {
     if (el.searchSort) el.searchSort.addEventListener("change", rerunSearchIfAny);
     if (el.searchGenre) el.searchGenre.addEventListener("change", rerunSearchIfAny);
     if (el.searchType) el.searchType.addEventListener("change", rerunSearchIfAny);
+    if (el.srcSc) el.srcSc.addEventListener("change", rerunSearchIfAny);
+    if (el.srcAw) el.srcAw.addEventListener("change", rerunSearchIfAny);
     if (el.searchClear) el.searchClear.addEventListener("click", clearSearch);
     if (el.urlInput) el.urlInput.addEventListener("input", toggleClearBtn);
     toggleClearBtn();
@@ -347,6 +351,11 @@ async function searchCatalog(query) {
         if (el.searchSort && el.searchSort.value) params.set("sort", el.searchSort.value);
         if (el.searchGenre && el.searchGenre.value) params.set("genre", el.searchGenre.value);
         if (el.searchType && el.searchType.value) params.set("type", el.searchType.value);
+        const srcs = [];
+        if (!el.srcSc || el.srcSc.checked) srcs.push("sc");
+        if (el.srcAw && el.srcAw.checked) srcs.push("aw");
+        if (!srcs.length) srcs.push("sc");
+        params.set("sources", srcs.join(","));
         const resp = await fetch(`/api/search?${params.toString()}`);
         if (!resp.ok) {
             if (await checkDomainError(resp)) return;

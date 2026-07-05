@@ -230,6 +230,14 @@ async function init() {
     if (el.privacyVpnOk) el.privacyVpnOk.addEventListener("click", _dismissPrivacy);
     if (el.privacyCheckIp) el.privacyCheckIp.addEventListener("click", checkEgressIp);
     refreshProxyState();
+    // Vista "solo download" per telefono/tablet (aperta dal QR): mostra soltanto
+    // la sezione "I tuoi download" e carica i file gia' scaricati.
+    try {
+        if (new URLSearchParams(location.search).get("view") === "downloads") {
+            document.body.classList.add("downloads-only");
+            if (typeof refreshDownloads === "function") refreshDownloads();
+        }
+    } catch (e) {}
     if (el.searchClear) el.searchClear.addEventListener("click", clearSearch);
     if (el.urlInput) el.urlInput.addEventListener("input", toggleClearBtn);
     toggleClearBtn();
@@ -865,32 +873,7 @@ function warnNoProxyOnce() {
     showToast("⚠ Nessun proxy/VPN: il tuo IP e visibile ai siti. Valuta una VPN o imposta un proxy.", 6000);
 }
 
-function _lanToken() {
-    try {
-        var t = new URLSearchParams(location.search).get("t");
-        if (t) return t;
-        var m = document.cookie.match(/(?:^|;\s*)sc_token=([^;]+)/);
-        return m ? decodeURIComponent(m[1]) : "";
-    } catch (e) { return ""; }
-}
-
-function isRemoteDevice() {
-    // true se l'app e' aperta da telefono/tablet (via IP di rete), non dal PC
-    return location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
-}
-
-function maybeUseOptimizedPlayer(src, hls, title) {
-    if (!isRemoteDevice() || !src) return false;
-    var tok = _lanToken();
-    var u = "/phone.html?src=" + encodeURIComponent(src) + "&hls=" + (hls ? "1" : "0")
-          + "&title=" + encodeURIComponent(title || "SC Portal")
-          + (tok ? "&t=" + encodeURIComponent(tok) : "");
-    location.href = u;
-    return true;
-}
-
 function playStreamMp4(streamUrl, title) {
-    if (maybeUseOptimizedPlayer(streamUrl, false, title || "SC Portal")) return;
     closePlayer();
     currentPlayTitle = title || "";
     if (el.playingTitle) el.playingTitle.textContent = `Riproduzione: ${title || "episodio"}`;
@@ -1310,7 +1293,6 @@ function handleHlsError(data, onRefetch) {
 // "fresco" (token rigenerati) quando lo stream cade per scadenza token o rete,
 // e la riproduzione riprende dalla stessa posizione.
 function playStream(streamSrc, getSrc, iframeFallback) {
-    if (maybeUseOptimizedPlayer(streamSrc, true, _castTitle())) return;
     streamReloadAttempts = 0; fragErrCount = 0; netRetryCount = 0;
     currentMediaForCast = { src: streamSrc, hls: true, title: _castTitle() };
     el.videoPlayer.classList.remove("hidden");
@@ -1807,7 +1789,6 @@ function setQualityControls(show) {
 // Riproduce un file GIA' scaricato direttamente nel player (file locale: niente
 // HLS, niente selettori qualita'/audio). Funziona anche da telefono.
 function playDownloaded(id, title, key) {
-    if (maybeUseOptimizedPlayer("/api/download/play/" + encodeURIComponent(id), false, title || "SC Portal")) return;
     closePlayer();
     currentPlayTitle = title || "";
     if (el.playingTitle) el.playingTitle.textContent = `Riproduzione: ${title || "download"}`;
@@ -1852,52 +1833,30 @@ async function openPhoneCast() {
     }
     const base = "http://" + info.lan_ip + ":" + info.port;
     const tok = encodeURIComponent(info.token || "");
-    const appUrl = base + "/?t=" + tok;
-    const m = currentMediaForCast;
-    let mediaUrl = null;
-    if (m && m.src) {
-        mediaUrl = base + "/phone.html?src=" + encodeURIComponent(m.src) + "&hls=" + (m.hls ? "1" : "0")
-            + "&title=" + encodeURIComponent(m.title || "SC Portal") + "&t=" + tok;
-    }
-    showPhoneCastOverlay(appUrl, mediaUrl);
+    // QR UNICO: apre sul telefono/tablet SOLO "I tuoi download".
+    const url = base + "/?t=" + tok + "&view=downloads";
+    showPhoneCastOverlay(url);
 }
 
-function showPhoneCastOverlay(appUrl, mediaUrl) {
-    const modes = [];
-    if (mediaUrl) modes.push({ label: "\u25b6 Questo video", url: mediaUrl, hint: "Apre e riproduce SUBITO questo titolo sul dispositivo." });
-    modes.push({ label: "\u2630 Naviga SC Portal", url: appUrl, hint: "Apre l'app completa sul telefono/tablet: cerca, sfoglia e riproduci qualsiasi cosa." });
-    let cur = 0;
+function showPhoneCastOverlay(url) {
     const overlay = document.createElement("div");
     overlay.className = "picker-overlay";
     overlay.innerHTML = `
       <div class="picker-panel glass phonecast-panel">
-        <h3>\ud83d\udcf1 Trasmetti a telefono/tablet</h3>
-        ${modes.length > 1 ? `<div class="phonecast-tabs">${modes.map((mo, i) => `<button class="secondary-btn small-btn pc-tab" data-i="${i}">${mo.label}</button>`).join("")}</div>` : ""}
-        <p class="picker-hint pc-hint"></p>
-        <div class="phonecast-qr"><img alt="QR" class="pc-qr"></div>
-        <input type="text" class="phonecast-link pc-link" readonly>
+        <h3>\ud83d\udcf1 I tuoi download su telefono/tablet</h3>
+        <p class="picker-hint">Inquadra il QR col telefono o tablet (anche Apple): si apriranno SOLO i tuoi download, pronti da riprodurre. Stessa rete Wi-Fi di questo PC.</p>
+        <div class="phonecast-qr"><img alt="QR" src="/api/cast/qr?data=${encodeURIComponent(url)}"></div>
+        <input type="text" class="phonecast-link" readonly value="${escapeHtml(url)}">
         <div class="picker-actions">
           <button class="secondary-btn phonecast-copy">Copia link</button>
           <button class="secondary-btn picker-cancel">Chiudi</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
-    const img = overlay.querySelector(".pc-qr");
-    const inp = overlay.querySelector(".pc-link");
-    const hint = overlay.querySelector(".pc-hint");
-    const tabs = overlay.querySelectorAll(".pc-tab");
-    function render() {
-        const mo = modes[cur];
-        img.src = "/api/cast/qr?data=" + encodeURIComponent(mo.url);
-        inp.value = mo.url;
-        hint.textContent = mo.hint + " Stessa rete Wi-Fi di questo PC.";
-        tabs.forEach((t, i) => t.classList.toggle("active", i === cur));
-    }
-    tabs.forEach((t) => t.addEventListener("click", () => { cur = parseInt(t.getAttribute("data-i"), 10) || 0; render(); }));
-    render();
     const close = () => overlay.remove();
     overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
     overlay.querySelector(".picker-cancel").addEventListener("click", close);
+    const inp = overlay.querySelector(".phonecast-link");
     overlay.querySelector(".phonecast-copy").addEventListener("click", () => {
         try { inp.select(); } catch (e) {}
         try { navigator.clipboard.writeText(inp.value); }

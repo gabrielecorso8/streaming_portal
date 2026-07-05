@@ -8,9 +8,9 @@
     <!-- Google Fonts: Outfit -->
     <!-- HLS.js for streaming -->
     <script src="hls.min.js?v=1.5.8"></script>
-    <link rel="icon" type="image/x-icon" href="favicon.ico?v=55">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=56">
     <link rel="apple-touch-icon" href="app-icon.png">
-    <link rel="stylesheet" href="styles.css?v=55">
+    <link rel="stylesheet" href="styles.css?v=56">
 </head>
 <body>
     <header class="app-header">
@@ -139,7 +139,7 @@
                     <button id="close-player-btn" class="close-btn">&times;</button>
                 </div>
                 <div class="video-container">
-                    <video id="video-player" controls playsinline webkit-playsinline></video>
+                    <video id="video-player" controls playsinline webkit-playsinline x-webkit-airplay="allow"></video>
                     <iframe id="iframe-player" src="" frameborder="0" allowfullscreen class="hidden" style="width:100%; height:100%; display:block;"></iframe>
                 </div>
                 <div class="player-controls-bar">
@@ -192,7 +192,7 @@
         </section>
 
         <!-- Downloads Management Section -->
-        <section class="downloads-section card glass">
+        <section class="downloads-section card glass" id="downloads-section">
             <div class="downloads-header">
                 <h2>I tuoi download</h2>
                 <div class="header-actions">
@@ -281,6 +281,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=55"></script>
+    <script src="app.js?v=56"></script>
 </body>
 </html>

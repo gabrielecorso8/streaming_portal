@@ -1439,3 +1439,12 @@ body {
 /* Selettore modalità nel pannello Telefono/Tablet */
 .phonecast-tabs { display: flex; gap: .4rem; justify-content: center; flex-wrap: wrap; margin: .2rem 0 .5rem; }
 .phonecast-tabs .pc-tab.active { border-color: var(--accent, #8b5cf6); color: #fff; background: rgba(139,92,246,.22); }
+
+/* Vista "solo download" per telefono/tablet (aperta dal QR) */
+body.downloads-only .hero,
+body.downloads-only #library-section,
+body.downloads-only #domains-section,
+body.downloads-only #search-results-section,
+body.downloads-only #privacy-banner,
+body.downloads-only .header-search-btn { display: none !important; }
+body.downloads-only #downloads-section { margin-top: 1rem; }

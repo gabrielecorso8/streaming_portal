@@ -1414,3 +1414,13 @@ body {
 .src-check { display: inline-flex; align-items: center; gap: .35rem; font-size: .85rem; color: var(--text-secondary); cursor: pointer; user-select: none; padding: .25rem .5rem; border-radius: 8px; }
 .src-check:hover { background: rgba(255,255,255,.05); }
 .src-check input { accent-color: var(--accent, #8b5cf6); cursor: pointer; }
+
+/* Avviso privacy (nessun proxy/VPN) */
+.privacy-banner {
+    display: flex; align-items: center; gap: .6rem; margin: .8rem auto 0; max-width: 720px;
+    padding: .6rem .9rem; border-radius: 12px; font-size: .88rem; line-height: 1.35;
+    background: linear-gradient(180deg, rgba(234,179,8,.16), rgba(234,179,8,.06));
+    border: 1px solid rgba(234,179,8,.35); color: #fde68a;
+}
+.privacy-banner span { flex: 1; }
+.privacy-banner .icon-btn { flex: 0 0 auto; color: #fde68a; }

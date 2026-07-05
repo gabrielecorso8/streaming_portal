@@ -122,7 +122,7 @@ _CSP = (
     "script-src 'self'; "                       # niente CDN esterni (no tracking)
     "style-src 'self' 'unsafe-inline'; "        # niente Google Fonts
     "font-src 'self'; "
-    "img-src 'self' data: https:; "             # locandine remote
+    "img-src 'self' data:; "                    # locandine SOLO via proxy locale
     "media-src 'self' blob: https:; "           # stream/mp4 remoti
     "connect-src 'self' https:; "
     "worker-src 'self' blob:; "
@@ -725,7 +725,23 @@ def get_cdn_url(page_data=None):
     return get_base_url()
 
 
+def cover_out(url):
+    """Fa passare le locandine REMOTE dal proxy locale /api/img, cosi' il browser
+    non contatta le CDN dei poster (niente esposizione dell'IP a terzi)."""
+    if not url or not isinstance(url, str):
+        return url or ""
+    if url.startswith("/") or url.startswith("data:"):
+        return url  # gia' locale (/covers/...) o inline
+    if url.startswith("http://") or url.startswith("https://"):
+        return "/api/img?u=" + urllib.parse.quote(url, safe="")
+    return url
+
+
 def image_url(images, preferred=("poster", "cover"), cdn_url=None):
+    return cover_out(_raw_image_url(images, preferred=preferred, cdn_url=cdn_url))
+
+
+def _raw_image_url(images, preferred=("poster", "cover"), cdn_url=None):
     """Extract an image URL from both old dict and new list image shapes."""
     if not images:
         return ""
@@ -871,6 +887,27 @@ class DownloadRequest(BaseModel):
 @app.get("/api/settings")
 def get_settings():
     return SETTINGS
+
+
+@app.get("/api/img")
+def proxy_image(u: str):
+    """Scarica una locandina REMOTA lato server e la restituisce da localhost,
+    cosi' il browser non contatta le CDN dei poster. Protetto anti-SSRF."""
+    if not _is_safe_remote_url(u):
+        raise HTTPException(status_code=400, detail="URL non consentito")
+    try:
+        r = session.get(u, headers=get_headers(), timeout=12, verify=False, proxies=get_proxies())
+    except Exception:
+        raise HTTPException(status_code=502, detail="Immagine non disponibile")
+    if r.status_code != 200:
+        raise HTTPException(status_code=r.status_code, detail="Immagine non disponibile")
+    if len(r.content) > 15 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Immagine troppo grande")
+    ct = r.headers.get("content-type", "")
+    if not ct.startswith("image/"):
+        ct = "image/jpeg"
+    return Response(content=r.content, media_type=ct,
+                    headers={"Cache-Control": "public, max-age=86400"})
 
 @app.post("/api/save")
 def save_all():
@@ -1185,7 +1222,7 @@ def _title_view(e):
     return {
         "key": e.get("key"),
         "name": e.get("name") or "Senza titolo",
-        "cover": e.get("cover", ""),
+        "cover": cover_out(e.get("cover", "")),
         "type": e.get("type", ""),
         "release_date": e.get("release_date", ""),
         "is_clone": bool(e.get("is_clone", False)),
@@ -1218,7 +1255,7 @@ def _folders_payload():
             else:
                 cover = next((it.get("cover") for it in items if it.get("cover")), "")
         folders_out.append({
-            "id": f["id"], "name": f.get("name", ""), "cover": cover,
+            "id": f["id"], "name": f.get("name", ""), "cover": cover_out(cover),
             "kind": f.get("kind", ""), "parent": f.get("parent", ""),
             "favorite": bool(f.get("favorite", False)),
             "order": list(f.get("order", [])), "items": items,
@@ -1595,7 +1632,7 @@ def search_source_domain(domain, q, limit=12):
                     "score": None,
                     "release_date": "",
                     "genres": [],
-                    "cover": cover,
+                    "cover": cover_out(cover),
                     "url": href,
                     "is_clone": True,
                     "source": host,
@@ -1697,7 +1734,7 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None,
                             extra.append({
                                 "id": "", "name": it["title"], "slug": "",
                                 "id_and_slug": it["key"], "type": "tv", "score": None,
-                                "release_date": "", "genres": [], "cover": it["cover"],
+                                "release_date": "", "genres": [], "cover": cover_out(it["cover"]),
                                 "url": it["url"], "is_clone": True, "is_animeworld": True,
                                 "source": "animeworld",
                             })
@@ -2050,7 +2087,7 @@ def resolve_url(payload: ResolveUrlRequest):
             "is_clone": True,
             "is_animeworld": True,
             "title": info.get("title") or "AnimeWorld",
-            "cover": info.get("cover", ""),
+            "cover": cover_out(info.get("cover", "")),
             "plot": info.get("plot", ""),
             "iframe_url": "",
             "stream_url": "",

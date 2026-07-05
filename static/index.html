@@ -8,9 +8,9 @@
     <!-- Google Fonts: Outfit -->
     <!-- HLS.js for streaming -->
     <script src="hls.min.js?v=1.5.8"></script>
-    <link rel="icon" type="image/x-icon" href="favicon.ico?v=47">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=48">
     <link rel="apple-touch-icon" href="app-icon.png">
-    <link rel="stylesheet" href="styles.css?v=47">
+    <link rel="stylesheet" href="styles.css?v=48">
 </head>
 <body>
     <header class="app-header">
@@ -115,6 +115,10 @@
                     </select>
                     <label class="src-check" title="Cerca su StreamingCommunity"><input type="checkbox" id="src-sc" checked> StreamingCommunity</label>
                     <label class="src-check" title="Cerca su AnimeWorld"><input type="checkbox" id="src-aw"> AnimeWorld</label>
+                </div>
+                <div id="privacy-banner" class="privacy-banner hidden">
+                    <span>🔒 Nessun proxy/VPN attivo: il tuo IP e' visibile ai siti di streaming. Imposta un proxy nel box "Domini salvati" qui sotto oppure usa una VPN.</span>
+                    <button id="privacy-dismiss" class="icon-btn" type="button" title="Ho capito">✕</button>
                 </div>
             </div>
         </section>
@@ -273,6 +277,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=47"></script>
+    <script src="app.js?v=48"></script>
 </body>
 </html>

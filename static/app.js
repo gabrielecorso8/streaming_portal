@@ -1997,8 +1997,8 @@ function currentNextItem() {
 }
 
 function showBannerIfAny() {
-    const next = currentNextItem();
-    if (next) showNextBanner(next); else hideNextBanner();
+    // Banner "Prossimo" rimosso su richiesta: non mostrare nulla.
+    hideNextBanner();
 }
 
 function checkNextBanner() {

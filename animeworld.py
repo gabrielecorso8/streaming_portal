@@ -24,6 +24,20 @@ import requests
 from bs4 import BeautifulSoup
 
 DEFAULT_HOST = "www.animeworld.ac"
+KNOWN_HOSTS = ["www.animeworld.ac", "www.animeworld.so", "www.animeworld.tv"]
+
+
+def _host_candidates(host):
+    """Il sito ha piu' domini equivalenti: proviamo prima quello indicato, poi
+    gli altri noti (uno di essi potrebbe essere down o bloccato da Cloudflare)."""
+    h = (host or DEFAULT_HOST).lower()
+    if h and not h.startswith("www.") and "animeworld" in h:
+        h = "www." + h
+    order = [h] if h else []
+    for k in KNOWN_HOSTS:
+        if k not in order:
+            order.append(k)
+    return order
 
 _UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -79,20 +93,19 @@ def search(query, host=DEFAULT_HOST, proxies=None, limit=40):
     al PRIMO contenitore .film-list (i risultati veri) e in piu' filtriamo per
     rilevanza rispetto alla query.
     """
-    base = f"https://{host}"
-    s = _session(proxies)
-    out = []
     q_tokens = [t for t in re.split(r"\W+", (query or "").lower()) if len(t) >= 2]
 
     def _relevant(title):
         if not q_tokens:
             return True
         nt = (title or "").lower()
+        # tiene i titoli con almeno un token della query (scarta il "rumore"
+        # delle sidebar Top Anime / Nuove aggiunte / Correlati)
         return any(t in nt for t in q_tokens)
 
-    def _collect(anchors):
+    def _collect(soup, base):
         seen, res = set(), []
-        for a in anchors:
+        for a in soup.select("a[href*='/play/']"):
             href = a.get("href") or ""
             m = re.search(r"/play/([^/?#]+)", href)
             if not m:
@@ -113,19 +126,20 @@ def search(query, host=DEFAULT_HOST, proxies=None, limit=40):
                 break
         return res
 
-    try:
-        r = s.get(f"{base}/search", params={"keyword": query}, timeout=15)
-        if r.status_code != 200:
-            return out
-        soup = BeautifulSoup(r.text, "lxml")
-        container = soup.select_one("div.film-list") or soup.select_one(".film-list")
-        if container:
-            out = _collect(container.select("a[href*='/play/']"))
-        if not out:
-            out = _collect(soup.select("a[href*='/play/']"))
-    except Exception as e:
-        print(f"[animeworld] search error: {e}")
-    return out
+    for h in _host_candidates(host):
+        base = f"https://{h}"
+        try:
+            r = _session(proxies).get(f"{base}/search", params={"keyword": query}, timeout=12)
+            if r.status_code != 200 or not r.text:
+                continue
+            soup = BeautifulSoup(r.text, "lxml")
+            res = _collect(soup, base)
+            if res:
+                return res
+        except Exception as e:
+            print(f"[animeworld] search error on {h}: {e}")
+            continue
+    return []
 
 
 def _key_for(url):

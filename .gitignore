@@ -10,6 +10,7 @@ tmp/
 downloads/
 server.log
 downloads_state.json
+library_state.json
 
 # Local binaries (ffmpeg) — too large for the repo
 bin/

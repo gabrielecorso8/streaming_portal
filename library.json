@@ -7,8 +7,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": true,
-    "added_at": 1782627800,
-    "last_opened": 1783072393,
     "release_date": ""
   },
   {
@@ -19,8 +17,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782750904,
     "release_date": ""
   },
   {
@@ -30,9 +26,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/8c18bfe3-8035-4b4b-b93c-92a2156b3483.webp",
     "type": "tv",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782659269
+    "favorite": false
   },
   {
     "key": "270-harry-potter-e-la-pietra-filosofale",
@@ -42,8 +36,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782743780,
     "release_date": "2001-01-01"
   },
   {
@@ -54,8 +46,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782743780,
     "release_date": "2002-01-01"
   },
   {
@@ -66,8 +56,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782743780,
     "release_date": "2004-01-01"
   },
   {
@@ -78,8 +66,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782743780,
     "release_date": "2005-01-01"
   },
   {
@@ -90,8 +76,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782743780,
     "release_date": "2007-01-01"
   },
   {
@@ -102,8 +86,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782743780,
     "release_date": "2009-01-01"
   },
   {
@@ -114,8 +96,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782743780,
     "release_date": "2010-01-01"
   },
   {
@@ -126,8 +106,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782743780,
     "release_date": "2011-01-01"
   },
   {
@@ -138,8 +116,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782743757,
     "release_date": "2016-01-01"
   },
   {
@@ -150,8 +126,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782743757,
     "release_date": "2018-01-01"
   },
   {
@@ -162,8 +136,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782743757,
     "release_date": "2022-04-06"
   },
   {
@@ -174,8 +146,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782902815,
     "release_date": ""
   },
   {
@@ -185,9 +155,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/312fc090-a2c5-43ba-bab2-c17d80c923f2.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782627800
+    "favorite": false
   },
   {
     "key": "1136-il-signore-degli-anelli-le-due-torri",
@@ -196,9 +164,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/2a5abe09-5769-42b5-9ee0-8db0f487be36.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782627800
+    "favorite": false
   },
   {
     "key": "1139-il-signore-degli-anelli-il-ritorno-del-re",
@@ -208,8 +174,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782904294,
     "release_date": ""
   },
   {
@@ -220,8 +184,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782904292,
     "release_date": ""
   },
   {
@@ -232,8 +194,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782904287,
     "release_date": ""
   },
   {
@@ -244,8 +204,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782904284,
     "release_date": ""
   },
   {
@@ -256,8 +214,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782859994,
     "release_date": ""
   },
   {
@@ -267,9 +223,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/1ea7f80e-31f8-4c87-982b-eaee8f2f5217.webp",
     "type": "tv",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782627800
+    "favorite": false
   },
   {
     "key": "12374-money-road-ogni-tentazione-ha-un-prezzo",
@@ -279,8 +233,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1783072485,
     "release_date": "2026-05-21"
   },
   {
@@ -291,8 +243,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782929648,
     "release_date": "2025-12-21"
   },
   {
@@ -303,8 +253,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782929648,
     "release_date": "2025-09-07"
   },
   {
@@ -315,8 +263,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782929647,
     "release_date": "2025-12-11"
   },
   {
@@ -327,8 +273,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782929647,
     "release_date": "2026-03-12"
   },
   {
@@ -339,8 +283,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": true,
-    "added_at": 1782627800,
-    "last_opened": 1783072401,
     "release_date": "2026-05-25"
   },
   {
@@ -351,8 +293,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782950585,
     "release_date": "1999-01-31"
   },
   {
@@ -363,8 +303,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782913327,
     "release_date": "2024-08-01"
   },
   {
@@ -375,8 +313,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782627800,
-    "last_opened": 1782913329,
     "release_date": "2020-01-01"
   },
   {
@@ -386,9 +322,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/5226bb79-a641-4a9b-970d-811ad7acec60.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782637845,
-    "last_opened": 1782637845
+    "favorite": false
   },
   {
     "key": "6625-le-conseguenze-dellamore",
@@ -397,9 +331,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/f91160a4-980f-439d-9b61-7b85b41f1662.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782637870,
-    "last_opened": 1782660000
+    "favorite": false
   },
   {
     "key": "6973-il-divo",
@@ -408,9 +340,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/0dcb7c05-3328-4065-ae9d-d499ec19c850.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782637884,
-    "last_opened": 1782662201
+    "favorite": false
   },
   {
     "key": "6780-loro",
@@ -420,8 +350,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782637893,
-    "last_opened": 1782812264,
     "release_date": "2018-09-13"
   },
   {
@@ -431,9 +359,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/6b42cd4c-7c66-416c-9c70-478add3b4121.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782637911,
-    "last_opened": 1782637911
+    "favorite": false
   },
   {
     "key": "43933-youth-la-giovinezza",
@@ -442,9 +368,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/7745ca45-6032-4a91-beba-97686e837f29.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782637921,
-    "last_opened": 1782637921
+    "favorite": false
   },
   {
     "key": "8150-this-must-be-the-place",
@@ -453,9 +377,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/52ed99fd-f464-4e1e-a248-e024334e5f52.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782637936,
-    "last_opened": 1782638048
+    "favorite": false
   },
   {
     "key": "https://streaming-community.fans/titles/12355-guarda-lamico-di-famiglia-streaming.html",
@@ -464,9 +386,7 @@
     "cover": "https://streaming-community.fans/uploads/logos/tt0772105.webp",
     "type": "movie",
     "is_clone": true,
-    "favorite": false,
-    "added_at": 1782637953,
-    "last_opened": 1782663779
+    "favorite": false
   },
   {
     "key": "3894-e-stata-la-mano-di-dio",
@@ -475,9 +395,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/91abcf43-5ee9-462d-9982-57a456f6eccf.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782637967,
-    "last_opened": 1782637967
+    "favorite": false
   },
   {
     "key": "1567-kill-bill-volume-2",
@@ -486,9 +404,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/5632ce08-2542-48ff-81e3-ce0d5e2b8e7a.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638138,
-    "last_opened": 1782638138
+    "favorite": false
   },
   {
     "key": "1566-kill-bill-volume-1",
@@ -497,9 +413,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/b8a62aad-7599-4243-988d-1e3e535f8359.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638145,
-    "last_opened": 1782638145
+    "favorite": false
   },
   {
     "key": "4388-the-hateful-eight",
@@ -509,8 +423,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782638156,
-    "last_opened": 1782824225,
     "release_date": ""
   },
   {
@@ -521,8 +433,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782638169,
-    "last_opened": 1782817594,
     "release_date": ""
   },
   {
@@ -532,9 +442,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/3c3e220b-b227-4f0a-92ac-c65a43435380.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638191,
-    "last_opened": 1782638191
+    "favorite": false
   },
   {
     "key": "969-le-iene",
@@ -543,9 +451,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/55b42363-c67b-4657-a6cb-35c6c44ec913.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638211,
-    "last_opened": 1782638346
+    "favorite": false
   },
   {
     "key": "935-cera-una-volta-a-hollywood",
@@ -554,9 +460,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/8ca03c7e-ba4c-4dac-8835-282b80667993.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638241,
-    "last_opened": 1782638241
+    "favorite": false
   },
   {
     "key": "254-django-unchained",
@@ -565,9 +469,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/ea5c1559-d38f-4c2c-9f0a-22ea687fc916.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638256,
-    "last_opened": 1782638256
+    "favorite": false
   },
   {
     "key": "618-bastardi-senza-gloria",
@@ -576,9 +478,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/2ce895e0-9d6d-4112-87e5-68a08843902e.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638266,
-    "last_opened": 1782638266
+    "favorite": false
   },
   {
     "key": "12931-grindhouse-a-prova-di-morte",
@@ -587,9 +487,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/e9af2ed3-a2a2-47f1-870b-6c79175dcfd2.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638285,
-    "last_opened": 1782638519
+    "favorite": false
   },
   {
     "key": "3-breaking-bad-reazioni-collaterali",
@@ -598,9 +496,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/843f8568-7f3e-4ab9-8293-4437da385e82.webp",
     "type": "tv",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638593,
-    "last_opened": 1782639137
+    "favorite": false
   },
   {
     "key": "240-el-camino-il-film-di-breaking-bad",
@@ -609,9 +505,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/4057c67f-5ce3-4736-987b-f68914e32761.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638602,
-    "last_opened": 1782638602
+    "favorite": false
   },
   {
     "key": "9905-dune-prophecy",
@@ -621,8 +515,6 @@
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782638659,
-    "last_opened": 1782905236,
     "release_date": ""
   },
   {
@@ -633,8 +525,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782638669,
-    "last_opened": 1782812756,
     "release_date": "1984-12-14"
   },
   {
@@ -644,9 +534,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/96fdf838-8559-44bb-94ee-809bc464a85c.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638682,
-    "last_opened": 1782638682
+    "favorite": false
   },
   {
     "key": "1994-matrix",
@@ -655,9 +543,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/535acede-13ac-49c2-9b4a-c59a29ed70a0.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638714,
-    "last_opened": 1782662406
+    "favorite": false
   },
   {
     "key": "2008-matrix-reloaded",
@@ -666,9 +552,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/df094013-c258-4f27-aa23-fd09fafee240.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638723,
-    "last_opened": 1782638723
+    "favorite": false
   },
   {
     "key": "2003-matrix-revolutions",
@@ -677,9 +561,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/1cbda176-6384-4ea2-b256-a9880c360f5b.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638728,
-    "last_opened": 1782638728
+    "favorite": false
   },
   {
     "key": "3914-matrix-resurrections",
@@ -688,9 +570,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/2bf5ad3a-721a-4597-8268-ef7920ddf6fc.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638735,
-    "last_opened": 1782638735
+    "favorite": false
   },
   {
     "key": "90-pirati-dei-caraibi-la-maledizione-della-prima-luna",
@@ -700,8 +580,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782638764,
-    "last_opened": 1782725859,
     "release_date": ""
   },
   {
@@ -711,9 +589,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/12e78a35-9d9e-439e-b26b-26a2ae217e0b.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638771,
-    "last_opened": 1782638771
+    "favorite": false
   },
   {
     "key": "281-pirati-dei-caraibi-ai-confini-del-mondo",
@@ -722,9 +598,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/95fac280-f1cd-4931-b5bb-d29565886c79.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638777,
-    "last_opened": 1782638777
+    "favorite": false
   },
   {
     "key": "280-pirati-dei-caraibi-oltre-i-confini-del-mare",
@@ -733,9 +607,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/7849734c-01ec-42ad-94d7-19bc435a8b26.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638783,
-    "last_opened": 1782638783
+    "favorite": false
   },
   {
     "key": "279-pirati-dei-caraibi-la-vendetta-di-salazar",
@@ -744,9 +616,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/7faa5a7e-3b93-4f23-a44c-b9e3dcaf87ae.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782638789,
-    "last_opened": 1782638789
+    "favorite": false
   },
   {
     "key": "4944-madagascar",
@@ -756,8 +626,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782659401,
-    "last_opened": 1782813579,
     "release_date": "2005-05-25"
   },
   {
@@ -768,8 +636,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782659423,
-    "last_opened": 1782813580,
     "release_date": "2008-10-30"
   },
   {
@@ -780,8 +646,6 @@
     "type": "movie",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782659450,
-    "last_opened": 1782813580,
     "release_date": "2012-06-06"
   },
   {
@@ -791,20 +655,17 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/d529e988-5c01-4cd6-876f-cb5a15b934f3.webp",
     "type": "tv",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782662238,
-    "last_opened": 1782662238
+    "favorite": false
   },
   {
     "key": "83-peaky-blinders",
     "url": "https://streamingcommunityz.tech/it/titles/83-peaky-blinders",
     "name": "Peaky Blinders",
-    "cover": "https://cdn.streamingcommunityz.tech/images/c841f64f-cb2f-4e66-a683-da00568c5d3c.webp",
+    "cover": "https://cdn.streamingcommunityz.pl/images/c841f64f-cb2f-4e66-a683-da00568c5d3c.webp",
     "type": "tv",
     "is_clone": false,
     "favorite": false,
-    "added_at": 1782662621,
-    "last_opened": 1782662779
+    "release_date": ""
   },
   {
     "key": "48502-peaky-blinders-the-immortal-man",
@@ -813,9 +674,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/e0140765-7d92-438d-a0fc-ff59e6973c37.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782662636,
-    "last_opened": 1782662785
+    "favorite": false
   },
   {
     "key": "6239-spider-man-across-the-spider-verse",
@@ -824,9 +683,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/e7899376-2d0d-4c7e-8d07-df32c31fe045.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782662669,
-    "last_opened": 1782662669
+    "favorite": false
   },
   {
     "key": "391-spider-man-un-nuovo-universo",
@@ -835,9 +692,7 @@
     "cover": "https://cdn.streamingcommunityz.tech/images/70131edb-8c34-45dc-981c-9aba12811168.webp",
     "type": "movie",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782662704,
-    "last_opened": 1782690472
+    "favorite": false
   },
   {
     "key": "6034-oppenheimer",
@@ -847,9 +702,7 @@
     "type": "movie",
     "release_date": "2023-07-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782726338,
-    "last_opened": 1782726383
+    "favorite": false
   },
   {
     "key": "1925-tenet",
@@ -859,9 +712,7 @@
     "type": "movie",
     "release_date": "2020-08-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782726383,
-    "last_opened": 1782726383
+    "favorite": false
   },
   {
     "key": "692-dunkirk",
@@ -871,9 +722,7 @@
     "type": "movie",
     "release_date": "2017-07-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782726383,
-    "last_opened": 1782726383
+    "favorite": false
   },
   {
     "key": "112-interstellar",
@@ -883,9 +732,7 @@
     "type": "movie",
     "release_date": "2014-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782726383,
-    "last_opened": 1782726383
+    "favorite": false
   },
   {
     "key": "1703-il-cavaliere-oscuro-il-ritorno",
@@ -895,9 +742,7 @@
     "type": "movie",
     "release_date": "2012-07-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782726383,
-    "last_opened": 1782726383
+    "favorite": false
   },
   {
     "key": "733-inception",
@@ -907,9 +752,7 @@
     "type": "movie",
     "release_date": "2010-07-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782726383,
-    "last_opened": 1782726383
+    "favorite": false
   },
   {
     "key": "1447-il-cavaliere-oscuro",
@@ -919,9 +762,7 @@
     "type": "movie",
     "release_date": "2008-07-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782726383,
-    "last_opened": 1782726383
+    "favorite": false
   },
   {
     "key": "2161-the-prestige",
@@ -931,9 +772,7 @@
     "type": "movie",
     "release_date": "2006-10-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782726383,
-    "last_opened": 1782726383
+    "favorite": false
   },
   {
     "key": "787-batman-begins",
@@ -943,9 +782,7 @@
     "type": "movie",
     "release_date": "2005-06-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782726383,
-    "last_opened": 1782726383
+    "favorite": false
   },
   {
     "key": "9507-insomnia",
@@ -955,9 +792,7 @@
     "type": "movie",
     "release_date": "2002-05-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782726383,
-    "last_opened": 1782726383
+    "favorite": false
   },
   {
     "key": "2938-memento",
@@ -967,9 +802,7 @@
     "type": "movie",
     "release_date": "2000-10-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782726383,
-    "last_opened": 1782726383
+    "favorite": false
   },
   {
     "key": "835-jurassic-park",
@@ -979,9 +812,7 @@
     "type": "movie",
     "release_date": "1993-06-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782729804,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "834-il-mondo-perduto-jurassic-park",
@@ -991,9 +822,7 @@
     "type": "movie",
     "release_date": "1997-05-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782729804,
-    "last_opened": 1782826094
+    "favorite": false
   },
   {
     "key": "833-jurassic-park-iii",
@@ -1003,9 +832,7 @@
     "type": "movie",
     "release_date": "2001-07-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782729804,
-    "last_opened": 1782729804
+    "favorite": false
   },
   {
     "key": "831-jurassic-world",
@@ -1015,9 +842,7 @@
     "type": "movie",
     "release_date": "2015-06-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782729804,
-    "last_opened": 1782729804
+    "favorite": false
   },
   {
     "key": "832-jurassic-world-il-regno-distrutto",
@@ -1027,9 +852,7 @@
     "type": "movie",
     "release_date": "2018-06-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782729804,
-    "last_opened": 1782729804
+    "favorite": false
   },
   {
     "key": "4660-jurassic-world-il-dominio",
@@ -1039,9 +862,7 @@
     "type": "movie",
     "release_date": "2022-06-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782729817,
-    "last_opened": 1782729817
+    "favorite": false
   },
   {
     "key": "9898-jurassic-world-rebirth",
@@ -1051,9 +872,7 @@
     "type": "movie",
     "release_date": "2025-07-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782729817,
-    "last_opened": 1782729817
+    "favorite": false
   },
   {
     "key": "109-bojack-horseman",
@@ -1063,9 +882,7 @@
     "type": "tv",
     "release_date": "2014-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782743019,
-    "last_opened": 1782913329
+    "favorite": false
   },
   {
     "key": "1478-american-dad",
@@ -1075,9 +892,7 @@
     "type": "tv",
     "release_date": "2026-02-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782743052,
-    "last_opened": 1782950599
+    "favorite": false
   },
   {
     "key": "12943-avatar-fuoco-e-cenere",
@@ -1087,9 +902,7 @@
     "type": "movie",
     "release_date": "2025-12-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782743509,
-    "last_opened": 1782743519
+    "favorite": false
   },
   {
     "key": "429-avatar",
@@ -1099,9 +912,7 @@
     "type": "movie",
     "release_date": "2009-12-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782743519,
-    "last_opened": 1782743519
+    "favorite": false
   },
   {
     "key": "2518-avatar-la-via-dellacqua",
@@ -1111,9 +922,7 @@
     "type": "movie",
     "release_date": "2022-12-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782743519,
-    "last_opened": 1782743519
+    "favorite": false
   },
   {
     "key": "1214-love-death-robots",
@@ -1123,9 +932,7 @@
     "type": "tv",
     "release_date": "2025-05-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782744290,
-    "last_opened": 1782913331
+    "favorite": false
   },
   {
     "key": "326-captain-america-il-primo-vendicatore",
@@ -1135,9 +942,7 @@
     "type": "movie",
     "release_date": "2011-07-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810673,
-    "last_opened": 1782810673
+    "favorite": false
   },
   {
     "key": "7448-marvels-agent-carter",
@@ -1147,9 +952,7 @@
     "type": "tv",
     "release_date": "2015-01-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810673,
-    "last_opened": 1782810673
+    "favorite": false
   },
   {
     "key": "1019-captain-marvel",
@@ -1159,9 +962,7 @@
     "type": "movie",
     "release_date": "2019-03-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810673,
-    "last_opened": 1782810673
+    "favorite": false
   },
   {
     "key": "314-iron-man",
@@ -1171,9 +972,7 @@
     "type": "movie",
     "release_date": "2008-04-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810673,
-    "last_opened": 1782810673
+    "favorite": false
   },
   {
     "key": "313-iron-man-2",
@@ -1183,9 +982,7 @@
     "type": "movie",
     "release_date": "2010-04-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810673,
-    "last_opened": 1782810673
+    "favorite": false
   },
   {
     "key": "327-lincredibile-hulk",
@@ -1195,9 +992,7 @@
     "type": "movie",
     "release_date": "2008-06-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810673,
-    "last_opened": 1782810673
+    "favorite": false
   },
   {
     "key": "312-thor",
@@ -1207,9 +1002,7 @@
     "type": "movie",
     "release_date": "2011-04-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810673,
-    "last_opened": 1782810673
+    "favorite": false
   },
   {
     "key": "215-the-avengers",
@@ -1219,9 +1012,7 @@
     "type": "movie",
     "release_date": "2012-04-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810697,
-    "last_opened": 1782810697
+    "favorite": false
   },
   {
     "key": "315-iron-man-3",
@@ -1231,9 +1022,7 @@
     "type": "movie",
     "release_date": "2013-04-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810733,
-    "last_opened": 1782810733
+    "favorite": false
   },
   {
     "key": "378-thor-the-dark-world",
@@ -1243,9 +1032,7 @@
     "type": "movie",
     "release_date": "2013-10-29",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810733,
-    "last_opened": 1782810733
+    "favorite": false
   },
   {
     "key": "318-captain-america-the-winter-soldier",
@@ -1255,9 +1042,7 @@
     "type": "movie",
     "release_date": "2014-03-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810733,
-    "last_opened": 1782810733
+    "favorite": false
   },
   {
     "key": "377-guardiani-della-galassia",
@@ -1267,9 +1052,7 @@
     "type": "movie",
     "release_date": "2014-07-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810733,
-    "last_opened": 1782810733
+    "favorite": false
   },
   {
     "key": "376-guardiani-della-galassia-vol-2",
@@ -1279,9 +1062,7 @@
     "type": "movie",
     "release_date": "2017-04-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810733,
-    "last_opened": 1782810733
+    "favorite": false
   },
   {
     "key": "217-avengers-age-of-ultron",
@@ -1291,9 +1072,7 @@
     "type": "movie",
     "release_date": "2015-04-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810733,
-    "last_opened": 1782810733
+    "favorite": false
   },
   {
     "key": "319-ant-man",
@@ -1303,9 +1082,7 @@
     "type": "movie",
     "release_date": "2015-07-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810733,
-    "last_opened": 1782810733
+    "favorite": false
   },
   {
     "key": "382-captain-america-civil-war",
@@ -1315,9 +1092,7 @@
     "type": "movie",
     "release_date": "2016-04-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810748,
-    "last_opened": 1782810748
+    "favorite": false
   },
   {
     "key": "2243-black-widow",
@@ -1327,9 +1102,7 @@
     "type": "movie",
     "release_date": "2021-07-07",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810748,
-    "last_opened": 1782810748
+    "favorite": false
   },
   {
     "key": "343-black-panther",
@@ -1339,9 +1112,7 @@
     "type": "movie",
     "release_date": "2018-02-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810748,
-    "last_opened": 1782810748
+    "favorite": false
   },
   {
     "key": "336-spider-man-homecoming",
@@ -1351,9 +1122,7 @@
     "type": "movie",
     "release_date": "2017-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810748,
-    "last_opened": 1782810748
+    "favorite": false
   },
   {
     "key": "345-doctor-strange",
@@ -1363,9 +1132,7 @@
     "type": "movie",
     "release_date": "2016-10-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810748,
-    "last_opened": 1782810748
+    "favorite": false
   },
   {
     "key": "344-thor-ragnarok",
@@ -1375,9 +1142,7 @@
     "type": "movie",
     "release_date": "2017-10-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810748,
-    "last_opened": 1782810748
+    "favorite": false
   },
   {
     "key": "342-ant-man-and-the-wasp",
@@ -1387,9 +1152,7 @@
     "type": "movie",
     "release_date": "2018-07-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810748,
-    "last_opened": 1782810748
+    "favorite": false
   },
   {
     "key": "211-avengers-infinity-war",
@@ -1399,9 +1162,7 @@
     "type": "movie",
     "release_date": "2018-04-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810759,
-    "last_opened": 1782810759
+    "favorite": false
   },
   {
     "key": "216-avengers-endgame",
@@ -1411,9 +1172,7 @@
     "type": "movie",
     "release_date": "2019-04-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810759,
-    "last_opened": 1782810759
+    "favorite": false
   },
   {
     "key": "363-spider-man",
@@ -1423,9 +1182,7 @@
     "type": "movie",
     "release_date": "2002-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810815,
-    "last_opened": 1782810815
+    "favorite": false
   },
   {
     "key": "364-spider-man-2",
@@ -1435,9 +1192,7 @@
     "type": "movie",
     "release_date": "2004-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810815,
-    "last_opened": 1782810815
+    "favorite": false
   },
   {
     "key": "365-spider-man-3",
@@ -1447,9 +1202,7 @@
     "type": "movie",
     "release_date": "2007-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810815,
-    "last_opened": 1782810815
+    "favorite": false
   },
   {
     "key": "493-the-amazing-spider-man",
@@ -1459,9 +1212,7 @@
     "type": "movie",
     "release_date": "2012-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810827,
-    "last_opened": 1782810827
+    "favorite": false
   },
   {
     "key": "367-the-amazing-spider-man-2-il-potere-di-electro",
@@ -1471,9 +1222,7 @@
     "type": "movie",
     "release_date": "2014-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810827,
-    "last_opened": 1782810827
+    "favorite": false
   },
   {
     "key": "349-x-men-linizio",
@@ -1483,9 +1232,7 @@
     "type": "movie",
     "release_date": "2011-06-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810898,
-    "last_opened": 1782810898
+    "favorite": false
   },
   {
     "key": "371-x-men",
@@ -1495,9 +1242,7 @@
     "type": "movie",
     "release_date": "2000-07-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810898,
-    "last_opened": 1782810898
+    "favorite": false
   },
   {
     "key": "350-x-men-2",
@@ -1507,9 +1252,7 @@
     "type": "movie",
     "release_date": "2003-04-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810898,
-    "last_opened": 1782810898
+    "favorite": false
   },
   {
     "key": "353-x-men-conflitto-finale",
@@ -1519,9 +1262,7 @@
     "type": "movie",
     "release_date": "2006-05-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810898,
-    "last_opened": 1782810898
+    "favorite": false
   },
   {
     "key": "372-x-men-le-origini-wolverine",
@@ -1531,9 +1272,7 @@
     "type": "movie",
     "release_date": "2009-04-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810898,
-    "last_opened": 1782810961
+    "favorite": false
   },
   {
     "key": "331-x-men-giorni-di-un-futuro-passato",
@@ -1543,9 +1282,7 @@
     "type": "movie",
     "release_date": "2014-05-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810898,
-    "last_opened": 1782810898
+    "favorite": false
   },
   {
     "key": "352-x-men-apocalisse",
@@ -1555,9 +1292,7 @@
     "type": "movie",
     "release_date": "2016-05-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810898,
-    "last_opened": 1782810898
+    "favorite": false
   },
   {
     "key": "332-x-men-dark-phoenix",
@@ -1567,9 +1302,7 @@
     "type": "movie",
     "release_date": "2019-06-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810898,
-    "last_opened": 1782810898
+    "favorite": false
   },
   {
     "key": "333-wolverine-limmortale",
@@ -1579,9 +1312,7 @@
     "type": "movie",
     "release_date": "2013-07-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782810914,
-    "last_opened": 1782810966
+    "favorite": false
   },
   {
     "key": "370-logan-the-wolverine",
@@ -1591,9 +1322,7 @@
     "type": "movie",
     "release_date": "2017-02-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811078,
-    "last_opened": 1782811078
+    "favorite": false
   },
   {
     "key": "261-deadpool",
@@ -1603,9 +1332,7 @@
     "type": "movie",
     "release_date": "2016-02-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811078,
-    "last_opened": 1782811078
+    "favorite": false
   },
   {
     "key": "184-deadpool-2",
@@ -1615,9 +1342,7 @@
     "type": "movie",
     "release_date": "2018-05-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811078,
-    "last_opened": 1782811078
+    "favorite": false
   },
   {
     "key": "3331-loki",
@@ -1627,9 +1352,7 @@
     "type": "tv",
     "release_date": "2023-10-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811107,
-    "last_opened": 1782811234
+    "favorite": false
   },
   {
     "key": "2736-wandavision",
@@ -1639,9 +1362,7 @@
     "type": "tv",
     "release_date": "2021-01-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811163,
-    "last_opened": 1782811163
+    "favorite": false
   },
   {
     "key": "3867-shang-chi-e-la-leggenda-dei-dieci-anelli",
@@ -1651,9 +1372,7 @@
     "type": "movie",
     "release_date": "2021-09-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811163,
-    "last_opened": 1782811163
+    "favorite": false
   },
   {
     "key": "3093-the-falcon-and-the-winter-soldier",
@@ -1663,9 +1382,7 @@
     "type": "tv",
     "release_date": "2021-03-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811163,
-    "last_opened": 1782811163
+    "favorite": false
   },
   {
     "key": "340-spider-man-far-from-home",
@@ -1675,9 +1392,7 @@
     "type": "movie",
     "release_date": "2019-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811163,
-    "last_opened": 1782811163
+    "favorite": false
   },
   {
     "key": "3868-spider-man-no-way-home",
@@ -1687,9 +1402,7 @@
     "type": "movie",
     "release_date": "2021-12-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811163,
-    "last_opened": 1782811163
+    "favorite": false
   },
   {
     "key": "3739-what-if",
@@ -1699,9 +1412,7 @@
     "type": "tv",
     "release_date": "2024-12-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811168,
-    "last_opened": 1782825768
+    "favorite": false
   },
   {
     "key": "252-venom",
@@ -1711,9 +1422,7 @@
     "type": "movie",
     "release_date": "2018-09-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811211,
-    "last_opened": 1782811211
+    "favorite": false
   },
   {
     "key": "3249-venom-la-furia-di-carnage",
@@ -1723,9 +1432,7 @@
     "type": "movie",
     "release_date": "2021-09-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811211,
-    "last_opened": 1782811211
+    "favorite": false
   },
   {
     "key": "4564-morbius",
@@ -1735,9 +1442,7 @@
     "type": "movie",
     "release_date": "2022-03-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811211,
-    "last_opened": 1782811211
+    "favorite": false
   },
   {
     "key": "7690-madame-web",
@@ -1747,9 +1452,7 @@
     "type": "movie",
     "release_date": "2024-02-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811211,
-    "last_opened": 1782811211
+    "favorite": false
   },
   {
     "key": "10780-kraven-il-cacciatore",
@@ -1759,9 +1462,7 @@
     "type": "movie",
     "release_date": "2024-12-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811212,
-    "last_opened": 1782811212
+    "favorite": false
   },
   {
     "key": "9901-venom-the-last-dance",
@@ -1771,9 +1472,7 @@
     "type": "movie",
     "release_date": "2024-10-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811212,
-    "last_opened": 1782811212
+    "favorite": false
   },
   {
     "key": "2873-eternals",
@@ -1783,9 +1482,7 @@
     "type": "movie",
     "release_date": "2021-11-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811233,
-    "last_opened": 1782811233
+    "favorite": false
   },
   {
     "key": "3559-doctor-strange-nel-multiverso-della-follia",
@@ -1795,9 +1492,7 @@
     "type": "movie",
     "release_date": "2022-05-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811233,
-    "last_opened": 1782811233
+    "favorite": false
   },
   {
     "key": "4826-moon-knight",
@@ -1807,9 +1502,7 @@
     "type": "tv",
     "release_date": "2022-03-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811233,
-    "last_opened": 1782811233
+    "favorite": false
   },
   {
     "key": "5163-ms-marvel",
@@ -1819,9 +1512,7 @@
     "type": "tv",
     "release_date": "2022-06-08",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811233,
-    "last_opened": 1782811233
+    "favorite": false
   },
   {
     "key": "5126-thor-love-and-thunder",
@@ -1831,9 +1522,7 @@
     "type": "movie",
     "release_date": "2022-07-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811233,
-    "last_opened": 1782811233
+    "favorite": false
   },
   {
     "key": "5392-she-hulk-attorney-at-law",
@@ -1843,9 +1532,7 @@
     "type": "tv",
     "release_date": "2022-08-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811233,
-    "last_opened": 1782811233
+    "favorite": false
   },
   {
     "key": "5651-licantropus",
@@ -1855,9 +1542,7 @@
     "type": "movie",
     "release_date": "2022-10-07",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811233,
-    "last_opened": 1782811233
+    "favorite": false
   },
   {
     "key": "5878-guardiani-della-galassia-holiday-special",
@@ -1867,9 +1552,7 @@
     "type": "movie",
     "release_date": "2022-11-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811233,
-    "last_opened": 1782811233
+    "favorite": false
   },
   {
     "key": "5767-black-panther-wakanda-forever",
@@ -1879,9 +1562,7 @@
     "type": "movie",
     "release_date": "2022-11-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811233,
-    "last_opened": 1782811233
+    "favorite": false
   },
   {
     "key": "6070-ant-man-and-the-wasp-quantumania",
@@ -1891,9 +1572,7 @@
     "type": "movie",
     "release_date": "2023-02-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811234,
-    "last_opened": 1782811234
+    "favorite": false
   },
   {
     "key": "6416-secret-invasion",
@@ -1903,9 +1582,7 @@
     "type": "tv",
     "release_date": "2023-06-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811234,
-    "last_opened": 1782811234
+    "favorite": false
   },
   {
     "key": "6296-guardiani-della-galassia-vol3",
@@ -1915,9 +1592,7 @@
     "type": "movie",
     "release_date": "2023-05-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811234,
-    "last_opened": 1782811234
+    "favorite": false
   },
   {
     "key": "6814-the-marvels",
@@ -1927,9 +1602,7 @@
     "type": "movie",
     "release_date": "2023-11-08",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811234,
-    "last_opened": 1782811234
+    "favorite": false
   },
   {
     "key": "7483-echo",
@@ -1939,9 +1612,7 @@
     "type": "tv",
     "release_date": "2024-01-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811234,
-    "last_opened": 1782811234
+    "favorite": false
   },
   {
     "key": "46-daredevil",
@@ -1951,9 +1622,7 @@
     "type": "tv",
     "release_date": "2015-04-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811282,
-    "last_opened": 1782823788
+    "favorite": false
   },
   {
     "key": "50-marvels-jessica-jones",
@@ -1963,9 +1632,7 @@
     "type": "tv",
     "release_date": "2015-11-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811293,
-    "last_opened": 1782811293
+    "favorite": false
   },
   {
     "key": "43-marvels-luke-cage",
@@ -1975,9 +1642,7 @@
     "type": "tv",
     "release_date": "2016-09-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811305,
-    "last_opened": 1782811305
+    "favorite": false
   },
   {
     "key": "41-marvels-iron-fist",
@@ -1987,9 +1652,7 @@
     "type": "tv",
     "release_date": "2017-03-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811315,
-    "last_opened": 1782811329
+    "favorite": false
   },
   {
     "key": "1854-marvels-the-defenders",
@@ -1999,9 +1662,7 @@
     "type": "tv",
     "release_date": "2017-08-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811342,
-    "last_opened": 1782811342
+    "favorite": false
   },
   {
     "key": "78-marvels-the-punisher",
@@ -2011,9 +1672,7 @@
     "type": "tv",
     "release_date": "2017-11-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811354,
-    "last_opened": 1782811354
+    "favorite": false
   },
   {
     "key": "56645-the-punisher-one-last-kill",
@@ -2023,9 +1682,7 @@
     "type": "movie",
     "release_date": "2026-05-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811368,
-    "last_opened": 1782811399
+    "favorite": false
   },
   {
     "key": "11520-daredevil-rinascita",
@@ -2035,9 +1692,7 @@
     "type": "tv",
     "release_date": "2026-03-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811377,
-    "last_opened": 1782811403
+    "favorite": false
   },
   {
     "key": "5384-deadpool-and-wolverine",
@@ -2047,9 +1702,7 @@
     "type": "movie",
     "release_date": "2024-07-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811448,
-    "last_opened": 1782811720
+    "favorite": false
   },
   {
     "key": "9936-agatha-all-along",
@@ -2059,9 +1712,7 @@
     "type": "tv",
     "release_date": "2024-09-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811448,
-    "last_opened": 1782811448
+    "favorite": false
   },
   {
     "key": "10572-captain-america-brave-new-world",
@@ -2071,9 +1722,7 @@
     "type": "movie",
     "release_date": "2025-02-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811448,
-    "last_opened": 1782811448
+    "favorite": false
   },
   {
     "key": "12606-ironheart",
@@ -2083,9 +1732,7 @@
     "type": "tv",
     "release_date": "2025-06-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811448,
-    "last_opened": 1782811724
+    "favorite": false
   },
   {
     "key": "10002-thunderbolts",
@@ -2095,9 +1742,7 @@
     "type": "movie",
     "release_date": "2025-05-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811448,
-    "last_opened": 1782811448
+    "favorite": false
   },
   {
     "key": "12660-i-fantastici-quattro-gli-inizi",
@@ -2107,9 +1752,7 @@
     "type": "movie",
     "release_date": "2025-07-31",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811448,
-    "last_opened": 1782811448
+    "favorite": false
   },
   {
     "key": "8103-x-men-97",
@@ -2119,9 +1762,7 @@
     "type": "tv",
     "release_date": "2024-03-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811465,
-    "last_opened": 1782811465
+    "favorite": false
   },
   {
     "key": "11147-il-vostro-amichevole-spider-man-di-quartiere",
@@ -2131,9 +1772,7 @@
     "type": "tv",
     "release_date": "2025-01-29",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811465,
-    "last_opened": 1782823798
+    "favorite": false
   },
   {
     "key": "12807-eyes-of-wakanda",
@@ -2143,9 +1782,7 @@
     "type": "tv",
     "release_date": "2025-08-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811465,
-    "last_opened": 1782811465
+    "favorite": false
   },
   {
     "key": "17626-marvel-zombies",
@@ -2155,9 +1792,7 @@
     "type": "tv",
     "release_date": "2025-09-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782811465,
-    "last_opened": 1782811465
+    "favorite": false
   },
   {
     "key": "10299-luomo-in-piu",
@@ -2167,9 +1802,7 @@
     "type": "movie",
     "release_date": "2001-08-31",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782812105,
-    "last_opened": 1782812160
+    "favorite": false
   },
   {
     "key": "53528-la-grazia",
@@ -2179,9 +1812,7 @@
     "type": "movie",
     "release_date": "2025-12-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782812232,
-    "last_opened": 1782812232
+    "favorite": false
   },
   {
     "key": "887-the-elephant-man",
@@ -2191,9 +1822,7 @@
     "type": "movie",
     "release_date": "1980-10-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782812756,
-    "last_opened": 1782812756
+    "favorite": false
   },
   {
     "key": "8893-velluto-blu",
@@ -2203,9 +1832,7 @@
     "type": "movie",
     "release_date": "1986-09-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782812756,
-    "last_opened": 1782812756
+    "favorite": false
   },
   {
     "key": "10955-cuore-selvaggio",
@@ -2215,9 +1842,7 @@
     "type": "movie",
     "release_date": "1990-08-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782812756,
-    "last_opened": 1782812756
+    "favorite": false
   },
   {
     "key": "9394-fuoco-cammina-con-me",
@@ -2227,9 +1852,7 @@
     "type": "movie",
     "release_date": "1992-06-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782812756,
-    "last_opened": 1782812756
+    "favorite": false
   },
   {
     "key": "2751-strade-perdute",
@@ -2239,9 +1862,7 @@
     "type": "movie",
     "release_date": "1997-01-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782812756,
-    "last_opened": 1782812756
+    "favorite": false
   },
   {
     "key": "2491-mulholland-drive",
@@ -2251,9 +1872,7 @@
     "type": "movie",
     "release_date": "2001-09-08",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782812756,
-    "last_opened": 1782812756
+    "favorite": false
   },
   {
     "key": "6835-i-segreti-di-twin-peaks",
@@ -2263,9 +1882,7 @@
     "type": "tv",
     "release_date": "1990-04-08",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782812873,
-    "last_opened": 1782812873
+    "favorite": false
   },
   {
     "key": "8974-z-la-formica",
@@ -2275,9 +1892,7 @@
     "type": "movie",
     "release_date": "1998-10-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813579,
-    "last_opened": 1782928781
+    "favorite": false
   },
   {
     "key": "9697-il-principe-degitto",
@@ -2287,9 +1902,7 @@
     "type": "movie",
     "release_date": "1998-12-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813579,
-    "last_opened": 1782813579
+    "favorite": false
   },
   {
     "key": "2004-la-strada-per-el-dorado",
@@ -2299,9 +1912,7 @@
     "type": "movie",
     "release_date": "2000-03-31",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813579,
-    "last_opened": 1782813579
+    "favorite": false
   },
   {
     "key": "6829-galline-in-fuga",
@@ -2311,9 +1922,7 @@
     "type": "movie",
     "release_date": "2000-06-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813579,
-    "last_opened": 1782813579
+    "favorite": false
   },
   {
     "key": "1417-shrek",
@@ -2323,9 +1932,7 @@
     "type": "movie",
     "release_date": "2001-05-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813579,
-    "last_opened": 1782813579
+    "favorite": false
   },
   {
     "key": "620-spirit-cavallo-selvaggio",
@@ -2335,9 +1942,7 @@
     "type": "movie",
     "release_date": "2002-05-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813579,
-    "last_opened": 1782813579
+    "favorite": false
   },
   {
     "key": "9084-sinbad-la-leggenda-dei-sette-mari",
@@ -2347,9 +1952,7 @@
     "type": "movie",
     "release_date": "2003-07-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813579,
-    "last_opened": 1782813579
+    "favorite": false
   },
   {
     "key": "1418-shrek-2",
@@ -2359,9 +1962,7 @@
     "type": "movie",
     "release_date": "2004-05-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813579,
-    "last_opened": 1782813579
+    "favorite": false
   },
   {
     "key": "2452-shark-tale",
@@ -2371,9 +1972,7 @@
     "type": "movie",
     "release_date": "2004-09-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813579,
-    "last_opened": 1782813579
+    "favorite": false
   },
   {
     "key": "1989-wallace-and-gromit-la-maledizione-del-coniglio-mannaro",
@@ -2383,9 +1982,7 @@
     "type": "movie",
     "release_date": "2005-09-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813579,
-    "last_opened": 1782813579
+    "favorite": false
   },
   {
     "key": "10394-la-gang-del-bosco",
@@ -2395,9 +1992,7 @@
     "type": "movie",
     "release_date": "2006-05-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813579,
-    "last_opened": 1782813579
+    "favorite": false
   },
   {
     "key": "3115-giu-per-il-tubo",
@@ -2407,9 +2002,7 @@
     "type": "movie",
     "release_date": "2006-10-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "1419-shrek-terzo",
@@ -2419,9 +2012,7 @@
     "type": "movie",
     "release_date": "2007-05-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813747
+    "favorite": false
   },
   {
     "key": "2232-bee-movie",
@@ -2431,9 +2022,7 @@
     "type": "movie",
     "release_date": "2007-10-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "808-kung-fu-panda",
@@ -2443,9 +2032,7 @@
     "type": "movie",
     "release_date": "2008-06-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "2197-mostri-contro-alieni",
@@ -2455,9 +2042,7 @@
     "type": "movie",
     "release_date": "2009-03-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "516-dragon-trainer",
@@ -2467,9 +2052,7 @@
     "type": "movie",
     "release_date": "2010-03-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "1988-shrek-e-vissero-felici-e-contenti",
@@ -2479,9 +2062,7 @@
     "type": "movie",
     "release_date": "2010-05-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813750
+    "favorite": false
   },
   {
     "key": "2247-megamind",
@@ -2491,9 +2072,7 @@
     "type": "movie",
     "release_date": "2010-10-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "807-kung-fu-panda-2",
@@ -2503,9 +2082,7 @@
     "type": "movie",
     "release_date": "2011-05-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "2414-il-gatto-con-gli-stivali",
@@ -2515,9 +2092,7 @@
     "type": "movie",
     "release_date": "2011-10-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813745
+    "favorite": false
   },
   {
     "key": "2155-le-5-leggende",
@@ -2527,9 +2102,7 @@
     "type": "movie",
     "release_date": "2012-11-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "2942-i-croods",
@@ -2539,9 +2112,7 @@
     "type": "movie",
     "release_date": "2013-03-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "2415-turbo",
@@ -2551,9 +2122,7 @@
     "type": "movie",
     "release_date": "2013-07-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "1290-mr-peabody-e-sherman",
@@ -2563,9 +2132,7 @@
     "type": "movie",
     "release_date": "2014-02-07",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "513-dragon-trainer-2",
@@ -2575,9 +2142,7 @@
     "type": "movie",
     "release_date": "2014-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "2931-home-a-casa",
@@ -2587,9 +2152,7 @@
     "type": "movie",
     "release_date": "2015-03-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782817240
+    "favorite": false
   },
   {
     "key": "499-trolls",
@@ -2599,9 +2162,7 @@
     "type": "movie",
     "release_date": "2016-10-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813580,
-    "last_opened": 1782813580
+    "favorite": false
   },
   {
     "key": "2891-baby-boss",
@@ -2611,9 +2172,7 @@
     "type": "movie",
     "release_date": "2017-03-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782813581
+    "favorite": false
   },
   {
     "key": "8196-capitan-mutanda-il-film",
@@ -2623,9 +2182,7 @@
     "type": "movie",
     "release_date": "2017-06-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782814121
+    "favorite": false
   },
   {
     "key": "633-dragon-trainer-il-mondo-nascosto",
@@ -2635,9 +2192,7 @@
     "type": "movie",
     "release_date": "2019-01-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782813581
+    "favorite": false
   },
   {
     "key": "3289-il-piccolo-yeti",
@@ -2647,9 +2202,7 @@
     "type": "movie",
     "release_date": "2019-09-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782813581
+    "favorite": false
   },
   {
     "key": "2427-trolls-world-tour",
@@ -2659,9 +2212,7 @@
     "type": "movie",
     "release_date": "2020-03-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782813964
+    "favorite": false
   },
   {
     "key": "4033-baby-boss-2-affari-di-famiglia",
@@ -2671,9 +2222,7 @@
     "type": "movie",
     "release_date": "2021-07-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782813581
+    "favorite": false
   },
   {
     "key": "4983-troppo-cattivi",
@@ -2683,9 +2232,7 @@
     "type": "movie",
     "release_date": "2022-03-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782813903
+    "favorite": false
   },
   {
     "key": "5964-il-gatto-con-gli-stivali-2-lultimo-desiderio",
@@ -2695,9 +2242,7 @@
     "type": "movie",
     "release_date": "2022-12-07",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782813581
+    "favorite": false
   },
   {
     "key": "6662-ruby-gillman-la-ragazza-con-i-tentacoli",
@@ -2707,9 +2252,7 @@
     "type": "movie",
     "release_date": "2023-06-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782813581
+    "favorite": false
   },
   {
     "key": "6815-trolls-3-tutti-insieme",
@@ -2719,9 +2262,7 @@
     "type": "movie",
     "release_date": "2023-12-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782813581
+    "favorite": false
   },
   {
     "key": "7681-orion-e-il-buio",
@@ -2731,9 +2272,7 @@
     "type": "movie",
     "release_date": "2024-02-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782896801
+    "favorite": false
   },
   {
     "key": "7692-kung-fu-panda-4",
@@ -2743,9 +2282,7 @@
     "type": "movie",
     "release_date": "2024-03-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782813581
+    "favorite": false
   },
   {
     "key": "10041-il-robot-selvaggio",
@@ -2755,9 +2292,7 @@
     "type": "movie",
     "release_date": "2024-10-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813581,
-    "last_opened": 1782813581
+    "favorite": false
   },
   {
     "key": "806-kung-fu-panda-3",
@@ -2767,9 +2302,7 @@
     "type": "movie",
     "release_date": "2016-01-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813832,
-    "last_opened": 1782813832
+    "favorite": false
   },
   {
     "key": "3480-i-croods-2-una-nuova-era",
@@ -2779,9 +2312,7 @@
     "type": "movie",
     "release_date": "2020-11-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782813934,
-    "last_opened": 1782813934
+    "favorite": false
   },
   {
     "key": "12662-troppo-cattivi-2",
@@ -2791,9 +2322,7 @@
     "type": "movie",
     "release_date": "2025-08-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814071,
-    "last_opened": 1782814074
+    "favorite": false
   },
   {
     "key": "842-toy-story-2-woody-and-buzz-alla-riscossa",
@@ -2803,9 +2332,7 @@
     "type": "movie",
     "release_date": "1999-10-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814894,
-    "last_opened": 1782814894
+    "favorite": false
   },
   {
     "key": "841-toy-story-3-la-grande-fuga",
@@ -2815,9 +2342,7 @@
     "type": "movie",
     "release_date": "2010-06-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814894,
-    "last_opened": 1782814894
+    "favorite": false
   },
   {
     "key": "871-toy-story-4",
@@ -2827,9 +2352,7 @@
     "type": "movie",
     "release_date": "2019-06-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814894,
-    "last_opened": 1782814894
+    "favorite": false
   },
   {
     "key": "4327-a-bugs-life-megaminimondo",
@@ -2839,9 +2362,7 @@
     "type": "movie",
     "release_date": "1998-11-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814894,
-    "last_opened": 1782860496
+    "favorite": false
   },
   {
     "key": "2228-monsters-and-co",
@@ -2851,9 +2372,7 @@
     "type": "movie",
     "release_date": "2001-11-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814894,
-    "last_opened": 1782824431
+    "favorite": false
   },
   {
     "key": "2231-monsters-university",
@@ -2863,9 +2382,7 @@
     "type": "movie",
     "release_date": "2013-06-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814894,
-    "last_opened": 1782814894
+    "favorite": false
   },
   {
     "key": "2246-alla-ricerca-di-nemo",
@@ -2875,9 +2392,7 @@
     "type": "movie",
     "release_date": "2003-05-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814894,
-    "last_opened": 1782814894
+    "favorite": false
   },
   {
     "key": "2120-alla-ricerca-di-dory",
@@ -2887,9 +2402,7 @@
     "type": "movie",
     "release_date": "2016-06-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "5469-gli-incredibili-una-normale-famiglia-di-supereroi",
@@ -2899,9 +2412,7 @@
     "type": "movie",
     "release_date": "2004-10-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "5582-gli-incredibili-2",
@@ -2911,9 +2422,7 @@
     "type": "movie",
     "release_date": "2018-06-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "778-cars-motori-ruggenti",
@@ -2923,9 +2432,7 @@
     "type": "movie",
     "release_date": "2006-06-08",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "524-cars-2",
@@ -2935,9 +2442,7 @@
     "type": "movie",
     "release_date": "2011-06-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782815112
+    "favorite": false
   },
   {
     "key": "777-cars-3",
@@ -2947,9 +2452,7 @@
     "type": "movie",
     "release_date": "2017-06-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "2631-ratatouille",
@@ -2959,9 +2462,7 @@
     "type": "movie",
     "release_date": "2007-06-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "3402-wall-e",
@@ -2971,9 +2472,7 @@
     "type": "movie",
     "release_date": "2008-06-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "1849-up",
@@ -2983,9 +2482,7 @@
     "type": "movie",
     "release_date": "2009-05-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "1642-ribelle-the-brave",
@@ -2995,9 +2492,7 @@
     "type": "movie",
     "release_date": "2012-06-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "2760-inside-out",
@@ -3007,9 +2502,7 @@
     "type": "movie",
     "release_date": "2015-06-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "7698-inside-out-2",
@@ -3019,9 +2512,7 @@
     "type": "movie",
     "release_date": "2024-06-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "8913-il-viaggio-di-arlo",
@@ -3031,9 +2522,7 @@
     "type": "movie",
     "release_date": "2015-11-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "530-coco",
@@ -3043,9 +2532,7 @@
     "type": "movie",
     "release_date": "2017-10-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "1372-onward-oltre-la-magia",
@@ -3055,9 +2542,7 @@
     "type": "movie",
     "release_date": "2020-02-29",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814895,
-    "last_opened": 1782814895
+    "favorite": false
   },
   {
     "key": "2641-soul",
@@ -3067,9 +2552,7 @@
     "type": "movie",
     "release_date": "2020-12-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814896,
-    "last_opened": 1782814896
+    "favorite": false
   },
   {
     "key": "3373-luca",
@@ -3079,9 +2562,7 @@
     "type": "movie",
     "release_date": "2021-06-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814896,
-    "last_opened": 1782928665
+    "favorite": false
   },
   {
     "key": "5203-lightyear-la-vera-storia-di-buzz",
@@ -3091,9 +2572,7 @@
     "type": "movie",
     "release_date": "2022-06-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814896,
-    "last_opened": 1782814896
+    "favorite": false
   },
   {
     "key": "6421-elemental",
@@ -3103,9 +2582,7 @@
     "type": "movie",
     "release_date": "2023-06-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814896,
-    "last_opened": 1782928667
+    "favorite": false
   },
   {
     "key": "12659-elio",
@@ -3115,9 +2592,7 @@
     "type": "movie",
     "release_date": "2025-08-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814896,
-    "last_opened": 1782814896
+    "favorite": false
   },
   {
     "key": "55244-jumpers-un-salto-tra-gli-animali",
@@ -3127,9 +2602,7 @@
     "type": "movie",
     "release_date": "2026-03-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814896,
-    "last_opened": 1782814896
+    "favorite": false
   },
   {
     "key": "840-toy-story-il-mondo-dei-giocattoli",
@@ -3139,9 +2612,7 @@
     "type": "movie",
     "release_date": "1995-10-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782814922,
-    "last_opened": 1782814922
+    "favorite": false
   },
   {
     "key": "8585-the-acolyte-la-seguace",
@@ -3151,9 +2622,7 @@
     "type": "tv",
     "release_date": "2024-06-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825662,
-    "last_opened": 1782825677
+    "favorite": false
   },
   {
     "key": "163-star-wars-la-minaccia-fantasma-episodio-i",
@@ -3163,9 +2632,7 @@
     "type": "movie",
     "release_date": "1999-05-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825662,
-    "last_opened": 1782825683
+    "favorite": false
   },
   {
     "key": "266-star-wars-lattacco-dei-cloni-episodio-ii",
@@ -3175,9 +2642,7 @@
     "type": "movie",
     "release_date": "2002-05-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825662,
-    "last_opened": 1782825662
+    "favorite": false
   },
   {
     "key": "9906-star-wars-the-clone-wars",
@@ -3187,9 +2652,7 @@
     "type": "movie",
     "release_date": "2008-08-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825663,
-    "last_opened": 1782825663
+    "favorite": false
   },
   {
     "key": "5731-star-wars-tales-of-the-jedi",
@@ -3199,9 +2662,7 @@
     "type": "tv",
     "release_date": "2022-10-26",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825663,
-    "last_opened": 1782825663
+    "favorite": false
   },
   {
     "key": "162-star-wars-la-vendetta-dei-sith-episodio-iii",
@@ -3211,21 +2672,17 @@
     "type": "movie",
     "release_date": "2005-05-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825663,
-    "last_opened": 1782825663
+    "favorite": false
   },
   {
     "key": "8385-star-wars-tales-of-the-empire",
     "url": "https://streamingcommunityz.tech/it/titles/8385-star-wars-tales-of-the-empire",
     "name": "Star Wars: Tales of the Empire",
-    "cover": "https://cdn.streamingcommunityz.tech/images/6097880d-ff46-44a2-b9ba-8b7925389d49.webp",
+    "cover": "https://cdn.streamingcommunityz.pl/images/6097880d-ff46-44a2-b9ba-8b7925389d49.webp",
     "type": "tv",
     "release_date": "2024-05-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825663,
-    "last_opened": 1782825663
+    "favorite": false
   },
   {
     "key": "12204-star-wars-tales-of-the-underworld",
@@ -3235,9 +2692,7 @@
     "type": "tv",
     "release_date": "2025-05-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825663,
-    "last_opened": 1782825663
+    "favorite": false
   },
   {
     "key": "3238-star-wars-the-bad-batch",
@@ -3247,9 +2702,7 @@
     "type": "tv",
     "release_date": "2021-05-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825663,
-    "last_opened": 1782825663
+    "favorite": false
   },
   {
     "key": "4134-solo-a-star-wars-story",
@@ -3259,9 +2712,7 @@
     "type": "movie",
     "release_date": "2018-05-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825663,
-    "last_opened": 1782825663
+    "favorite": false
   },
   {
     "key": "5075-obi-wan-kenobi",
@@ -3271,9 +2722,7 @@
     "type": "tv",
     "release_date": "2022-05-26",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825663,
-    "last_opened": 1782825663
+    "favorite": false
   },
   {
     "key": "5586-star-wars-andor",
@@ -3283,9 +2732,7 @@
     "type": "tv",
     "release_date": "2025-04-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825663,
-    "last_opened": 1782825663
+    "favorite": false
   },
   {
     "key": "5404-star-wars-rebels",
@@ -3295,9 +2742,7 @@
     "type": "tv",
     "release_date": "2014-10-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825663,
-    "last_opened": 1782825663
+    "favorite": false
   },
   {
     "key": "5608-rogue-one-a-star-wars-story",
@@ -3307,9 +2752,7 @@
     "type": "movie",
     "release_date": "2016-12-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825663,
-    "last_opened": 1782825663
+    "favorite": false
   },
   {
     "key": "2339-star-wars-una-nuova-speranza-episodio-iv",
@@ -3319,9 +2762,7 @@
     "type": "movie",
     "release_date": "1977-05-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825664,
-    "last_opened": 1782825664
+    "favorite": false
   },
   {
     "key": "165-star-wars-limpero-colpisce-ancora-episodio-v",
@@ -3331,9 +2772,7 @@
     "type": "movie",
     "release_date": "1980-05-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825664,
-    "last_opened": 1782825664
+    "favorite": false
   },
   {
     "key": "164-star-wars-il-ritorno-dello-jedi-episodio-vi",
@@ -3343,9 +2782,7 @@
     "type": "movie",
     "release_date": "1983-05-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825664,
-    "last_opened": 1782825664
+    "favorite": false
   },
   {
     "key": "146-the-mandalorian",
@@ -3355,9 +2792,7 @@
     "type": "tv",
     "release_date": "2019-11-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825664,
-    "last_opened": 1782825700
+    "favorite": false
   },
   {
     "key": "4405-the-book-of-boba-fett",
@@ -3367,9 +2802,7 @@
     "type": "tv",
     "release_date": "2021-12-29",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825664,
-    "last_opened": 1782825664
+    "favorite": false
   },
   {
     "key": "6509-ahsoka",
@@ -3379,9 +2812,7 @@
     "type": "tv",
     "release_date": "2023-08-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825664,
-    "last_opened": 1782825664
+    "favorite": false
   },
   {
     "key": "9899-star-wars-skeleton-crew",
@@ -3391,9 +2822,7 @@
     "type": "tv",
     "release_date": "2024-12-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825664,
-    "last_opened": 1782825692
+    "favorite": false
   },
   {
     "key": "10846-star-wars-resistance",
@@ -3403,9 +2832,7 @@
     "type": "tv",
     "release_date": "2019-10-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825664,
-    "last_opened": 1782825664
+    "favorite": false
   },
   {
     "key": "161-star-wars-il-risveglio-della-forza-episodio-vii",
@@ -3415,9 +2842,7 @@
     "type": "movie",
     "release_date": "2015-12-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825664,
-    "last_opened": 1782825664
+    "favorite": false
   },
   {
     "key": "160-star-wars-gli-ultimi-jedi-episodio-viii",
@@ -3427,9 +2852,7 @@
     "type": "movie",
     "release_date": "2017-12-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825664,
-    "last_opened": 1782825664
+    "favorite": false
   },
   {
     "key": "291-star-wars-lascesa-di-skywalker-episodio-ix",
@@ -3439,9 +2862,7 @@
     "type": "movie",
     "release_date": "2019-12-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825664,
-    "last_opened": 1782825664
+    "favorite": false
   },
   {
     "key": "3892-dune",
@@ -3451,9 +2872,7 @@
     "type": "movie",
     "release_date": "2021-09-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825824,
-    "last_opened": 1782825824
+    "favorite": false
   },
   {
     "key": "64160-paura-e-desiderio",
@@ -3463,9 +2882,7 @@
     "type": "movie",
     "release_date": "1953-03-31",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825945,
-    "last_opened": 1782825945
+    "favorite": false
   },
   {
     "key": "54663-il-bacio-della-pantera",
@@ -3475,9 +2892,7 @@
     "type": "movie",
     "release_date": "1942-12-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825945,
-    "last_opened": 1782825945
+    "favorite": false
   },
   {
     "key": "55541-rapina-a-mano-armata",
@@ -3487,9 +2902,7 @@
     "type": "movie",
     "release_date": "1956-06-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825945,
-    "last_opened": 1782825945
+    "favorite": false
   },
   {
     "key": "12655-orizzonti-di-gloria",
@@ -3499,9 +2912,7 @@
     "type": "movie",
     "release_date": "1957-10-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825946,
-    "last_opened": 1782825946
+    "favorite": false
   },
   {
     "key": "4543-lolita",
@@ -3511,9 +2922,7 @@
     "type": "movie",
     "release_date": "1962-06-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825946,
-    "last_opened": 1782825946
+    "favorite": false
   },
   {
     "key": "9858-il-dottor-stranamore-ovvero-come-ho-imparato-a-non-preoccuparmi-e-ad-amare-la-bomba",
@@ -3523,9 +2932,7 @@
     "type": "movie",
     "release_date": "1964-01-29",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825946,
-    "last_opened": 1782825946
+    "favorite": false
   },
   {
     "key": "2514-2001-odissea-nello-spazio",
@@ -3535,9 +2942,7 @@
     "type": "movie",
     "release_date": "1968-04-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825946,
-    "last_opened": 1782825946
+    "favorite": false
   },
   {
     "key": "597-arancia-meccanica",
@@ -3547,9 +2952,7 @@
     "type": "movie",
     "release_date": "1971-12-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825946,
-    "last_opened": 1782825946
+    "favorite": false
   },
   {
     "key": "6954-barry-lyndon",
@@ -3559,9 +2962,7 @@
     "type": "movie",
     "release_date": "1975-12-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825946,
-    "last_opened": 1782825946
+    "favorite": false
   },
   {
     "key": "337-shining",
@@ -3571,9 +2972,7 @@
     "type": "movie",
     "release_date": "1980-05-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825946,
-    "last_opened": 1782825946
+    "favorite": false
   },
   {
     "key": "2922-full-metal-jacket",
@@ -3583,9 +2982,7 @@
     "type": "movie",
     "release_date": "1987-06-26",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825946,
-    "last_opened": 1782825946
+    "favorite": false
   },
   {
     "key": "6686-eyes-wide-shut",
@@ -3595,9 +2992,7 @@
     "type": "movie",
     "release_date": "1999-07-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782825946,
-    "last_opened": 1782825946
+    "favorite": false
   },
   {
     "key": "10638-swat-squadra-speciale-anticrimine-2",
@@ -3607,9 +3002,7 @@
     "type": "movie",
     "release_date": "2011-03-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826092,
-    "last_opened": 1782826092
+    "favorite": false
   },
   {
     "key": "11361-duel",
@@ -3619,9 +3012,7 @@
     "type": "movie",
     "release_date": "1971-11-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826092,
-    "last_opened": 1782862077
+    "favorite": false
   },
   {
     "key": "56501-sugarland-express",
@@ -3631,9 +3022,7 @@
     "type": "movie",
     "release_date": "1974-03-31",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826092,
-    "last_opened": 1782862084
+    "favorite": false
   },
   {
     "key": "2271-lo-squalo",
@@ -3643,9 +3032,7 @@
     "type": "movie",
     "release_date": "1975-06-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826093,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "9247-incontri-ravvicinati-del-terzo-tipo",
@@ -3655,9 +3042,7 @@
     "type": "movie",
     "release_date": "1977-12-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826093,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "6950-1941-allarme-a-hollywood",
@@ -3667,9 +3052,7 @@
     "type": "movie",
     "release_date": "1979-12-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826093,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "2343-i-predatori-dellarca-perduta",
@@ -3679,9 +3062,7 @@
     "type": "movie",
     "release_date": "1981-06-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826093,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "1135-et-lextra-terrestre",
@@ -3691,9 +3072,7 @@
     "type": "movie",
     "release_date": "1982-06-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826093,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "10932-ai-confini-della-realta-il-film",
@@ -3703,9 +3082,7 @@
     "type": "movie",
     "release_date": "1983-06-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826093,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "2338-indiana-jones-e-il-tempio-maledetto",
@@ -3715,9 +3092,7 @@
     "type": "movie",
     "release_date": "1984-05-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826093,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "9943-il-colore-viola",
@@ -3727,9 +3102,7 @@
     "type": "movie",
     "release_date": "1985-12-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826093,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "55706-limpero-del-sole",
@@ -3739,9 +3112,7 @@
     "type": "movie",
     "release_date": "1987-12-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826093,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "2342-indiana-jones-e-lultima-crociata",
@@ -3751,9 +3122,7 @@
     "type": "movie",
     "release_date": "1989-05-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826093,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "45450-always-per-sempre",
@@ -3763,9 +3132,7 @@
     "type": "movie",
     "release_date": "1989-12-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826093,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "500-hook-capitan-uncino",
@@ -3775,9 +3142,7 @@
     "type": "movie",
     "release_date": "1991-12-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826093,
-    "last_opened": 1782826093
+    "favorite": false
   },
   {
     "key": "1632-la-lista-di-schindler",
@@ -3787,9 +3152,7 @@
     "type": "movie",
     "release_date": "1993-11-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826094,
-    "last_opened": 1782826094
+    "favorite": false
   },
   {
     "key": "4365-amistad",
@@ -3799,9 +3162,7 @@
     "type": "movie",
     "release_date": "1997-12-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826094,
-    "last_opened": 1782826094
+    "favorite": false
   },
   {
     "key": "5524-salvate-il-soldato-ryan",
@@ -3811,9 +3172,7 @@
     "type": "movie",
     "release_date": "1998-07-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826094,
-    "last_opened": 1782826094
+    "favorite": false
   },
   {
     "key": "11322-ai-intelligenza-artificiale",
@@ -3823,9 +3182,7 @@
     "type": "movie",
     "release_date": "2001-06-29",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826094,
-    "last_opened": 1782826094
+    "favorite": false
   },
   {
     "key": "6450-minority-report",
@@ -3835,9 +3192,7 @@
     "type": "movie",
     "release_date": "2002-06-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826094,
-    "last_opened": 1782826094
+    "favorite": false
   },
   {
     "key": "2619-prova-a-prendermi",
@@ -3847,9 +3202,7 @@
     "type": "movie",
     "release_date": "2002-12-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826094,
-    "last_opened": 1782826094
+    "favorite": false
   },
   {
     "key": "1919-the-terminal",
@@ -3859,9 +3212,7 @@
     "type": "movie",
     "release_date": "2004-06-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826094,
-    "last_opened": 1782826094
+    "favorite": false
   },
   {
     "key": "56974-la-guerra-dei-mondi",
@@ -3871,9 +3222,7 @@
     "type": "movie",
     "release_date": "1953-04-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826094,
-    "last_opened": 1782826094
+    "favorite": false
   },
   {
     "key": "8314-munich",
@@ -3883,9 +3232,7 @@
     "type": "movie",
     "release_date": "2005-12-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826094,
-    "last_opened": 1782826094
+    "favorite": false
   },
   {
     "key": "1497-indiana-jones-e-il-regno-del-teschio-di-cristallo",
@@ -3895,9 +3242,7 @@
     "type": "movie",
     "release_date": "2008-05-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826094,
-    "last_opened": 1782826094
+    "favorite": false
   },
   {
     "key": "10031-le-avventure-di-tintin-il-segreto-dellunicorno",
@@ -3907,9 +3252,7 @@
     "type": "movie",
     "release_date": "2011-10-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826094,
-    "last_opened": 1782826094
+    "favorite": false
   },
   {
     "key": "3088-war-horse",
@@ -3919,9 +3262,7 @@
     "type": "movie",
     "release_date": "2011-12-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826095,
-    "last_opened": 1782826095
+    "favorite": false
   },
   {
     "key": "11979-lincoln",
@@ -3931,9 +3272,7 @@
     "type": "movie",
     "release_date": "2012-11-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826095,
-    "last_opened": 1782826095
+    "favorite": false
   },
   {
     "key": "3635-il-ponte-delle-spie",
@@ -3943,9 +3282,7 @@
     "type": "movie",
     "release_date": "2015-10-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826095,
-    "last_opened": 1782826095
+    "favorite": false
   },
   {
     "key": "10625-il-ggg-il-grande-gigante-gentile",
@@ -3955,9 +3292,7 @@
     "type": "movie",
     "release_date": "2016-06-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826095,
-    "last_opened": 1782826095
+    "favorite": false
   },
   {
     "key": "8689-the-post",
@@ -3967,9 +3302,7 @@
     "type": "movie",
     "release_date": "2017-12-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826095,
-    "last_opened": 1782826095
+    "favorite": false
   },
   {
     "key": "856-ready-player-one",
@@ -3979,9 +3312,7 @@
     "type": "movie",
     "release_date": "2018-03-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826095,
-    "last_opened": 1782826095
+    "favorite": false
   },
   {
     "key": "56041-west-side-story",
@@ -3991,9 +3322,7 @@
     "type": "movie",
     "release_date": "1961-12-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826095,
-    "last_opened": 1782826095
+    "favorite": false
   },
   {
     "key": "6017-the-fabelmans",
@@ -4003,9 +3332,7 @@
     "type": "movie",
     "release_date": "2022-11-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826095,
-    "last_opened": 1782826095
+    "favorite": false
   },
   {
     "key": "60267-disclosure-day",
@@ -4015,9 +3342,7 @@
     "type": "movie",
     "release_date": "2026-06-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826095,
-    "last_opened": 1782839267
+    "favorite": false
   },
   {
     "key": "48764-o-come-otello",
@@ -4027,9 +3352,7 @@
     "type": "movie",
     "release_date": "2001-08-31",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826322,
-    "last_opened": 1782826322
+    "favorite": false
   },
   {
     "key": "8470-dogtooth",
@@ -4039,9 +3362,7 @@
     "type": "movie",
     "release_date": "2009-06-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826322,
-    "last_opened": 1782826322
+    "favorite": false
   },
   {
     "key": "12027-belle-sebastien-amici-per-sempre",
@@ -4051,9 +3372,7 @@
     "type": "movie",
     "release_date": "2018-02-07",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826322,
-    "last_opened": 1782826322
+    "favorite": false
   },
   {
     "key": "7647-the-lobster",
@@ -4063,9 +3382,7 @@
     "type": "movie",
     "release_date": "2015-10-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826322,
-    "last_opened": 1782826322
+    "favorite": false
   },
   {
     "key": "6626-il-sacrificio-del-cervo-sacro",
@@ -4075,9 +3392,7 @@
     "type": "movie",
     "release_date": "2017-10-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826322,
-    "last_opened": 1782826322
+    "favorite": false
   },
   {
     "key": "710-la-favorita",
@@ -4087,9 +3402,7 @@
     "type": "movie",
     "release_date": "2018-11-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826322,
-    "last_opened": 1782826322
+    "favorite": false
   },
   {
     "key": "6819-povere-creature",
@@ -4099,9 +3412,7 @@
     "type": "movie",
     "release_date": "2024-01-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826322,
-    "last_opened": 1782826322
+    "favorite": false
   },
   {
     "key": "9244-kinds-of-kindness",
@@ -4111,9 +3422,7 @@
     "type": "movie",
     "release_date": "2024-07-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826322,
-    "last_opened": 1782826322
+    "favorite": false
   },
   {
     "key": "41255-bugonia",
@@ -4123,9 +3432,7 @@
     "type": "movie",
     "release_date": "2025-10-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826323,
-    "last_opened": 1782826323
+    "favorite": false
   },
   {
     "key": "58830-america-1929-sterminateli-senza-pieta",
@@ -4135,9 +3442,7 @@
     "type": "movie",
     "release_date": "1972-06-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826447,
-    "last_opened": 1782826447
+    "favorite": false
   },
   {
     "key": "50291-mean-streets-domenica-in-chiesa-lunedi-allinferno",
@@ -4147,9 +3452,7 @@
     "type": "movie",
     "release_date": "1973-10-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826447,
-    "last_opened": 1782826807
+    "favorite": false
   },
   {
     "key": "911-taxi-driver",
@@ -4159,9 +3462,7 @@
     "type": "movie",
     "release_date": "1976-02-07",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826448,
-    "last_opened": 1782826448
+    "favorite": false
   },
   {
     "key": "2892-toro-scatenato",
@@ -4171,9 +3472,7 @@
     "type": "movie",
     "release_date": "1980-11-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826448,
-    "last_opened": 1782826448
+    "favorite": false
   },
   {
     "key": "7761-re-per-una-notte",
@@ -4183,9 +3482,7 @@
     "type": "movie",
     "release_date": "1982-12-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826448,
-    "last_opened": 1782826448
+    "favorite": false
   },
   {
     "key": "48188-il-colore-dei-soldi",
@@ -4195,9 +3492,7 @@
     "type": "movie",
     "release_date": "1986-10-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826448,
-    "last_opened": 1782826448
+    "favorite": false
   },
   {
     "key": "1361-quei-bravi-ragazzi",
@@ -4207,9 +3502,7 @@
     "type": "movie",
     "release_date": "1990-09-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826448,
-    "last_opened": 1782826448
+    "favorite": false
   },
   {
     "key": "11189-cape-fear-il-promontorio-della-paura",
@@ -4219,9 +3512,7 @@
     "type": "movie",
     "release_date": "1991-11-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826448,
-    "last_opened": 1782826448
+    "favorite": false
   },
   {
     "key": "50260-leta-dellinnocenza",
@@ -4231,9 +3522,7 @@
     "type": "movie",
     "release_date": "1993-09-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826448,
-    "last_opened": 1782826448
+    "favorite": false
   },
   {
     "key": "6448-casino",
@@ -4243,9 +3532,7 @@
     "type": "movie",
     "release_date": "1995-11-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826448,
-    "last_opened": 1782826448
+    "favorite": false
   },
   {
     "key": "6519-gangs-of-new-york",
@@ -4255,9 +3542,7 @@
     "type": "movie",
     "release_date": "2003-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826449,
-    "last_opened": 1782826449
+    "favorite": false
   },
   {
     "key": "548-the-aviator",
@@ -4267,9 +3552,7 @@
     "type": "movie",
     "release_date": "2004-12-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826449,
-    "last_opened": 1782826449
+    "favorite": false
   },
   {
     "key": "199-the-departed-il-bene-e-il-male",
@@ -4279,9 +3562,7 @@
     "type": "movie",
     "release_date": "2006-10-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826449,
-    "last_opened": 1782826449
+    "favorite": false
   },
   {
     "key": "904-shutter-island",
@@ -4291,9 +3572,7 @@
     "type": "movie",
     "release_date": "2010-02-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826449,
-    "last_opened": 1782826449
+    "favorite": false
   },
   {
     "key": "8184-hugo-cabret",
@@ -4303,9 +3582,7 @@
     "type": "movie",
     "release_date": "2011-11-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826449,
-    "last_opened": 1782827863
+    "favorite": false
   },
   {
     "key": "159-the-wolf-of-wall-street",
@@ -4315,9 +3592,7 @@
     "type": "movie",
     "release_date": "2013-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826449,
-    "last_opened": 1782826449
+    "favorite": false
   },
   {
     "key": "3658-silence",
@@ -4327,9 +3602,7 @@
     "type": "movie",
     "release_date": "2016-12-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826449,
-    "last_opened": 1782827872
+    "favorite": false
   },
   {
     "key": "1138-the-irishman",
@@ -4339,9 +3612,7 @@
     "type": "movie",
     "release_date": "2019-11-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826449,
-    "last_opened": 1782826449
+    "favorite": false
   },
   {
     "key": "6821-killers-of-the-flower-moon",
@@ -4351,9 +3622,7 @@
     "type": "movie",
     "release_date": "2023-11-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826449,
-    "last_opened": 1782826449
+    "favorite": false
   },
   {
     "key": "1636-il-padrino",
@@ -4363,9 +3632,7 @@
     "type": "movie",
     "release_date": "1972-03-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826565,
-    "last_opened": 1782826565
+    "favorite": false
   },
   {
     "key": "55237-la-conversazione",
@@ -4375,9 +3642,7 @@
     "type": "movie",
     "release_date": "1974-04-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826565,
-    "last_opened": 1782827606
+    "favorite": false
   },
   {
     "key": "1637-il-padrino-parte-ii",
@@ -4387,9 +3652,7 @@
     "type": "movie",
     "release_date": "1974-12-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826565,
-    "last_opened": 1782826565
+    "favorite": false
   },
   {
     "key": "8795-apocalypse-now",
@@ -4399,9 +3662,7 @@
     "type": "movie",
     "release_date": "1979-08-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826565,
-    "last_opened": 1782827613
+    "favorite": false
   },
   {
     "key": "55788-rusty-il-selvaggio",
@@ -4411,9 +3672,7 @@
     "type": "movie",
     "release_date": "1983-10-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826566,
-    "last_opened": 1782826566
+    "favorite": false
   },
   {
     "key": "12750-peggy-sue-si-e-sposata",
@@ -4423,9 +3682,7 @@
     "type": "movie",
     "release_date": "1986-10-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826566,
-    "last_opened": 1782826566
+    "favorite": false
   },
   {
     "key": "11123-giardini-di-pietra",
@@ -4435,9 +3692,7 @@
     "type": "movie",
     "release_date": "1987-05-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826566,
-    "last_opened": 1782826566
+    "favorite": false
   },
   {
     "key": "50340-tucker-un-uomo-e-il-suo-sogno",
@@ -4447,9 +3702,7 @@
     "type": "movie",
     "release_date": "1988-08-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826566,
-    "last_opened": 1782826566
+    "favorite": false
   },
   {
     "key": "1638-il-padrino-parte-iii",
@@ -4459,9 +3712,7 @@
     "type": "movie",
     "release_date": "1990-12-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826566,
-    "last_opened": 1782826566
+    "favorite": false
   },
   {
     "key": "2569-dracula-di-bram-stoker",
@@ -4471,9 +3722,7 @@
     "type": "movie",
     "release_date": "1992-11-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826566,
-    "last_opened": 1782827663
+    "favorite": false
   },
   {
     "key": "56565-jack",
@@ -4483,9 +3732,7 @@
     "type": "movie",
     "release_date": "1996-08-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826566,
-    "last_opened": 1782827661
+    "favorite": false
   },
   {
     "key": "10805-luomo-della-pioggia",
@@ -4495,9 +3742,7 @@
     "type": "movie",
     "release_date": "1997-11-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826566,
-    "last_opened": 1782827671
+    "favorite": false
   },
   {
     "key": "6573-segreti-di-famiglia",
@@ -4507,9 +3752,7 @@
     "type": "movie",
     "release_date": "2015-10-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826567,
-    "last_opened": 1782826567
+    "favorite": false
   },
   {
     "key": "10748-megalopolis",
@@ -4519,9 +3762,7 @@
     "type": "movie",
     "release_date": "2024-12-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782826567,
-    "last_opened": 1782826567
+    "favorite": false
   },
   {
     "key": "53099-luci-del-varieta",
@@ -4531,9 +3772,7 @@
     "type": "movie",
     "release_date": "1950-12-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782835735,
-    "last_opened": 1782835735
+    "favorite": false
   },
   {
     "key": "53111-la-strada",
@@ -4543,9 +3782,7 @@
     "type": "movie",
     "release_date": "1954-09-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782835735,
-    "last_opened": 1782835735
+    "favorite": false
   },
   {
     "key": "4579-la-dolce-vita",
@@ -4555,9 +3792,7 @@
     "type": "movie",
     "release_date": "1960-02-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782835735,
-    "last_opened": 1782835735
+    "favorite": false
   },
   {
     "key": "9612-8-12",
@@ -4567,9 +3802,7 @@
     "type": "movie",
     "release_date": "1963-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782835735,
-    "last_opened": 1782835735
+    "favorite": false
   },
   {
     "key": "49946-il-casanova-di-federico-fellini",
@@ -4579,9 +3812,7 @@
     "type": "movie",
     "release_date": "1976-12-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782835735,
-    "last_opened": 1782835735
+    "favorite": false
   },
   {
     "key": "11010-amarcord",
@@ -4591,9 +3822,7 @@
     "type": "movie",
     "release_date": "1973-12-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782835735,
-    "last_opened": 1782835735
+    "favorite": false
   },
   {
     "key": "1436-biancaneve-e-i-sette-nani",
@@ -4603,9 +3832,7 @@
     "type": "movie",
     "release_date": "1937-12-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836348,
-    "last_opened": 1782836348
+    "favorite": false
   },
   {
     "key": "10347-pinocchio",
@@ -4615,9 +3842,7 @@
     "type": "movie",
     "release_date": "1940-02-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836348,
-    "last_opened": 1782836348
+    "favorite": false
   },
   {
     "key": "10653-fantasia",
@@ -4627,9 +3852,7 @@
     "type": "movie",
     "release_date": "1940-11-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836348,
-    "last_opened": 1782927560
+    "favorite": false
   },
   {
     "key": "8017-fantasia-2000",
@@ -4639,9 +3862,7 @@
     "type": "movie",
     "release_date": "1999-12-31",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836348,
-    "last_opened": 1782927439
+    "favorite": false
   },
   {
     "key": "9955-dumbo",
@@ -4651,9 +3872,7 @@
     "type": "movie",
     "release_date": "1941-10-31",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836348,
-    "last_opened": 1782836348
+    "favorite": false
   },
   {
     "key": "7900-bambi",
@@ -4663,9 +3882,7 @@
     "type": "movie",
     "release_date": "1942-08-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836348,
-    "last_opened": 1782836348
+    "favorite": false
   },
   {
     "key": "7904-bambi-2-bambi-e-il-grande-principe-della-foresta",
@@ -4675,9 +3892,7 @@
     "type": "movie",
     "release_date": "2006-01-26",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836348,
-    "last_opened": 1782836348
+    "favorite": false
   },
   {
     "key": "7723-lo-scrigno-delle-sette-perle",
@@ -4687,9 +3902,7 @@
     "type": "movie",
     "release_date": "1948-05-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836348,
-    "last_opened": 1782836348
+    "favorite": false
   },
   {
     "key": "10850-le-avventure-di-ichabod-e-mr-toad",
@@ -4699,9 +3912,7 @@
     "type": "movie",
     "release_date": "1949-10-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836348,
-    "last_opened": 1782836348
+    "favorite": false
   },
   {
     "key": "2089-cenerentola",
@@ -4711,9 +3922,7 @@
     "type": "movie",
     "release_date": "1950-02-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782836349
+    "favorite": false
   },
   {
     "key": "7914-alice-nel-paese-delle-meraviglie",
@@ -4723,9 +3932,7 @@
     "type": "movie",
     "release_date": "1951-07-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782837553
+    "favorite": false
   },
   {
     "key": "2723-le-avventure-di-peter-pan",
@@ -4735,9 +3942,7 @@
     "type": "movie",
     "release_date": "1953-02-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782837556
+    "favorite": false
   },
   {
     "key": "7848-lilli-e-il-vagabondo",
@@ -4747,9 +3952,7 @@
     "type": "movie",
     "release_date": "1955-06-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782836349
+    "favorite": false
   },
   {
     "key": "7843-lilli-e-il-vagabondo-2-il-cucciolo-ribelle",
@@ -4759,9 +3962,7 @@
     "type": "movie",
     "release_date": "2001-02-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782896816
+    "favorite": false
   },
   {
     "key": "2534-la-bella-addormentata-nel-bosco",
@@ -4771,9 +3972,7 @@
     "type": "movie",
     "release_date": "1959-02-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782836349
+    "favorite": false
   },
   {
     "key": "7842-la-carica-dei-101",
@@ -4783,9 +3982,7 @@
     "type": "movie",
     "release_date": "1961-01-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782836349
+    "favorite": false
   },
   {
     "key": "7783-la-spada-nella-roccia",
@@ -4795,9 +3992,7 @@
     "type": "movie",
     "release_date": "1963-12-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782836349
+    "favorite": false
   },
   {
     "key": "8895-il-libro-della-giungla",
@@ -4807,9 +4002,7 @@
     "type": "movie",
     "release_date": "1967-10-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782837560
+    "favorite": false
   },
   {
     "key": "7730-gli-aristogatti",
@@ -4819,9 +4012,7 @@
     "type": "movie",
     "release_date": "1970-12-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782837570
+    "favorite": false
   },
   {
     "key": "7654-le-avventure-di-bianca-e-bernie",
@@ -4831,9 +4022,7 @@
     "type": "movie",
     "release_date": "1977-06-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782836349
+    "favorite": false
   },
   {
     "key": "11092-bianca-e-bernie-nella-terra-dei-canguri",
@@ -4843,9 +4032,7 @@
     "type": "movie",
     "release_date": "1990-11-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782836349
+    "favorite": false
   },
   {
     "key": "7519-red-e-toby-nemiciamici",
@@ -4855,9 +4042,7 @@
     "type": "movie",
     "release_date": "1981-07-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836349,
-    "last_opened": 1782836349
+    "favorite": false
   },
   {
     "key": "7966-taron-e-la-pentola-magica",
@@ -4867,9 +4052,7 @@
     "type": "movie",
     "release_date": "1985-07-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782837567
+    "favorite": false
   },
   {
     "key": "12563-basil-linvestigatopo",
@@ -4879,9 +4062,7 @@
     "type": "movie",
     "release_date": "1986-07-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782837565
+    "favorite": false
   },
   {
     "key": "12337-oliver-company",
@@ -4891,9 +4072,7 @@
     "type": "movie",
     "release_date": "1988-11-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782836350
+    "favorite": false
   },
   {
     "key": "6459-la-sirenetta",
@@ -4903,9 +4082,7 @@
     "type": "movie",
     "release_date": "1989-11-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782836350
+    "favorite": false
   },
   {
     "key": "10035-la-sirenetta-ii-ritorno-agli-abissi",
@@ -4915,9 +4092,7 @@
     "type": "movie",
     "release_date": "2000-01-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782836350
+    "favorite": false
   },
   {
     "key": "8366-la-bella-e-la-bestia",
@@ -4927,9 +4102,7 @@
     "type": "movie",
     "release_date": "1991-10-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782836350
+    "favorite": false
   },
   {
     "key": "10343-la-bella-e-la-bestia-un-magico-natale",
@@ -4939,9 +4112,7 @@
     "type": "movie",
     "release_date": "1997-11-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782837300
+    "favorite": false
   },
   {
     "key": "4939-aladdin",
@@ -4951,9 +4122,7 @@
     "type": "movie",
     "release_date": "1992-11-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782836350
+    "favorite": false
   },
   {
     "key": "32741-il-ritorno-di-jafar",
@@ -4963,9 +4132,7 @@
     "type": "movie",
     "release_date": "1994-05-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782836350
+    "favorite": false
   },
   {
     "key": "54709-aladdin-e-il-re-dei-ladri",
@@ -4975,9 +4142,7 @@
     "type": "movie",
     "release_date": "1996-05-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782836350
+    "favorite": false
   },
   {
     "key": "6444-il-re-leone",
@@ -4987,9 +4152,7 @@
     "type": "movie",
     "release_date": "1994-06-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782836350
+    "favorite": false
   },
   {
     "key": "6445-il-re-leone-3-hakuna-matata",
@@ -4999,9 +4162,7 @@
     "type": "movie",
     "release_date": "2004-02-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782836350
+    "favorite": false
   },
   {
     "key": "2123-pocahontas",
@@ -5011,9 +4172,7 @@
     "type": "movie",
     "release_date": "1995-06-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836350,
-    "last_opened": 1782836350
+    "favorite": false
   },
   {
     "key": "2124-pocahontas-ii-viaggio-nel-nuovo-mondo",
@@ -5023,9 +4182,7 @@
     "type": "movie",
     "release_date": "1998-08-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836351,
-    "last_opened": 1782836351
+    "favorite": false
   },
   {
     "key": "2388-il-gobbo-di-notre-dame",
@@ -5035,9 +4192,7 @@
     "type": "movie",
     "release_date": "1996-04-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836351,
-    "last_opened": 1782836351
+    "favorite": false
   },
   {
     "key": "52561-il-gobbo-di-notre-dame-ii-il-segreto-della-campana",
@@ -5047,9 +4202,7 @@
     "type": "movie",
     "release_date": "2002-02-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836351,
-    "last_opened": 1782836351
+    "favorite": false
   },
   {
     "key": "488-hercules",
@@ -5059,9 +4212,7 @@
     "type": "movie",
     "release_date": "1997-06-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836351,
-    "last_opened": 1782836351
+    "favorite": false
   },
   {
     "key": "2103-mulan",
@@ -5071,9 +4222,7 @@
     "type": "movie",
     "release_date": "1998-06-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836351,
-    "last_opened": 1782836351
+    "favorite": false
   },
   {
     "key": "2256-mulan-2",
@@ -5083,9 +4232,7 @@
     "type": "movie",
     "release_date": "2004-11-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836351,
-    "last_opened": 1782836351
+    "favorite": false
   },
   {
     "key": "5012-tarzan",
@@ -5095,9 +4242,7 @@
     "type": "movie",
     "release_date": "1999-06-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836351,
-    "last_opened": 1782836351
+    "favorite": false
   },
   {
     "key": "51977-tarzan-2",
@@ -5107,9 +4252,7 @@
     "type": "movie",
     "release_date": "2005-06-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836351,
-    "last_opened": 1782836351
+    "favorite": false
   },
   {
     "key": "2251-le-follie-dellimperatore",
@@ -5119,9 +4262,7 @@
     "type": "movie",
     "release_date": "2000-12-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836351,
-    "last_opened": 1782836351
+    "favorite": false
   },
   {
     "key": "10948-le-follie-di-kronk",
@@ -5131,9 +4272,7 @@
     "type": "movie",
     "release_date": "2005-12-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836351,
-    "last_opened": 1782836351
+    "favorite": false
   },
   {
     "key": "2737-atlantis-limpero-perduto",
@@ -5143,9 +4282,7 @@
     "type": "movie",
     "release_date": "2001-06-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836351,
-    "last_opened": 1782836351
+    "favorite": false
   },
   {
     "key": "10778-atlantis-il-ritorno-di-milo",
@@ -5155,9 +4292,7 @@
     "type": "movie",
     "release_date": "2003-02-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836351,
-    "last_opened": 1782836453
+    "favorite": false
   },
   {
     "key": "1933-lilo-and-stitch",
@@ -5167,9 +4302,7 @@
     "type": "movie",
     "release_date": "2002-06-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836453,
-    "last_opened": 1782836453
+    "favorite": false
   },
   {
     "key": "4604-provaci-ancora-stitch",
@@ -5179,9 +4312,7 @@
     "type": "movie",
     "release_date": "2003-08-26",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836454,
-    "last_opened": 1782837166
+    "favorite": false
   },
   {
     "key": "2262-lilo-and-stitch-2-che-disastro-stitch",
@@ -5191,9 +4322,7 @@
     "type": "movie",
     "release_date": "2005-01-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836454,
-    "last_opened": 1782836454
+    "favorite": false
   },
   {
     "key": "4605-leroy-and-stitch",
@@ -5203,9 +4332,7 @@
     "type": "movie",
     "release_date": "2006-06-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836454,
-    "last_opened": 1782836454
+    "favorite": false
   },
   {
     "key": "2102-il-pianeta-del-tesoro",
@@ -5215,9 +4342,7 @@
     "type": "movie",
     "release_date": "2002-11-26",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836454,
-    "last_opened": 1782836454
+    "favorite": false
   },
   {
     "key": "8237-koda-fratello-orso",
@@ -5227,9 +4352,7 @@
     "type": "movie",
     "release_date": "2003-10-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836454,
-    "last_opened": 1782836454
+    "favorite": false
   },
   {
     "key": "11112-koda-fratello-orso-2",
@@ -5239,9 +4362,7 @@
     "type": "movie",
     "release_date": "2006-08-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836454,
-    "last_opened": 1782836454
+    "favorite": false
   },
   {
     "key": "8533-mucche-alla-riscossa",
@@ -5251,9 +4372,7 @@
     "type": "movie",
     "release_date": "2004-04-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836454,
-    "last_opened": 1782836454
+    "favorite": false
   },
   {
     "key": "9975-chicken-little-amici-per-le-penne",
@@ -5263,9 +4382,7 @@
     "type": "movie",
     "release_date": "2005-11-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836454,
-    "last_opened": 1782836454
+    "favorite": false
   },
   {
     "key": "9908-i-robinson-una-famiglia-spaziale",
@@ -5275,9 +4392,7 @@
     "type": "movie",
     "release_date": "2007-03-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836454,
-    "last_opened": 1782836454
+    "favorite": false
   },
   {
     "key": "8205-bolt-un-eroe-a-quattro-zampe",
@@ -5287,9 +4402,7 @@
     "type": "movie",
     "release_date": "2008-11-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836454,
-    "last_opened": 1782836454
+    "favorite": false
   },
   {
     "key": "1995-la-principessa-e-il-ranocchio",
@@ -5299,9 +4412,7 @@
     "type": "movie",
     "release_date": "2009-12-08",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836454,
-    "last_opened": 1782836454
+    "favorite": false
   },
   {
     "key": "2221-rapunzel-lintreccio-della-torre",
@@ -5311,9 +4422,7 @@
     "type": "movie",
     "release_date": "2010-11-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836455,
-    "last_opened": 1782836455
+    "favorite": false
   },
   {
     "key": "1619-ralph-spaccatutto",
@@ -5323,9 +4432,7 @@
     "type": "movie",
     "release_date": "2012-11-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836455,
-    "last_opened": 1782836455
+    "favorite": false
   },
   {
     "key": "925-ralph-spacca-internet",
@@ -5335,9 +4442,7 @@
     "type": "movie",
     "release_date": "2018-11-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836455,
-    "last_opened": 1782836455
+    "favorite": false
   },
   {
     "key": "674-frozen-il-regno-di-ghiaccio",
@@ -5347,9 +4452,7 @@
     "type": "movie",
     "release_date": "2013-11-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836455,
-    "last_opened": 1782836455
+    "favorite": false
   },
   {
     "key": "715-frozen-ii-il-segreto-di-arendelle",
@@ -5359,9 +4462,7 @@
     "type": "movie",
     "release_date": "2019-11-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836455,
-    "last_opened": 1782836455
+    "favorite": false
   },
   {
     "key": "1641-big-hero-6",
@@ -5371,9 +4472,7 @@
     "type": "movie",
     "release_date": "2014-10-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836455,
-    "last_opened": 1782836455
+    "favorite": false
   },
   {
     "key": "2493-zootropolis",
@@ -5383,9 +4482,7 @@
     "type": "movie",
     "release_date": "2016-02-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836455,
-    "last_opened": 1782836455
+    "favorite": false
   },
   {
     "key": "1831-oceania",
@@ -5395,9 +4492,7 @@
     "type": "movie",
     "release_date": "2016-11-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836455,
-    "last_opened": 1782836455
+    "favorite": false
   },
   {
     "key": "3047-raya-e-lultimo-drago",
@@ -5407,9 +4502,7 @@
     "type": "movie",
     "release_date": "2021-03-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836455,
-    "last_opened": 1782836455
+    "favorite": false
   },
   {
     "key": "4244-encanto",
@@ -5419,9 +4512,7 @@
     "type": "movie",
     "release_date": "2021-11-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836455,
-    "last_opened": 1782836455
+    "favorite": false
   },
   {
     "key": "5969-strange-world-un-mondo-misterioso",
@@ -5431,9 +4522,7 @@
     "type": "movie",
     "release_date": "2022-11-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836456,
-    "last_opened": 1782836456
+    "favorite": false
   },
   {
     "key": "6818-wish",
@@ -5443,9 +4532,7 @@
     "type": "movie",
     "release_date": "2023-12-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836456,
-    "last_opened": 1782836456
+    "favorite": false
   },
   {
     "key": "9331-trilli",
@@ -5455,9 +4542,7 @@
     "type": "movie",
     "release_date": "2008-09-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836456,
-    "last_opened": 1782836456
+    "favorite": false
   },
   {
     "key": "9330-trilli-e-il-tesoro-perduto",
@@ -5467,9 +4552,7 @@
     "type": "movie",
     "release_date": "2009-09-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836456,
-    "last_opened": 1782836456
+    "favorite": false
   },
   {
     "key": "9333-trilli-e-il-grande-salvataggio",
@@ -5479,9 +4562,7 @@
     "type": "movie",
     "release_date": "2010-07-29",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836456,
-    "last_opened": 1782836456
+    "favorite": false
   },
   {
     "key": "9335-trilli-e-il-segreto-delle-ali",
@@ -5491,9 +4572,7 @@
     "type": "movie",
     "release_date": "2012-08-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836456,
-    "last_opened": 1782836456
+    "favorite": false
   },
   {
     "key": "9332-trilli-e-la-nave-pirata",
@@ -5503,9 +4582,7 @@
     "type": "movie",
     "release_date": "2014-02-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836456,
-    "last_opened": 1782836456
+    "favorite": false
   },
   {
     "key": "9334-trilli-e-la-creatura-leggendaria",
@@ -5515,9 +4592,7 @@
     "type": "movie",
     "release_date": "2014-12-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836456,
-    "last_opened": 1782836456
+    "favorite": false
   },
   {
     "key": "9889-topolino-paperino-pippo-i-tre-moschettieri",
@@ -5527,9 +4602,7 @@
     "type": "movie",
     "release_date": "2004-08-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836456,
-    "last_opened": 1782906987
+    "favorite": false
   },
   {
     "key": "11001-la-carica-dei-101-ii-macchia-un-eroe-a-londra",
@@ -5539,9 +4612,7 @@
     "type": "movie",
     "release_date": "2003-03-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836632,
-    "last_opened": 1782836632
+    "favorite": false
   },
   {
     "key": "7137-robin-hood",
@@ -5551,9 +4622,7 @@
     "type": "movie",
     "release_date": "1973-11-08",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836656,
-    "last_opened": 1782837558
+    "favorite": false
   },
   {
     "key": "7520-red-e-toby-2-nemiciamici",
@@ -5563,9 +4632,7 @@
     "type": "movie",
     "release_date": "2006-11-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836669,
-    "last_opened": 1782836669
+    "favorite": false
   },
   {
     "key": "41659-zootropolis-2",
@@ -5575,9 +4642,7 @@
     "type": "movie",
     "release_date": "2025-11-26",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836726,
-    "last_opened": 1782836726
+    "favorite": false
   },
   {
     "key": "10006-oceania-2",
@@ -5587,9 +4652,7 @@
     "type": "movie",
     "release_date": "2024-12-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782836736,
-    "last_opened": 1782836736
+    "favorite": false
   },
   {
     "key": "11502-giuseppe-il-re-dei-sogni",
@@ -5599,9 +4662,7 @@
     "type": "movie",
     "release_date": "2002-12-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782837685,
-    "last_opened": 1782837685
+    "favorite": false
   },
   {
     "key": "11951-dog-man",
@@ -5611,9 +4672,7 @@
     "type": "movie",
     "release_date": "2025-01-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782837923,
-    "last_opened": 1782837923
+    "favorite": false
   },
   {
     "key": "56220-il-pensionante-una-storia-della-nebbia-di-londra",
@@ -5623,9 +4682,7 @@
     "type": "movie",
     "release_date": "1927-02-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838594,
-    "last_opened": 1782838594
+    "favorite": false
   },
   {
     "key": "11827-luomo-che-sapeva-troppo",
@@ -5635,9 +4692,7 @@
     "type": "movie",
     "release_date": "1956-05-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838595,
-    "last_opened": 1782838595
+    "favorite": false
   },
   {
     "key": "60244-la-taverna-della-giamaica",
@@ -5647,9 +4702,7 @@
     "type": "movie",
     "release_date": "1939-05-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838595,
-    "last_opened": 1782839277
+    "favorite": false
   },
   {
     "key": "50390-rebecca-la-prima-moglie",
@@ -5659,9 +4712,7 @@
     "type": "movie",
     "release_date": "1940-03-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838595,
-    "last_opened": 1782838595
+    "favorite": false
   },
   {
     "key": "59357-il-signore-e-la-signora-smith",
@@ -5671,9 +4722,7 @@
     "type": "movie",
     "release_date": "1941-01-31",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838595,
-    "last_opened": 1782838595
+    "favorite": false
   },
   {
     "key": "8610-il-sospetto",
@@ -5683,9 +4732,7 @@
     "type": "movie",
     "release_date": "1941-11-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838595,
-    "last_opened": 1782838595
+    "favorite": false
   },
   {
     "key": "58730-lombra-del-dubbio",
@@ -5695,9 +4742,7 @@
     "type": "movie",
     "release_date": "1943-01-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838595,
-    "last_opened": 1782838595
+    "favorite": false
   },
   {
     "key": "11200-nodo-alla-gola",
@@ -5707,9 +4752,7 @@
     "type": "movie",
     "release_date": "1948-03-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838595,
-    "last_opened": 1782838595
+    "favorite": false
   },
   {
     "key": "12905-paura-in-palcoscenico",
@@ -5719,9 +4762,7 @@
     "type": "movie",
     "release_date": "1950-02-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838596,
-    "last_opened": 1782838596
+    "favorite": false
   },
   {
     "key": "35321-laltro-uomo",
@@ -5731,9 +4772,7 @@
     "type": "movie",
     "release_date": "1951-06-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838596,
-    "last_opened": 1782838596
+    "favorite": false
   },
   {
     "key": "48253-il-delitto-perfetto",
@@ -5743,9 +4782,7 @@
     "type": "movie",
     "release_date": "1954-05-29",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838596,
-    "last_opened": 1782838596
+    "favorite": false
   },
   {
     "key": "8803-la-finestra-sul-cortile",
@@ -5755,9 +4792,7 @@
     "type": "movie",
     "release_date": "1954-08-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838596,
-    "last_opened": 1782838596
+    "favorite": false
   },
   {
     "key": "51747-caccia-al-ladro",
@@ -5767,9 +4802,7 @@
     "type": "movie",
     "release_date": "1955-08-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838596,
-    "last_opened": 1782838596
+    "favorite": false
   },
   {
     "key": "51748-la-congiura-degli-innocenti",
@@ -5779,9 +4812,7 @@
     "type": "movie",
     "release_date": "1955-09-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838596,
-    "last_opened": 1782838596
+    "favorite": false
   },
   {
     "key": "50367-il-ladro",
@@ -5791,9 +4822,7 @@
     "type": "movie",
     "release_date": "1956-12-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838596,
-    "last_opened": 1782838596
+    "favorite": false
   },
   {
     "key": "7575-la-donna-che-visse-due-volte",
@@ -5803,9 +4832,7 @@
     "type": "movie",
     "release_date": "1958-05-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838596,
-    "last_opened": 1782838596
+    "favorite": false
   },
   {
     "key": "12699-intrigo-internazionale",
@@ -5815,9 +4842,7 @@
     "type": "movie",
     "release_date": "1959-07-08",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838597,
-    "last_opened": 1782838597
+    "favorite": false
   },
   {
     "key": "8793-psyco",
@@ -5827,9 +4852,7 @@
     "type": "movie",
     "release_date": "1960-06-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838597,
-    "last_opened": 1782838597
+    "favorite": false
   },
   {
     "key": "10551-gli-uccelli",
@@ -5839,9 +4862,7 @@
     "type": "movie",
     "release_date": "1963-03-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838597,
-    "last_opened": 1782838597
+    "favorite": false
   },
   {
     "key": "55855-frenzy",
@@ -5851,9 +4872,7 @@
     "type": "movie",
     "release_date": "1972-05-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782838597,
-    "last_opened": 1782838597
+    "favorite": false
   },
   {
     "key": "8965-mimic",
@@ -5863,9 +4882,7 @@
     "type": "movie",
     "release_date": "1997-08-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839023,
-    "last_opened": 1782839023
+    "favorite": false
   },
   {
     "key": "5023-hellboy",
@@ -5875,9 +4892,7 @@
     "type": "movie",
     "release_date": "2004-04-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839024,
-    "last_opened": 1782839024
+    "favorite": false
   },
   {
     "key": "6695-il-labirinto-del-fauno",
@@ -5887,9 +4902,7 @@
     "type": "movie",
     "release_date": "2006-10-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839024,
-    "last_opened": 1782839024
+    "favorite": false
   },
   {
     "key": "5024-hellboy-the-golden-army",
@@ -5899,9 +4912,7 @@
     "type": "movie",
     "release_date": "2008-07-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839024,
-    "last_opened": 1782839024
+    "favorite": false
   },
   {
     "key": "854-pacific-rim",
@@ -5911,9 +4922,7 @@
     "type": "movie",
     "release_date": "2013-07-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839024,
-    "last_opened": 1782839024
+    "favorite": false
   },
   {
     "key": "10698-crimson-peak",
@@ -5923,9 +4932,7 @@
     "type": "movie",
     "release_date": "2015-10-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839024,
-    "last_opened": 1782839024
+    "favorite": false
   },
   {
     "key": "1903-la-forma-dellacqua-the-shape-of-water",
@@ -5935,9 +4942,7 @@
     "type": "movie",
     "release_date": "2017-12-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839024,
-    "last_opened": 1782839024
+    "favorite": false
   },
   {
     "key": "4638-la-fiera-delle-illusioni-nightmare-alley",
@@ -5947,9 +4952,7 @@
     "type": "movie",
     "release_date": "2021-12-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839024,
-    "last_opened": 1782839024
+    "favorite": false
   },
   {
     "key": "5933-pinocchio-di-guillermo-del-toro",
@@ -5959,9 +4962,7 @@
     "type": "movie",
     "release_date": "2022-11-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839024,
-    "last_opened": 1782839024
+    "favorite": false
   },
   {
     "key": "8659-blade-ii",
@@ -5971,9 +4972,7 @@
     "type": "movie",
     "release_date": "2002-03-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839024,
-    "last_opened": 1782839024
+    "favorite": false
   },
   {
     "key": "23323-frankenstein",
@@ -5983,9 +4982,7 @@
     "type": "movie",
     "release_date": "2025-11-07",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839036,
-    "last_opened": 1782839039
+    "favorite": false
   },
   {
     "key": "49163-attitudini-nessuna",
@@ -5995,9 +4992,7 @@
     "type": "movie",
     "release_date": "2025-12-04",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839151,
-    "last_opened": 1782839157
+    "favorite": false
   },
   {
     "key": "1922-tre-uomini-e-una-gamba",
@@ -6007,9 +5002,7 @@
     "type": "movie",
     "release_date": "1997-12-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839156,
-    "last_opened": 1782839156
+    "favorite": false
   },
   {
     "key": "471-cosi-e-la-vita",
@@ -6019,9 +5012,7 @@
     "type": "movie",
     "release_date": "1998-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839156,
-    "last_opened": 1782839156
+    "favorite": false
   },
   {
     "key": "54617-tutti-gli-uomini-del-deficiente",
@@ -6031,9 +5022,7 @@
     "type": "movie",
     "release_date": "1999-12-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839156,
-    "last_opened": 1782839156
+    "favorite": false
   },
   {
     "key": "2337-chiedimi-se-sono-felice",
@@ -6043,9 +5032,7 @@
     "type": "movie",
     "release_date": "2000-12-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839156,
-    "last_opened": 1782839156
+    "favorite": false
   },
   {
     "key": "1660-la-leggenda-di-al-john-e-jack",
@@ -6055,9 +5042,7 @@
     "type": "movie",
     "release_date": "2002-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839156,
-    "last_opened": 1782839156
+    "favorite": false
   },
   {
     "key": "1669-tu-la-conosci-claudia",
@@ -6067,9 +5052,7 @@
     "type": "movie",
     "release_date": "2004-12-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839157,
-    "last_opened": 1782839157
+    "favorite": false
   },
   {
     "key": "1656-il-cosmo-sul-como",
@@ -6079,9 +5062,7 @@
     "type": "movie",
     "release_date": "2008-12-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839157,
-    "last_opened": 1782839157
+    "favorite": false
   },
   {
     "key": "1440-la-banda-dei-babbi-natale",
@@ -6091,9 +5072,7 @@
     "type": "movie",
     "release_date": "2010-12-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839157,
-    "last_opened": 1782839157
+    "favorite": false
   },
   {
     "key": "634-il-ricco-il-povero-e-il-maggiordomo",
@@ -6103,9 +5082,7 @@
     "type": "movie",
     "release_date": "2014-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839157,
-    "last_opened": 1782839157
+    "favorite": false
   },
   {
     "key": "10611-fuga-da-reuma-park",
@@ -6115,9 +5092,7 @@
     "type": "movie",
     "release_date": "2016-12-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839157,
-    "last_opened": 1782839157
+    "favorite": false
   },
   {
     "key": "1316-odio-lestate",
@@ -6127,9 +5102,7 @@
     "type": "movie",
     "release_date": "2020-01-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839157,
-    "last_opened": 1782839157
+    "favorite": false
   },
   {
     "key": "6219-il-grande-giorno",
@@ -6139,9 +5112,7 @@
     "type": "movie",
     "release_date": "2022-12-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839157,
-    "last_opened": 1782839157
+    "favorite": false
   },
   {
     "key": "472-ritorno-al-futuro",
@@ -6151,9 +5122,7 @@
     "type": "movie",
     "release_date": "1985-07-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839205,
-    "last_opened": 1782839205
+    "favorite": false
   },
   {
     "key": "423-ritorno-al-futuro-parte-2",
@@ -6163,9 +5132,7 @@
     "type": "movie",
     "release_date": "1990-05-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839205,
-    "last_opened": 1782839205
+    "favorite": false
   },
   {
     "key": "476-ritorno-al-futuro-parte-iii",
@@ -6175,9 +5142,7 @@
     "type": "movie",
     "release_date": "1989-11-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782839205,
-    "last_opened": 1782839205
+    "favorite": false
   },
   {
     "key": "2119-the-office-us",
@@ -6187,9 +5152,7 @@
     "type": "tv",
     "release_date": "2005-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912812,
-    "last_opened": 1782913294
+    "favorite": false
   },
   {
     "key": "10705-parks-and-recreation",
@@ -6199,9 +5162,7 @@
     "type": "tv",
     "release_date": "2015-01-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912812,
-    "last_opened": 1782913294
+    "favorite": false
   },
   {
     "key": "4515-brooklyn-nine-nine",
@@ -6211,9 +5172,7 @@
     "type": "tv",
     "release_date": "2013-09-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912812,
-    "last_opened": 1782913294
+    "favorite": false
   },
   {
     "key": "1469-modern-family",
@@ -6223,9 +5182,7 @@
     "type": "tv",
     "release_date": "2009-09-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912812,
-    "last_opened": 1782913294
+    "favorite": false
   },
   {
     "key": "55234-scrubs",
@@ -6235,9 +5192,7 @@
     "type": "tv",
     "release_date": "2026-02-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912812,
-    "last_opened": 1782913294
+    "favorite": false
   },
   {
     "key": "449-friends",
@@ -6247,9 +5202,7 @@
     "type": "tv",
     "release_date": "1994-09-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912812,
-    "last_opened": 1782913294
+    "favorite": false
   },
   {
     "key": "1070-how-i-met-your-mother",
@@ -6259,9 +5212,7 @@
     "type": "tv",
     "release_date": "2005-09-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912813,
-    "last_opened": 1782913295
+    "favorite": false
   },
   {
     "key": "1146-the-big-bang-theory",
@@ -6271,9 +5222,7 @@
     "type": "tv",
     "release_date": "2007-09-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912813,
-    "last_opened": 1782913295
+    "favorite": false
   },
   {
     "key": "1243-new-girl",
@@ -6283,9 +5232,7 @@
     "type": "tv",
     "release_date": "2011-09-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912813,
-    "last_opened": 1782913295
+    "favorite": false
   },
   {
     "key": "5988-community",
@@ -6295,9 +5242,7 @@
     "type": "tv",
     "release_date": "2009-09-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912813,
-    "last_opened": 1782913295
+    "favorite": false
   },
   {
     "key": "4510-superstore",
@@ -6307,9 +5252,7 @@
     "type": "tv",
     "release_date": "2015-11-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912813,
-    "last_opened": 1782913295
+    "favorite": false
   },
   {
     "key": "4623-my-name-is-earl",
@@ -6319,9 +5262,7 @@
     "type": "tv",
     "release_date": "2005-09-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912813,
-    "last_opened": 1782932012
+    "favorite": false
   },
   {
     "key": "2708-malcolm",
@@ -6331,9 +5272,7 @@
     "type": "tv",
     "release_date": "2000-01-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912813,
-    "last_opened": 1782926678
+    "favorite": false
   },
   {
     "key": "49624-the-middle",
@@ -6343,9 +5282,7 @@
     "type": "tv",
     "release_date": "2017-10-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912813,
-    "last_opened": 1782913295
+    "favorite": false
   },
   {
     "key": "7507-bobs-burgers",
@@ -6355,9 +5292,7 @@
     "type": "tv",
     "release_date": "2025-09-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912814,
-    "last_opened": 1782913327
+    "favorite": false
   },
   {
     "key": "3273-solar-opposites",
@@ -6367,9 +5302,7 @@
     "type": "tv",
     "release_date": "2025-10-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912814,
-    "last_opened": 1782914277
+    "favorite": false
   },
   {
     "key": "2053-disincanto",
@@ -6379,9 +5312,7 @@
     "type": "tv",
     "release_date": "2018-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912814,
-    "last_opened": 1782913328
+    "favorite": false
   },
   {
     "key": "32219-harley-quinn",
@@ -6391,9 +5322,7 @@
     "type": "tv",
     "release_date": "2025-01-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912814,
-    "last_opened": 1782913328
+    "favorite": false
   },
   {
     "key": "8151-the-great-north",
@@ -6403,9 +5332,7 @@
     "type": "tv",
     "release_date": "2024-12-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912814,
-    "last_opened": 1782913328
+    "favorite": false
   },
   {
     "key": "5471-adventure-time",
@@ -6415,9 +5342,7 @@
     "type": "tv",
     "release_date": "2017-09-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912815,
-    "last_opened": 1782913328
+    "favorite": false
   },
   {
     "key": "8309-regular-show",
@@ -6427,9 +5352,7 @@
     "type": "tv",
     "release_date": "2016-09-26",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912815,
-    "last_opened": 1782913328
+    "favorite": false
   },
   {
     "key": "5299-psych",
@@ -6439,9 +5362,7 @@
     "type": "tv",
     "release_date": "2006-07-07",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912815,
-    "last_opened": 1782913345
+    "favorite": false
   },
   {
     "key": "8236-detective-monk",
@@ -6451,9 +5372,7 @@
     "type": "tv",
     "release_date": "2002-07-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912815,
-    "last_opened": 1782913345
+    "favorite": false
   },
   {
     "key": "7866-castle-detective-tra-le-righe",
@@ -6463,9 +5382,7 @@
     "type": "tv",
     "release_date": "2006-10-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912815,
-    "last_opened": 1782913345
+    "favorite": false
   },
   {
     "key": "1648-chuck",
@@ -6475,9 +5392,7 @@
     "type": "tv",
     "release_date": "2008-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912815,
-    "last_opened": 1782913345
+    "favorite": false
   },
   {
     "key": "6522-white-collar-fascino-criminale",
@@ -6487,9 +5402,7 @@
     "type": "tv",
     "release_date": "2009-10-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912815,
-    "last_opened": 1782913345
+    "favorite": false
   },
   {
     "key": "7850-leverage-consulenze-illegali",
@@ -6499,9 +5412,7 @@
     "type": "tv",
     "release_date": "2008-12-07",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912815,
-    "last_opened": 1782913346
+    "favorite": false
   },
   {
     "key": "7663-burn-notice-duro-a-morire",
@@ -6511,9 +5422,7 @@
     "type": "tv",
     "release_date": "2007-06-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912815,
-    "last_opened": 1782913346
+    "favorite": false
   },
   {
     "key": "4-lucifer",
@@ -6523,9 +5432,7 @@
     "type": "tv",
     "release_date": "2021-09-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912815,
-    "last_opened": 1782913346
+    "favorite": false
   },
   {
     "key": "3246-resident-alien",
@@ -6535,9 +5442,7 @@
     "type": "tv",
     "release_date": "2025-06-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912816,
-    "last_opened": 1782913366
+    "favorite": false
   },
   {
     "key": "26424-ghosts",
@@ -6547,9 +5452,7 @@
     "type": "tv",
     "release_date": "2025-10-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912816,
-    "last_opened": 1782913366
+    "favorite": false
   },
   {
     "key": "3625-ted-lasso",
@@ -6559,9 +5462,7 @@
     "type": "tv",
     "release_date": "2020-08-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912816,
-    "last_opened": 1782926696
+    "favorite": false
   },
   {
     "key": "4828-only-murders-in-the-building",
@@ -6571,9 +5472,7 @@
     "type": "tv",
     "release_date": "2025-09-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912816,
-    "last_opened": 1782913346
+    "favorite": false
   },
   {
     "key": "1310-the-good-place",
@@ -6583,9 +5482,7 @@
     "type": "tv",
     "release_date": "2016-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912816,
-    "last_opened": 1782913391
+    "favorite": false
   },
   {
     "key": "3911-schitts-creek",
@@ -6595,9 +5492,7 @@
     "type": "tv",
     "release_date": "2015-01-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912816,
-    "last_opened": 1782913391
+    "favorite": false
   },
   {
     "key": "63-atypical",
@@ -6607,9 +5502,7 @@
     "type": "tv",
     "release_date": "2021-07-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912816,
-    "last_opened": 1782913392
+    "favorite": false
   },
   {
     "key": "38157-derry-girls",
@@ -6619,9 +5512,7 @@
     "type": "tv",
     "release_date": "2022-04-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912816,
-    "last_opened": 1782913392
+    "favorite": false
   },
   {
     "key": "55286-jury-duty-presents-la-gita-aziendale",
@@ -6631,9 +5522,7 @@
     "type": "tv",
     "release_date": "2026-03-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912816,
-    "last_opened": 1782913299
+    "favorite": false
   },
   {
     "key": "11345-aiutami-hope",
@@ -6643,9 +5532,7 @@
     "type": "tv",
     "release_date": "2013-11-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912889,
-    "last_opened": 1782913295
+    "favorite": false
   },
   {
     "key": "49649-cougar-town",
@@ -6655,9 +5542,7 @@
     "type": "tv",
     "release_date": "2015-01-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912889,
-    "last_opened": 1782913296
+    "favorite": false
   },
   {
     "key": "7706-life-in-pieces",
@@ -6667,9 +5552,7 @@
     "type": "tv",
     "release_date": "2002-10-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912889,
-    "last_opened": 1782913296
+    "favorite": false
   },
   {
     "key": "10577-fresh-off-the-boat",
@@ -6679,9 +5562,7 @@
     "type": "tv",
     "release_date": "2019-09-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912890,
-    "last_opened": 1782913296
+    "favorite": false
   },
   {
     "key": "7684-black-ish",
@@ -6691,9 +5572,7 @@
     "type": "tv",
     "release_date": "2014-09-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912890,
-    "last_opened": 1782913296
+    "favorite": false
   },
   {
     "key": "4611-i-goldbergs",
@@ -6703,9 +5582,7 @@
     "type": "tv",
     "release_date": "2022-09-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912890,
-    "last_opened": 1782913296
+    "favorite": false
   },
   {
     "key": "5725-abbott-elementary",
@@ -6715,9 +5592,7 @@
     "type": "tv",
     "release_date": "2025-10-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912890,
-    "last_opened": 1782913296
+    "favorite": false
   },
   {
     "key": "10670-ap-bio",
@@ -6727,9 +5602,7 @@
     "type": "tv",
     "release_date": "2021-09-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912890,
-    "last_opened": 1782913296
+    "favorite": false
   },
   {
     "key": "23101-animal",
@@ -6739,9 +5612,7 @@
     "type": "tv",
     "release_date": "2025-10-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912890,
-    "last_opened": 1782913299
+    "favorite": false
   },
   {
     "key": "12773-better-late-than-single",
@@ -6751,9 +5622,7 @@
     "type": "tv",
     "release_date": "2025-07-08",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912890,
-    "last_opened": 1782913297
+    "favorite": false
   },
   {
     "key": "30896-processi-mediatici",
@@ -6763,9 +5632,7 @@
     "type": "tv",
     "release_date": "2020-05-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912890,
-    "last_opened": 1782913297
+    "favorite": false
   },
   {
     "key": "59060-star-city",
@@ -6775,9 +5642,7 @@
     "type": "tv",
     "release_date": "2026-05-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912890,
-    "last_opened": 1782913297
+    "favorite": false
   },
   {
     "key": "11429-frasier",
@@ -6787,9 +5652,7 @@
     "type": "tv",
     "release_date": "2003-09-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912891,
-    "last_opened": 1782913297
+    "favorite": false
   },
   {
     "key": "9690-cin-cin",
@@ -6799,9 +5662,7 @@
     "type": "tv",
     "release_date": "1982-09-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912891,
-    "last_opened": 1782913297
+    "favorite": false
   },
   {
     "key": "54222-will-grace",
@@ -6811,9 +5672,7 @@
     "type": "tv",
     "release_date": "2005-09-29",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912891,
-    "last_opened": 1782913297
+    "favorite": false
   },
   {
     "key": "5654-the-it-crowd",
@@ -6823,9 +5682,7 @@
     "type": "tv",
     "release_date": "2006-02-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912891,
-    "last_opened": 1782913297
+    "favorite": false
   },
   {
     "key": "10688-friday-night-lights",
@@ -6835,9 +5692,7 @@
     "type": "tv",
     "release_date": "2010-10-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912892,
-    "last_opened": 1782913298
+    "favorite": false
   },
   {
     "key": "5381-mythic-quest",
@@ -6847,9 +5702,7 @@
     "type": "tv",
     "release_date": "2025-01-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912892,
-    "last_opened": 1782913365
+    "favorite": false
   },
   {
     "key": "1941-upload",
@@ -6859,9 +5712,7 @@
     "type": "tv",
     "release_date": "2020-04-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912892,
-    "last_opened": 1782913365
+    "favorite": false
   },
   {
     "key": "7940-extraordinary",
@@ -6871,9 +5722,7 @@
     "type": "tv",
     "release_date": "2023-01-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912892,
-    "last_opened": 1782913365
+    "favorite": false
   },
   {
     "key": "10814-unbreakable-kimmy-schmidt",
@@ -6883,9 +5732,7 @@
     "type": "tv",
     "release_date": "2018-05-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912893,
-    "last_opened": 1782913298
+    "favorite": false
   },
   {
     "key": "11297-dead-like-me",
@@ -6895,9 +5742,7 @@
     "type": "tv",
     "release_date": "2003-06-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912893,
-    "last_opened": 1782913349
+    "favorite": false
   },
   {
     "key": "7253-archer",
@@ -6907,9 +5752,7 @@
     "type": "tv",
     "release_date": "2009-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912893,
-    "last_opened": 1782913329
+    "favorite": false
   },
   {
     "key": "4800-south-park",
@@ -6919,9 +5762,7 @@
     "type": "tv",
     "release_date": "2025-10-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912893,
-    "last_opened": 1782913329
+    "favorite": false
   },
   {
     "key": "31172-smiling-friends",
@@ -6931,9 +5772,7 @@
     "type": "tv",
     "release_date": "2025-10-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912893,
-    "last_opened": 1782913329
+    "favorite": false
   },
   {
     "key": "9053-exploding-kittens",
@@ -6943,9 +5782,7 @@
     "type": "tv",
     "release_date": "2024-07-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782912894,
-    "last_opened": 1782914282
+    "favorite": false
   },
   {
     "key": "2057-final-space",
@@ -6955,9 +5792,7 @@
     "type": "tv",
     "release_date": "2018-02-26",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913330,
-    "last_opened": 1782913330
+    "favorite": false
   },
   {
     "key": "1168-paradise-police",
@@ -6967,9 +5802,7 @@
     "type": "tv",
     "release_date": "2022-12-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913330,
-    "last_opened": 1782913330
+    "favorite": false
   },
   {
     "key": "1348-brickleberry",
@@ -6979,9 +5812,7 @@
     "type": "tv",
     "release_date": "2012-09-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913330,
-    "last_opened": 1782950741
+    "favorite": false
   },
   {
     "key": "10943-f-is-for-family",
@@ -6991,9 +5822,7 @@
     "type": "tv",
     "release_date": "2021-11-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913330,
-    "last_opened": 1782913330
+    "favorite": false
   },
   {
     "key": "4792-human-resources",
@@ -7003,9 +5832,7 @@
     "type": "tv",
     "release_date": "2022-03-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913330,
-    "last_opened": 1782913330
+    "favorite": false
   },
   {
     "key": "2050-big-mouth",
@@ -7015,9 +5842,7 @@
     "type": "tv",
     "release_date": "2025-05-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913330,
-    "last_opened": 1782913330
+    "favorite": false
   },
   {
     "key": "7540-hazbin-hotel",
@@ -7027,9 +5852,7 @@
     "type": "tv",
     "release_date": "2025-10-29",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913331,
-    "last_opened": 1782913331
+    "favorite": false
   },
   {
     "key": "13065-helluva-boss",
@@ -7039,9 +5862,7 @@
     "type": "tv",
     "release_date": "2025-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913331,
-    "last_opened": 1782913331
+    "favorite": false
   },
   {
     "key": "6944-invincibile",
@@ -7051,9 +5872,7 @@
     "type": "tv",
     "release_date": "2023-01-01",
     "is_clone": false,
-    "favorite": true,
-    "added_at": 1782913331,
-    "last_opened": 1783073001
+    "favorite": true
   },
   {
     "key": "14820-common-side-effects",
@@ -7063,9 +5882,7 @@
     "type": "tv",
     "release_date": "2025-02-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913331,
-    "last_opened": 1782913331
+    "favorite": false
   },
   {
     "key": "2773-star-trek-lower-decks",
@@ -7075,9 +5892,7 @@
     "type": "tv",
     "release_date": "2024-10-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913331,
-    "last_opened": 1783073017
+    "favorite": false
   },
   {
     "key": "8997-unicorn-academy",
@@ -7087,9 +5902,7 @@
     "type": "tv",
     "release_date": "2025-04-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913332,
-    "last_opened": 1782913332
+    "favorite": false
   },
   {
     "key": "7254-capitano-fall",
@@ -7099,9 +5912,7 @@
     "type": "tv",
     "release_date": "2023-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913332,
-    "last_opened": 1782913332
+    "favorite": false
   },
   {
     "key": "9548-ducktales-avventure-di-paperi",
@@ -7111,9 +5922,7 @@
     "type": "tv",
     "release_date": "1990-11-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913332,
-    "last_opened": 1782913332
+    "favorite": false
   },
   {
     "key": "3439-gravity-falls",
@@ -7123,9 +5932,7 @@
     "type": "tv",
     "release_date": "2012-06-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913332,
-    "last_opened": 1782913332
+    "favorite": false
   },
   {
     "key": "36358-hilda",
@@ -7135,9 +5942,7 @@
     "type": "tv",
     "release_date": "2020-12-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913333,
-    "last_opened": 1782913333
+    "favorite": false
   },
   {
     "key": "1871-elementary",
@@ -7147,9 +5952,7 @@
     "type": "tv",
     "release_date": "2012-09-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913346,
-    "last_opened": 1782913346
+    "favorite": false
   },
   {
     "key": "7546-bones",
@@ -7159,9 +5962,7 @@
     "type": "tv",
     "release_date": "2005-09-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913346,
-    "last_opened": 1782913346
+    "favorite": false
   },
   {
     "key": "177-the-mentalist",
@@ -7171,9 +5972,7 @@
     "type": "tv",
     "release_date": "2008-09-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913347,
-    "last_opened": 1782913347
+    "favorite": false
   },
   {
     "key": "11105-high-potential",
@@ -7183,9 +5982,7 @@
     "type": "tv",
     "release_date": "2025-09-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913347,
-    "last_opened": 1782913347
+    "favorite": false
   },
   {
     "key": "12608-elsbeth",
@@ -7195,9 +5992,7 @@
     "type": "tv",
     "release_date": "2025-10-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913347,
-    "last_opened": 1782913347
+    "favorite": false
   },
   {
     "key": "8991-delitti-in-paradiso",
@@ -7207,9 +6002,7 @@
     "type": "tv",
     "release_date": "2026-01-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913347,
-    "last_opened": 1782913347
+    "favorite": false
   },
   {
     "key": "7531-private-eyes",
@@ -7219,9 +6012,7 @@
     "type": "tv",
     "release_date": "2016-05-26",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913348,
-    "last_opened": 1782913348
+    "favorite": false
   },
   {
     "key": "19694-the-irrational",
@@ -7231,9 +6022,7 @@
     "type": "tv",
     "release_date": "2024-10-08",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913348,
-    "last_opened": 1782913348
+    "favorite": false
   },
   {
     "key": "7699-il-risolutore",
@@ -7243,9 +6032,7 @@
     "type": "tv",
     "release_date": "2012-01-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913348,
-    "last_opened": 1782913348
+    "favorite": false
   },
   {
     "key": "11686-the-librarians",
@@ -7255,9 +6042,7 @@
     "type": "tv",
     "release_date": "2017-12-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913348,
-    "last_opened": 1782913369
+    "favorite": false
   },
   {
     "key": "5375-warehouse-13",
@@ -7267,9 +6052,7 @@
     "type": "tv",
     "release_date": "2009-07-07",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913348,
-    "last_opened": 1782913367
+    "favorite": false
   },
   {
     "key": "5355-eureka",
@@ -7279,9 +6062,7 @@
     "type": "tv",
     "release_date": "2006-07-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913349,
-    "last_opened": 1782913367
+    "favorite": false
   },
   {
     "key": "2649-izombie",
@@ -7291,9 +6072,7 @@
     "type": "tv",
     "release_date": "2015-03-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913349,
-    "last_opened": 1782913349
+    "favorite": false
   },
   {
     "key": "4637-forever",
@@ -7303,9 +6082,7 @@
     "type": "tv",
     "release_date": "2014-09-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913350,
-    "last_opened": 1782913350
+    "favorite": false
   },
   {
     "key": "4834-macgyver",
@@ -7315,9 +6092,7 @@
     "type": "tv",
     "release_date": "1985-09-29",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913350,
-    "last_opened": 1782913350
+    "favorite": false
   },
   {
     "key": "4374-scorpion",
@@ -7327,9 +6102,7 @@
     "type": "tv",
     "release_date": "2014-09-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913350,
-    "last_opened": 1782913350
+    "favorite": false
   },
   {
     "key": "3383-the-rookie",
@@ -7339,9 +6112,7 @@
     "type": "tv",
     "release_date": "2025-01-07",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913350,
-    "last_opened": 1782913350
+    "favorite": false
   },
   {
     "key": "8480-non-sono-ancora-morta",
@@ -7351,9 +6122,7 @@
     "type": "tv",
     "release_date": "2023-02-08",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913350,
-    "last_opened": 1782913350
+    "favorite": false
   },
   {
     "key": "9161-bored-to-death",
@@ -7363,9 +6132,7 @@
     "type": "tv",
     "release_date": "2009-09-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913350,
-    "last_opened": 1782913350
+    "favorite": false
   },
   {
     "key": "7614-angie-tribeca",
@@ -7375,9 +6142,7 @@
     "type": "tv",
     "release_date": "2016-01-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913350,
-    "last_opened": 1782913350
+    "favorite": false
   },
   {
     "key": "56696-due-forze-opposte",
@@ -7387,9 +6152,7 @@
     "type": "tv",
     "release_date": "2026-05-14",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913351,
-    "last_opened": 1782913351
+    "favorite": false
   },
   {
     "key": "11399-the-good-cop",
@@ -7399,9 +6162,7 @@
     "type": "tv",
     "release_date": "2018-09-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913351,
-    "last_opened": 1782913351
+    "favorite": false
   },
   {
     "key": "5801-harry-wild-la-signora-del-delitto",
@@ -7411,9 +6172,7 @@
     "type": "tv",
     "release_date": "2026-06-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913351,
-    "last_opened": 1782928825
+    "favorite": false
   },
   {
     "key": "25268-murderville",
@@ -7423,9 +6182,7 @@
     "type": "tv",
     "release_date": "2022-02-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913351,
-    "last_opened": 1782913351
+    "favorite": false
   },
   {
     "key": "4266-true-story",
@@ -7435,9 +6192,7 @@
     "type": "tv",
     "release_date": "2021-11-24",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913351,
-    "last_opened": 1782913351
+    "favorite": false
   },
   {
     "key": "7522-no-activity-niente-da-segnalare",
@@ -7447,9 +6202,7 @@
     "type": "tv",
     "release_date": "2024-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913351,
-    "last_opened": 1782913351
+    "favorite": false
   },
   {
     "key": "2297-good-omens",
@@ -7459,9 +6212,7 @@
     "type": "tv",
     "release_date": "2026-05-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913365,
-    "last_opened": 1782913365
+    "favorite": false
   },
   {
     "key": "8171-dirk-gently-agenzia-di-investigazione-olistica",
@@ -7471,9 +6222,7 @@
     "type": "tv",
     "release_date": "2016-10-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913365,
-    "last_opened": 1782913365
+    "favorite": false
   },
   {
     "key": "7281-future-man",
@@ -7483,9 +6232,7 @@
     "type": "tv",
     "release_date": "2019-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913365,
-    "last_opened": 1782913365
+    "favorite": false
   },
   {
     "key": "5433-the-orville",
@@ -7495,9 +6242,7 @@
     "type": "tv",
     "release_date": "2017-09-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913366,
-    "last_opened": 1782913366
+    "favorite": false
   },
   {
     "key": "31769-avenue-5",
@@ -7507,9 +6252,7 @@
     "type": "tv",
     "release_date": "2022-10-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913366,
-    "last_opened": 1782913366
+    "favorite": false
   },
   {
     "key": "5865-mercoledi",
@@ -7519,9 +6262,7 @@
     "type": "tv",
     "release_date": "2025-09-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913366,
-    "last_opened": 1782913366
+    "favorite": false
   },
   {
     "key": "5057-buffy-lammazzavampiri",
@@ -7531,9 +6272,7 @@
     "type": "tv",
     "release_date": "1997-03-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913366,
-    "last_opened": 1782913366
+    "favorite": false
   },
   {
     "key": "8166-angel",
@@ -7543,9 +6282,7 @@
     "type": "tv",
     "release_date": "1999-10-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913366,
-    "last_opened": 1782913366
+    "favorite": false
   },
   {
     "key": "142-merlin",
@@ -7555,9 +6292,7 @@
     "type": "tv",
     "release_date": "2008-09-20",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913367,
-    "last_opened": 1782913367
+    "favorite": false
   },
   {
     "key": "9608-torchwood",
@@ -7567,9 +6302,7 @@
     "type": "tv",
     "release_date": "2006-10-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913367,
-    "last_opened": 1782913367
+    "favorite": false
   },
   {
     "key": "10998-american-primeval",
@@ -7579,9 +6312,7 @@
     "type": "tv",
     "release_date": "2025-01-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913367,
-    "last_opened": 1782913367
+    "favorite": false
   },
   {
     "key": "11684-being-human",
@@ -7591,9 +6322,7 @@
     "type": "tv",
     "release_date": "2014-01-13",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913368,
-    "last_opened": 1782913368
+    "favorite": false
   },
   {
     "key": "4697-grimm",
@@ -7603,9 +6332,7 @@
     "type": "tv",
     "release_date": "2011-10-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913368,
-    "last_opened": 1782913368
+    "favorite": false
   },
   {
     "key": "8317-dead-boy-detectives",
@@ -7615,9 +6342,7 @@
     "type": "tv",
     "release_date": "2024-04-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913368,
-    "last_opened": 1782913368
+    "favorite": false
   },
   {
     "key": "88-locke-and-key",
@@ -7627,9 +6352,7 @@
     "type": "tv",
     "release_date": "2020-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913368,
-    "last_opened": 1782913368
+    "favorite": false
   },
   {
     "key": "1107-dcs-legends-of-tomorrow",
@@ -7639,9 +6362,7 @@
     "type": "tv",
     "release_date": "2016-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913369,
-    "last_opened": 1782913369
+    "favorite": false
   },
   {
     "key": "1106-doom-patrol",
@@ -7651,9 +6372,7 @@
     "type": "tv",
     "release_date": "2022-12-08",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913369,
-    "last_opened": 1782913369
+    "favorite": false
   },
   {
     "key": "4508-peacemaker",
@@ -7663,9 +6382,7 @@
     "type": "tv",
     "release_date": "2025-08-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913369,
-    "last_opened": 1782913369
+    "favorite": false
   },
   {
     "key": "2382-misfits",
@@ -7675,9 +6392,7 @@
     "type": "tv",
     "release_date": "2009-11-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913369,
-    "last_opened": 1782913369
+    "favorite": false
   },
   {
     "key": "7217-the-tick",
@@ -7687,9 +6402,7 @@
     "type": "tv",
     "release_date": "2018-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913369,
-    "last_opened": 1782913369
+    "favorite": false
   },
   {
     "key": "5388-ash-vs-evil-dead",
@@ -7699,9 +6412,7 @@
     "type": "tv",
     "release_date": "2015-10-31",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913369,
-    "last_opened": 1782913369
+    "favorite": false
   },
   {
     "key": "9806-kaos",
@@ -7711,9 +6422,7 @@
     "type": "tv",
     "release_date": "2024-08-29",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913370,
-    "last_opened": 1782913370
+    "favorite": false
   },
   {
     "key": "9200-moon-girl-e-devil-dinosaur",
@@ -7723,9 +6432,7 @@
     "type": "tv",
     "release_date": "2023-02-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913370,
-    "last_opened": 1782913370
+    "favorite": false
   },
   {
     "key": "9285-time-bandits",
@@ -7735,9 +6442,7 @@
     "type": "tv",
     "release_date": "2024-07-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913370,
-    "last_opened": 1782913370
+    "favorite": false
   },
   {
     "key": "8710-the-nevers",
@@ -7747,9 +6452,7 @@
     "type": "tv",
     "release_date": "2021-04-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913370,
-    "last_opened": 1782913370
+    "favorite": false
   },
   {
     "key": "2401-miracle-workers",
@@ -7759,9 +6462,7 @@
     "type": "tv",
     "release_date": "2023-07-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913370,
-    "last_opened": 1782913370
+    "favorite": false
   },
   {
     "key": "5422-ghost-whisperer-presenze",
@@ -7771,9 +6472,7 @@
     "type": "tv",
     "release_date": "2005-09-23",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913371,
-    "last_opened": 1782913371
+    "favorite": false
   },
   {
     "key": "38102-date-da-mangiare-a-phil",
@@ -7783,9 +6482,7 @@
     "type": "tv",
     "release_date": "2025-06-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913392,
-    "last_opened": 1782913392
+    "favorite": false
   },
   {
     "key": "8173-la-fattoria-clarkson",
@@ -7795,9 +6492,7 @@
     "type": "tv",
     "release_date": "2026-06-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913392,
-    "last_opened": 1782913392
+    "favorite": false
   },
   {
     "key": "3954-the-great",
@@ -7807,9 +6502,7 @@
     "type": "tv",
     "release_date": "2020-05-15",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913392,
-    "last_opened": 1782913392
+    "favorite": false
   },
   {
     "key": "9094-james-may-il-nostro-agente-in",
@@ -7819,9 +6512,7 @@
     "type": "tv",
     "release_date": "2020-01-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913392,
-    "last_opened": 1782913392
+    "favorite": false
   },
   {
     "key": "9441-chefs-table",
@@ -7831,9 +6522,7 @@
     "type": "tv",
     "release_date": "2024-11-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913393,
-    "last_opened": 1782913393
+    "favorite": false
   },
   {
     "key": "36208-sale-grassi-acidi-calore",
@@ -7843,9 +6532,7 @@
     "type": "tv",
     "release_date": "2018-10-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913393,
-    "last_opened": 1782913393
+    "favorite": false
   },
   {
     "key": "29787-tiny-world",
@@ -7855,9 +6542,7 @@
     "type": "tv",
     "release_date": "2020-10-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913393,
-    "last_opened": 1782913393
+    "favorite": false
   },
   {
     "key": "1736-il-nostro-pianeta",
@@ -7867,9 +6552,7 @@
     "type": "tv",
     "release_date": "2019-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913393,
-    "last_opened": 1782913393
+    "favorite": false
   },
   {
     "key": "51720-pianeta-terra",
@@ -7879,9 +6562,7 @@
     "type": "tv",
     "release_date": "2006-03-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913393,
-    "last_opened": 1782913393
+    "favorite": false
   },
   {
     "key": "9492-blue-ribbon-il-campionato-di-cucina-usa",
@@ -7891,9 +6572,7 @@
     "type": "tv",
     "release_date": "2024-08-09",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913393,
-    "last_opened": 1782913393
+    "favorite": false
   },
   {
     "key": "7606-queer-eye",
@@ -7903,9 +6582,7 @@
     "type": "tv",
     "release_date": "2026-01-21",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913394,
-    "last_opened": 1782913394
+    "favorite": false
   },
   {
     "key": "25413-somebody-somewhere",
@@ -7915,9 +6592,7 @@
     "type": "tv",
     "release_date": "2024-10-27",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913394,
-    "last_opened": 1782913394
+    "favorite": false
   },
   {
     "key": "8565-trying",
@@ -7927,9 +6602,7 @@
     "type": "tv",
     "release_date": "2020-05-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913394,
-    "last_opened": 1782913394
+    "favorite": false
   },
   {
     "key": "5705-acapulco",
@@ -7939,9 +6612,7 @@
     "type": "tv",
     "release_date": "2025-07-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913394,
-    "last_opened": 1782913394
+    "favorite": false
   },
   {
     "key": "6196-shrinking",
@@ -7951,9 +6622,7 @@
     "type": "tv",
     "release_date": "2026-01-28",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913395,
-    "last_opened": 1782913395
+    "favorite": false
   },
   {
     "key": "10182-creature-grandi-e-piccole-un-veterinario-di-provincia",
@@ -7963,9 +6632,7 @@
     "type": "tv",
     "release_date": "2025-09-25",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913395,
-    "last_opened": 1782913395
+    "favorite": false
   },
   {
     "key": "1117-chiamatemi-anna",
@@ -7975,9 +6642,7 @@
     "type": "tv",
     "release_date": "2017-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913395,
-    "last_opened": 1782913395
+    "favorite": false
   },
   {
     "key": "4931-heartstopper",
@@ -7987,9 +6652,7 @@
     "type": "tv",
     "release_date": "2024-10-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913395,
-    "last_opened": 1782913395
+    "favorite": false
   },
   {
     "key": "50561-the-real-housewives-of-atlanta",
@@ -7999,9 +6662,7 @@
     "type": "tv",
     "release_date": "2026-04-05",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913395,
-    "last_opened": 1782913395
+    "favorite": false
   },
   {
     "key": "4819-last-cop-lultimo-sbirro",
@@ -8011,9 +6672,7 @@
     "type": "tv",
     "release_date": "2010-04-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913396,
-    "last_opened": 1782913396
+    "favorite": false
   },
   {
     "key": "1787-virgin-river",
@@ -8023,9 +6682,7 @@
     "type": "tv",
     "release_date": "2026-03-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913396,
-    "last_opened": 1782913396
+    "favorite": false
   },
   {
     "key": "4499-il-colore-delle-magnolie",
@@ -8035,9 +6692,7 @@
     "type": "tv",
     "release_date": "2026-06-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913397,
-    "last_opened": 1782913397
+    "favorite": false
   },
   {
     "key": "8155-lamore-e-la-vita-call-the-midwife",
@@ -8047,9 +6702,7 @@
     "type": "tv",
     "release_date": "2026-01-11",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913397,
-    "last_opened": 1782913397
+    "favorite": false
   },
   {
     "key": "9130-le-avventure-del-gatto-con-gli-stivali",
@@ -8059,9 +6712,7 @@
     "type": "tv",
     "release_date": "2015-01-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913397,
-    "last_opened": 1782913397
+    "favorite": false
   },
   {
     "key": "9949-midnight-diner-tokyo-stories",
@@ -8071,9 +6722,7 @@
     "type": "tv",
     "release_date": "2019-10-31",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913397,
-    "last_opened": 1782913397
+    "favorite": false
   },
   {
     "key": "40135-samurai-gourmet",
@@ -8083,9 +6732,7 @@
     "type": "tv",
     "release_date": "2017-03-17",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913397,
-    "last_opened": 1782913397
+    "favorite": false
   },
   {
     "key": "7536-lamore-nello-spettro-australia",
@@ -8095,9 +6742,7 @@
     "type": "tv",
     "release_date": "2019-01-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913398,
-    "last_opened": 1782913398
+    "favorite": false
   },
   {
     "key": "22205-in-viaggio-con-eugene-levy",
@@ -8107,9 +6752,7 @@
     "type": "tv",
     "release_date": "2025-09-19",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913398,
-    "last_opened": 1782913398
+    "favorite": false
   },
   {
     "key": "52166-long-way-round",
@@ -8119,9 +6762,7 @@
     "type": "tv",
     "release_date": "2004-10-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913398,
-    "last_opened": 1782913398
+    "favorite": false
   },
   {
     "key": "29960-in-moto-verso-nord",
@@ -8131,9 +6772,7 @@
     "type": "tv",
     "release_date": "2020-09-18",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782913398,
-    "last_opened": 1782913398
+    "favorite": false
   },
   {
     "key": "2965-i-pinguini-di-madagascar",
@@ -8143,9 +6782,7 @@
     "type": "movie",
     "release_date": "2014-11-22",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782914393,
-    "last_opened": 1782914393
+    "favorite": false
   },
   {
     "key": "4748-red",
@@ -8155,9 +6792,7 @@
     "type": "movie",
     "release_date": "2022-03-10",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782928645,
-    "last_opened": 1782928663
+    "favorite": false
   },
   {
     "key": "52091-masterchef",
@@ -8167,9 +6802,7 @@
     "type": "tv",
     "release_date": "2025-08-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782929647,
-    "last_opened": 1783072428
+    "favorite": false
   },
   {
     "key": "3401-celebrity-masterchef-italia",
@@ -8179,9 +6812,7 @@
     "type": "tv",
     "release_date": "2017-03-16",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782929647,
-    "last_opened": 1782929647
+    "favorite": false
   },
   {
     "key": "8180-gialappashow",
@@ -8191,9 +6822,7 @@
     "type": "tv",
     "release_date": "2026-03-30",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782929648,
-    "last_opened": 1782929648
+    "favorite": false
   },
   {
     "key": "5370-cucine-da-incubo-italia",
@@ -8203,9 +6832,7 @@
     "type": "tv",
     "release_date": "2025-04-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782929648,
-    "last_opened": 1782929648
+    "favorite": false
   },
   {
     "key": "8473-antonino-chef-academy",
@@ -8215,9 +6842,7 @@
     "type": "tv",
     "release_date": "2019-11-12",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782929649,
-    "last_opened": 1782929649
+    "favorite": false
   },
   {
     "key": "7953-italia-shore",
@@ -8227,9 +6852,7 @@
     "type": "tv",
     "release_date": "2026-02-03",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782929649,
-    "last_opened": 1782929649
+    "favorite": false
   },
   {
     "key": "7907-alessandro-borghese-celebrity-chef",
@@ -8239,9 +6862,7 @@
     "type": "tv",
     "release_date": "2022-05-02",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782929649,
-    "last_opened": 1782929649
+    "favorite": false
   },
   {
     "key": "50487-alessandro-borghese-4-ristoranti-estate",
@@ -8251,9 +6872,7 @@
     "type": "tv",
     "release_date": "2017-06-01",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782929649,
-    "last_opened": 1782929649
+    "favorite": false
   },
   {
     "key": "8181-4-matrimoni",
@@ -8263,8 +6882,186 @@
     "type": "tv",
     "release_date": "2009-06-06",
     "is_clone": false,
-    "favorite": false,
-    "added_at": 1782929649,
-    "last_opened": 1782929649
+    "favorite": false
+  },
+  {
+    "key": "902-cattivissimo-me-3",
+    "url": "https://streamingcommunityz.tech/it/titles/902-cattivissimo-me-3",
+    "name": "Cattivissimo me 3",
+    "cover": "https://cdn.streamingcommunityz.pl/images/dd91bacf-bfb5-482e-a537-29b1c6dff265.webp",
+    "type": "movie",
+    "release_date": "2017-06-15",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "1867-minions-2-come-gru-diventa-cattivissimo",
+    "url": "https://streamingcommunityz.tech/it/titles/1867-minions-2-come-gru-diventa-cattivissimo",
+    "name": "Minions 2 - Come Gru diventa cattivissimo",
+    "cover": "https://cdn.streamingcommunityz.pl/images/3631b878-232d-488b-92b7-68a6f8cc4811.webp",
+    "type": "movie",
+    "release_date": "2022-06-29",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "900-cattivissimo-me",
+    "url": "https://streamingcommunityz.tech/it/titles/900-cattivissimo-me",
+    "name": "Cattivissimo me",
+    "cover": "https://cdn.streamingcommunityz.pl/images/e009690e-cc84-4825-9d91-a75a3ab2b2ec.webp",
+    "type": "movie",
+    "release_date": "2010-07-08",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "901-cattivissimo-me-2",
+    "url": "https://streamingcommunityz.tech/it/titles/901-cattivissimo-me-2",
+    "name": "Cattivissimo me 2",
+    "cover": "https://cdn.streamingcommunityz.pl/images/900af3b1-a0ab-453b-ac15-664c3f915fe6.webp",
+    "type": "movie",
+    "release_date": "2013-06-25",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "1873-minions",
+    "url": "https://streamingcommunityz.tech/it/titles/1873-minions",
+    "name": "Minions",
+    "cover": "https://cdn.streamingcommunityz.pl/images/aa845d02-3b78-4249-aefd-0133729d99eb.webp",
+    "type": "movie",
+    "release_date": "2015-06-17",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "12927-hop",
+    "url": "https://streamingcommunityz.tech/it/titles/12927-hop",
+    "name": "Hop",
+    "cover": "https://cdn.streamingcommunityz.pl/images/bf3d3949-7803-498d-b28e-5b669407594d.webp",
+    "type": "movie",
+    "release_date": "2011-03-30",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "3011-lorax-il-guardiano-della-foresta",
+    "url": "https://streamingcommunityz.tech/it/titles/3011-lorax-il-guardiano-della-foresta",
+    "name": "Lorax - Il guardiano della foresta",
+    "cover": "https://cdn.streamingcommunityz.pl/images/081170eb-3002-4993-8a12-c976f1c106fc.webp",
+    "type": "movie",
+    "release_date": "2012-03-01",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "8976-pets-vita-da-animali",
+    "url": "https://streamingcommunityz.tech/it/titles/8976-pets-vita-da-animali",
+    "name": "Pets - Vita da animali",
+    "cover": "https://cdn.streamingcommunityz.pl/images/9f4db4c6-3d9b-4c47-8b6b-763f07e1bec3.webp",
+    "type": "movie",
+    "release_date": "2016-06-18",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "3819-sing",
+    "url": "https://streamingcommunityz.tech/it/titles/3819-sing",
+    "name": "Sing",
+    "cover": "https://cdn.streamingcommunityz.pl/images/2bdef72c-6f4e-4547-887a-bdc4c3f6aa16.webp",
+    "type": "movie",
+    "release_date": "2016-11-23",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "869-pets-2-vita-da-animali",
+    "url": "https://streamingcommunityz.tech/it/titles/869-pets-2-vita-da-animali",
+    "name": "Pets 2 - Vita da animali",
+    "cover": "https://cdn.streamingcommunityz.pl/images/a000a1a6-f040-40a8-a0e7-b5b4506c7054.webp",
+    "type": "movie",
+    "release_date": "2019-05-24",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "4404-sing-2-sempre-piu-forte",
+    "url": "https://streamingcommunityz.tech/it/titles/4404-sing-2-sempre-piu-forte",
+    "name": "Sing 2 - Sempre più forte",
+    "cover": "https://cdn.streamingcommunityz.pl/images/fbbb35b1-b8b1-4a2a-ad2f-316dde37da2b.webp",
+    "type": "movie",
+    "release_date": "2021-12-01",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "6228-super-mario-bros-il-film",
+    "url": "https://streamingcommunityz.tech/it/titles/6228-super-mario-bros-il-film",
+    "name": "Super Mario Bros. Il film",
+    "cover": "https://cdn.streamingcommunityz.pl/images/d36f064c-3ee7-465a-ad8a-11e9eb94f001.webp",
+    "type": "movie",
+    "release_date": "2023-04-05",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "7779-prendi-il-volo",
+    "url": "https://streamingcommunityz.tech/it/titles/7779-prendi-il-volo",
+    "name": "Prendi il volo",
+    "cover": "https://cdn.streamingcommunityz.pl/images/e825156b-4da6-490b-bc56-4f2259234dbf.webp",
+    "type": "movie",
+    "release_date": "2023-12-06",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "9242-cattivissimo-me-4",
+    "url": "https://streamingcommunityz.tech/it/titles/9242-cattivissimo-me-4",
+    "name": "Cattivissimo me 4",
+    "cover": "https://cdn.streamingcommunityz.pl/images/6694792b-37d5-4c0b-8d41-f0d2b2834169.webp",
+    "type": "movie",
+    "release_date": "2024-08-07",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "2253-il-grinch",
+    "url": "https://streamingcommunityz.tech/it/titles/2253-il-grinch",
+    "name": "Il Grinch",
+    "cover": "https://cdn.streamingcommunityz.pl/images/20176500-3ce7-4a34-936b-0da3cb2f4154.webp",
+    "type": "movie",
+    "release_date": "2018-11-08",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "55466-super-mario-galaxy-il-film",
+    "url": "https://streamingcommunityz.tech/it/titles/55466-super-mario-galaxy-il-film",
+    "name": "Super Mario Galaxy - Il film",
+    "cover": "https://cdn.streamingcommunityz.pl/images/99bfd29f-06c5-4b32-aae5-648e7f1a8350.webp",
+    "type": "movie",
+    "release_date": "2026-04-01",
+    "is_clone": false,
+    "favorite": false
+  },
+  {
+    "key": "9920-the-lego-movie",
+    "url": "https://streamingcommunityz.tech/it/titles/9920-the-lego-movie",
+    "name": "The Lego Movie",
+    "cover": "https://cdn.streamingcommunityz.pl/images/3130c7e1-96e0-45af-abf9-c77b148ad64b.webp",
+    "type": "movie",
+    "release_date": "",
+    "is_clone": false,
+    "favorite": true
+  },
+  {
+    "key": "6394-questo-mondo-non-mi-rendera-cattivo",
+    "url": "https://streamingcommunityz.tech/it/titles/6394-questo-mondo-non-mi-rendera-cattivo",
+    "name": "Questo mondo non mi renderà cattivo",
+    "cover": "https://cdn.streamingcommunityz.pl/images/8a7c9edd-1b1b-4b91-81dd-742168084b4d.webp",
+    "type": "tv",
+    "release_date": "",
+    "is_clone": false,
+    "favorite": false
   }
 ]

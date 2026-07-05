@@ -123,6 +123,10 @@ def start_server():
     import uvicorn
     import threading, webbrowser, time, socket
     dev = os.environ.get("SC_DEV") == "1"
+    # SICUREZZA: di default il server ascolta SOLO su questo PC (127.0.0.1), cosi'
+    # nessun altro dispositivo in rete puo' raggiungerlo. Per l'accesso da TV/
+    # telefono sulla stessa rete, avviare con SC_LAN=1 (meno protetto).
+    bind_host = "0.0.0.0" if os.environ.get("SC_LAN") == "1" else "127.0.0.1"
     url = "http://localhost:8082"
 
     # If a previous instance is still listening, just open the browser instead of
@@ -161,12 +165,12 @@ def start_server():
     # Start the server (api.py contains the FastAPI 'app'). Auto-reload only in
     # dev mode (set SC_DEV=1); disabled for the normal one-click app launch.
     try:
-        uvicorn.run("api:app", host="0.0.0.0", port=8082, reload=dev)
+        uvicorn.run("api:app", host=bind_host, port=8082, reload=dev)
     except OSError as e:
         # Port busy / transient bind error: wait briefly and retry once.
         print(f"[!] Avvio non riuscito ({e}); riprovo tra 2s...")
         time.sleep(2)
-        uvicorn.run("api:app", host="0.0.0.0", port=8082, reload=dev)
+        uvicorn.run("api:app", host=bind_host, port=8082, reload=dev)
 
 def deps_ok():
     """True se le dipendenze chiave sono gia' installate (cosi' a ogni riavvio

@@ -49,6 +49,15 @@
             "favorite": false
         },
         {
+            "id": "28807726",
+            "name": "MARVEL",
+            "kind": "saga",
+            "parent": "",
+            "cover": "/covers/28807726.jpg",
+            "items": [],
+            "favorite": false
+        },
+        {
             "id": "048a1c59",
             "name": "BREAKING BED SAGA",
             "kind": "saga",
@@ -59,15 +68,6 @@
                 "240-el-camino-il-film-di-breaking-bad"
             ],
             "parent": ""
-        },
-        {
-            "id": "28807726",
-            "name": "MARVEL",
-            "kind": "saga",
-            "parent": "",
-            "cover": "/covers/28807726.jpg",
-            "items": [],
-            "favorite": false
         },
         {
             "id": "678a6e16",
@@ -533,11 +533,11 @@
         {
             "id": "02b875b8",
             "name": "SERIE NIGHT",
-            "kind": "genere",
+            "kind": "",
             "parent": "",
             "cover": "/covers/02b875b8.png",
             "items": [],
-            "favorite": true
+            "favorite": false
         },
         {
             "id": "04a4ff20",
@@ -561,7 +561,7 @@
                 "55244-jumpers-un-salto-tra-gli-animali",
                 "4748-red"
             ],
-            "favorite": true
+            "favorite": false
         },
         {
             "id": "e79506bd",
@@ -595,7 +595,7 @@
                 "10041-il-robot-selvaggio",
                 "11951-dog-man"
             ],
-            "favorite": true
+            "favorite": false
         },
         {
             "id": "60d139ef",
@@ -873,7 +873,7 @@
                 "5969-strange-world-un-mondo-misterioso",
                 "6818-wish"
             ],
-            "favorite": true
+            "favorite": false
         },
         {
             "id": "96f8d8cc",
@@ -1548,6 +1548,29 @@
             ]
         },
         {
+            "id": "c325eb0c",
+            "name": "ILLUMINATION",
+            "kind": "genere",
+            "parent": "",
+            "cover": "/covers/c325eb0c.jpg",
+            "items": [
+                "12927-hop",
+                "3011-lorax-il-guardiano-della-foresta",
+                "7779-prendi-il-volo",
+                "2253-il-grinch"
+            ],
+            "order": [
+                "12927-hop",
+                "3011-lorax-il-guardiano-della-foresta",
+                "f:b34018fa",
+                "f:7b737172",
+                "f:a94f443c",
+                "2253-il-grinch",
+                "f:57889727",
+                "7779-prendi-il-volo"
+            ]
+        },
+        {
             "id": "a8c9d284",
             "name": "ALDO GIOVANNI E GIACOMO",
             "kind": "genere",
@@ -1568,10 +1591,57 @@
                 "6219-il-grande-giorno",
                 "49163-attitudini-nessuna"
             ]
+        },
+        {
+            "id": "b34018fa",
+            "name": "CATTIVISSIMO ME",
+            "kind": "",
+            "parent": "c325eb0c",
+            "cover": "",
+            "items": [
+                "900-cattivissimo-me",
+                "901-cattivissimo-me-2",
+                "1873-minions",
+                "902-cattivissimo-me-3",
+                "1867-minions-2-come-gru-diventa-cattivissimo",
+                "9242-cattivissimo-me-4"
+            ]
+        },
+        {
+            "id": "7b737172",
+            "name": "PETS",
+            "kind": "",
+            "parent": "c325eb0c",
+            "cover": "",
+            "items": [
+                "8976-pets-vita-da-animali",
+                "869-pets-2-vita-da-animali"
+            ]
+        },
+        {
+            "id": "a94f443c",
+            "name": "SING",
+            "kind": "",
+            "parent": "c325eb0c",
+            "cover": "",
+            "items": [
+                "3819-sing",
+                "4404-sing-2-sempre-piu-forte"
+            ]
+        },
+        {
+            "id": "57889727",
+            "name": "SUPER MARIO",
+            "kind": "",
+            "parent": "c325eb0c",
+            "cover": "",
+            "items": [
+                "6228-super-mario-bros-il-film",
+                "55466-super-mario-galaxy-il-film"
+            ]
         }
     ],
     "source_domains": [],
-    "custom_filters": [
-        "attori"
-    ]
+    "custom_filters": [],
+    "filter_covers": {}
 }

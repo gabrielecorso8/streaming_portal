@@ -468,6 +468,31 @@ def health_check_domains(auto_discover=False):
 _library_lock = threading.Lock()
 
 
+LIBRARY_STATE_FILE = os.path.join(PROJECT_DIR, "library_state.json")
+
+
+def load_library_state():
+    """Cronologia di visione (key -> last_opened) tenuta in un file SEPARATO e
+    NON versionato: cosi' library.json (condiviso su GitHub) contiene solo titoli
+    e locandine, non quando li hai aperti."""
+    try:
+        with open(LIBRARY_STATE_FILE, "r", encoding="utf-8") as f:
+            d = json.load(f)
+        return {k: v for k, v in d.items() if isinstance(v, (int, float))} if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_library_state():
+    try:
+        tmp = LIBRARY_STATE_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(LIB_STATE, f, ensure_ascii=False)
+        os.replace(tmp, LIBRARY_STATE_FILE)
+    except Exception:
+        pass
+
+
 def load_library():
     if not os.path.exists(LIBRARY_FILE):
         return []
@@ -481,7 +506,7 @@ def load_library():
         if isinstance(data, list):
             return data
     except Exception:
-        pass
+        pass  # (il salvage sotto gestisce i file troncati)
     # Salvage: if the file is truncated/corrupted, recover as many complete
     # title objects as possible instead of losing the whole library.
     salvaged = []
@@ -513,11 +538,29 @@ def _sorted_library(entries):
     # Favourites first, then most-recently-opened first.
     return sorted(
         entries,
-        key=lambda e: (0 if e.get("favorite") else 1, -(e.get("last_opened") or 0)),
+        key=lambda e: (0 if e.get("favorite") else 1, -(LIB_STATE.get(e.get("key")) or 0)),
     )
 
 
+LIB_STATE = load_library_state()
 LIBRARY = load_library()
+# Migrazione una-tantum: sposta i timestamp storici nel file di stato separato e
+# li RIMUOVE da library.json (che verra' riscritto senza cronologia personale).
+_migrated = False
+for _e in LIBRARY:
+    _k = _e.get("key")
+    _lo = _e.pop("last_opened", None)
+    _e.pop("added_at", None)
+    if _k and isinstance(_lo, (int, float)) and _k not in LIB_STATE:
+        LIB_STATE[_k] = _lo
+    if _lo is not None:
+        _migrated = True
+if _migrated:
+    try:
+        save_library(LIBRARY)
+        save_library_state()
+    except Exception:
+        pass
 
 def detect_active_domain():
     # StreamingCommunity now rotates both TLDs and hostnames (for example
@@ -2566,7 +2609,6 @@ def add_library(entry: LibraryEntry):
         if not (existing.get("release_date") or "").strip():
             existing["release_date"] = entry.release_date or existing.get("release_date", "")
         existing["is_clone"] = bool(entry.is_clone)
-        existing["last_opened"] = now
     else:
         LIBRARY.append({
             "key": key,
@@ -2577,9 +2619,9 @@ def add_library(entry: LibraryEntry):
             "release_date": entry.release_date or "",
             "is_clone": bool(entry.is_clone),
             "favorite": False,
-            "added_at": now,
-            "last_opened": now,
         })
+    LIB_STATE[key] = now          # cronologia nel file di stato separato
+    save_library_state()
     save_library(LIBRARY)
     return _sorted_library(LIBRARY)
 

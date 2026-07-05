@@ -142,7 +142,19 @@ def start_server():
     # SICUREZZA: di default il server ascolta SOLO su questo PC (127.0.0.1), cosi'
     # nessun altro dispositivo in rete puo' raggiungerlo. Per l'accesso da TV/
     # telefono sulla stessa rete, avviare con SC_LAN=1 (meno protetto).
-    bind_host = "0.0.0.0" if os.environ.get("SC_LAN") == "1" else "127.0.0.1"
+    # Di default il server ascolta SOLO su questo PC (127.0.0.1). Se l'utente ha
+    # attivato l'accesso da telefono/tablet (settings.json "lan_enabled") o
+    # SC_LAN=1, ascolta su 0.0.0.0 (rete locale) — protetto da token.
+    bind_host = "127.0.0.1"
+    try:
+        import json as _json
+        with open(os.path.join(PROJECT_DIR, "settings.json"), "r", encoding="utf-8") as _f:
+            if _json.load(_f).get("lan_enabled"):
+                bind_host = "0.0.0.0"
+    except Exception:
+        pass
+    if os.environ.get("SC_LAN") == "1":
+        bind_host = "0.0.0.0"
     url = "http://localhost:8082"
 
     # If a previous instance is still listening, just open the browser instead of
@@ -192,7 +204,7 @@ def deps_ok():
     """True se le dipendenze chiave sono gia' installate (cosi' a ogni riavvio
     NON rilanciamo pip: l'avvio resta veloce e funziona anche offline)."""
     try:
-        import uvicorn, fastapi, requests, bs4, m3u8  # noqa: F401
+        import uvicorn, fastapi, requests, bs4, m3u8, qrcode  # noqa: F401
         return True
     except Exception:
         return False

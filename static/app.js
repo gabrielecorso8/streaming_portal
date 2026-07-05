@@ -1,6 +1,7 @@
 let currentTitle = null; // Stores current active media details
 let activeHls = null;    // Stores active HLS.js instance
 let proxyConfigured = false;   // se e impostato un proxy (privacy)
+let currentMediaForCast = null; // { src, hls, title } del media in riproduzione
 let _proxyWarned = false;      // avviso proxy mostrato una volta
 let lastTitleContext = ""; // Name of the title being opened (for domain-error messages)
 let currentLibKey = "";    // Library key of the title currently shown in the modal
@@ -85,6 +86,7 @@ const el = {
     qualitySelect: document.getElementById("quality-select"),
     refreshDownloadsBtn: document.getElementById("refresh-downloads-btn"),
     castBtn: document.getElementById("cast-btn"),
+    phonecastBtn: document.getElementById("phonecast-btn"),
     headerSearchBtn: document.getElementById("header-search-btn"),
     headerFavoritesBtn: document.getElementById("header-favorites-btn"),
     headerDownloadsBtn: document.getElementById("header-downloads-btn"),
@@ -173,6 +175,7 @@ async function init() {
     });
     if (el.refreshDownloadsBtn) el.refreshDownloadsBtn.addEventListener("click", refreshDownloads);
     if (el.castBtn) el.castBtn.addEventListener("click", castToTV);
+    if (el.phonecastBtn) el.phonecastBtn.addEventListener("click", openPhoneCast);
     if (el.videoPlayer && "disableRemotePlayback" in el.videoPlayer) el.videoPlayer.disableRemotePlayback = false;
     if (el.headerSearchBtn) el.headerSearchBtn.addEventListener("click", () => {
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -873,6 +876,7 @@ function playStreamMp4(streamUrl, title) {
     el.videoPlayer.classList.remove("hidden");
     el.videoPlayer.src = streamUrl;
     el.videoPlayer.play().catch(() => {});
+    currentMediaForCast = { src: streamUrl, hls: false, title: title || "SC Portal" };
     playbackCtx = null;
     updatePlaybackNav();
 }
@@ -1282,6 +1286,7 @@ function handleHlsError(data, onRefetch) {
 // e la riproduzione riprende dalla stessa posizione.
 function playStream(streamSrc, getSrc, iframeFallback) {
     streamReloadAttempts = 0; fragErrCount = 0; netRetryCount = 0;
+    currentMediaForCast = { src: streamSrc, hls: true, title: _castTitle() };
     el.videoPlayer.classList.remove("hidden");
     if (el.iframePlayer) el.iframePlayer.classList.add("hidden");
 
@@ -1785,6 +1790,7 @@ function playDownloaded(id, title, key) {
     if (el.iframePlayer) el.iframePlayer.classList.add("hidden");
     el.videoPlayer.classList.remove("hidden");
     el.videoPlayer.src = `/api/download/play/${encodeURIComponent(id)}`;
+    currentMediaForCast = { src: `/api/download/play/${encodeURIComponent(id)}`, hls: false, title: title || "SC Portal" };
     el.videoPlayer.play().catch(() => {});
     const ep = parseEpisode(title);
     if (ep) {
@@ -1800,6 +1806,63 @@ function playDownloaded(id, title, key) {
 }
 
 // --- Precedente/Successivo dalla cartella -----------------------------------
+function _castTitle() {
+    var t = (el.playingTitle && el.playingTitle.textContent || "").replace(/^Riproduzione:\s*/, "");
+    return t || "SC Portal";
+}
+
+async function openPhoneCast() {
+    let info;
+    try { info = await (await fetch("/api/cast/info")).json(); }
+    catch (e) { showToast("Errore nel recupero dei dati di trasmissione"); return; }
+    if (!info || !info.lan_enabled) {
+        if (!confirm("Per usare telefono/tablet devi attivare l'accesso dalla rete locale (protetto da un codice segreto). Attivarlo ora? Poi dovrai chiudere e RIAVVIARE SC Portal.")) return;
+        try {
+            await fetch("/api/cast/enable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: true }) });
+            showToast("Accesso di rete attivato. Chiudi e RIAVVIA SC Portal, poi ripremi \ud83d\udcf1 Telefono/Tablet.", 9000);
+        } catch (e) { showToast("Errore nell'attivazione"); }
+        return;
+    }
+    const base = "http://" + info.lan_ip + ":" + info.port;
+    const tok = encodeURIComponent(info.token || "");
+    const m = currentMediaForCast;
+    let url, hasMedia = !!(m && m.src);
+    if (hasMedia) {
+        url = base + "/phone.html?src=" + encodeURIComponent(m.src) + "&hls=" + (m.hls ? "1" : "0")
+            + "&title=" + encodeURIComponent(m.title || "SC Portal") + "&t=" + tok;
+    } else {
+        url = base + "/?t=" + tok;
+    }
+    showPhoneCastOverlay(url, hasMedia);
+}
+
+function showPhoneCastOverlay(url, hasMedia) {
+    const overlay = document.createElement("div");
+    overlay.className = "picker-overlay";
+    overlay.innerHTML = `
+      <div class="picker-panel glass phonecast-panel">
+        <h3>\ud83d\udcf1 Trasmetti a telefono/tablet</h3>
+        <p class="picker-hint">${hasMedia ? "Inquadra il QR col telefono o tablet (anche Apple) per aprire QUESTO video." : "Inquadra il QR per aprire SC Portal sul telefono/tablet."} Devono essere sulla stessa rete Wi-Fi di questo PC.</p>
+        <div class="phonecast-qr"><img alt="QR" src="/api/cast/qr?data=${encodeURIComponent(url)}"></div>
+        <input type="text" class="phonecast-link" readonly value="${escapeHtml(url)}">
+        <div class="picker-actions">
+          <button class="secondary-btn phonecast-copy">Copia link</button>
+          <button class="secondary-btn picker-cancel">Chiudi</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    overlay.querySelector(".picker-cancel").addEventListener("click", close);
+    const inp = overlay.querySelector(".phonecast-link");
+    overlay.querySelector(".phonecast-copy").addEventListener("click", () => {
+        try { inp.select(); } catch (e) {}
+        try { navigator.clipboard.writeText(inp.value); }
+        catch (e) { try { document.execCommand("copy"); } catch (_) {} }
+        showToast("Link copiato");
+    });
+}
+
 function castToTV() {
     const v = el.videoPlayer;
     if (v && v.remote && typeof v.remote.prompt === "function") {

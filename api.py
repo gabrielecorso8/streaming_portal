@@ -9,6 +9,7 @@ import threading
 import urllib.parse
 import ipaddress
 import socket
+import secrets
 from functools import lru_cache
 import uuid
 import requests
@@ -205,13 +206,47 @@ def _same_origin(request):
         return False
 
 
+def _client_is_local(request):
+    """True se la richiesta arriva da QUESTO PC (loopback). I client della rete
+    locale (telefono/tablet) NON sono locali e devono fornire il token."""
+    c = getattr(request, "client", None)
+    h = (c.host if c else "") or ""
+    if not h:
+        return True  # sconosciuto: non bloccare questo PC
+    h = h.strip("[]")
+    try:
+        return ipaddress.ip_address(h).is_loopback
+    except ValueError:
+        return h == "localhost"
+
+
+def _token_ok(request):
+    tok = (SETTINGS.get("access_token") or "").strip()
+    if not tok:
+        return False
+    given = (request.query_params.get("t")
+             or request.cookies.get("sc_token")
+             or request.headers.get("x-sc-token") or "")
+    return bool(given) and secrets.compare_digest(str(given), tok)
+
+
 @app.middleware("http")
 async def security_headers(request, call_next):
     if not _host_allowed(request.headers.get("host", "")):
         return Response("Host non consentito", status_code=400)
+    # Accesso da rete locale (telefono/tablet): serve il token. Questo PC (loopback) e' esente.
+    if not _client_is_local(request) and not _token_ok(request):
+        return Response("Accesso non autorizzato: apri il link/QR con il codice.", status_code=403)
     if request.method in ("POST", "PUT", "PATCH", "DELETE") and not _same_origin(request):
         return Response("Richiesta cross-origin non consentita", status_code=403)
     response = await call_next(request)
+    # Se il token e' arrivato via ?t=, salvalo in un cookie per le richieste successive.
+    _qtok = request.query_params.get("t")
+    if _qtok and (SETTINGS.get("access_token") or "") and secrets.compare_digest(str(_qtok), SETTINGS["access_token"]):
+        try:
+            response.set_cookie("sc_token", _qtok, max_age=30 * 24 * 3600, samesite="lax", httponly=False)
+        except Exception:
+            pass
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
@@ -641,6 +676,15 @@ def detect_active_domain():
     return None
 
 SETTINGS = load_settings()
+# Token d'accesso per l'uso da telefono/tablet in rete locale (mai nel repo:
+# settings.json e' gitignorato). Generato una volta e persistito.
+if not (SETTINGS.get("access_token") or "").strip():
+    SETTINGS["access_token"] = secrets.token_urlsafe(18)
+    try:
+        save_settings(SETTINGS)
+    except Exception:
+        pass
+SETTINGS.setdefault("lan_enabled", False)
 
 
 def _prune_library():
@@ -938,6 +982,56 @@ def ip_check():
     except Exception:
         pass
     raise HTTPException(status_code=502, detail="Impossibile verificare l'IP (sei connesso a Internet?)")
+
+
+def _lan_ip():
+    """IP di questo PC nella rete locale (per farci connettere telefono/tablet)."""
+    try:
+        sk = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sk.connect(("8.8.8.8", 80))
+        ip = sk.getsockname()[0]
+        sk.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+
+@app.get("/api/cast/info")
+def cast_info():
+    """Dati per costruire il link/QR verso telefono/tablet."""
+    return {"lan_ip": _lan_ip(), "port": 8082,
+            "token": SETTINGS.get("access_token", ""),
+            "lan_enabled": bool(SETTINGS.get("lan_enabled"))}
+
+
+class CastEnable(BaseModel):
+    enabled: bool = True
+
+
+@app.post("/api/cast/enable")
+def cast_enable(payload: CastEnable):
+    """Attiva/disattiva l'accesso dalla rete locale (protetto da token). Richiede
+    un riavvio di SC Portal per cambiare l'indirizzo di ascolto del server."""
+    SETTINGS["lan_enabled"] = bool(payload.enabled)
+    save_settings(SETTINGS)
+    return {"ok": True, "lan_enabled": SETTINGS["lan_enabled"], "restart_needed": True}
+
+
+@app.get("/api/cast/qr")
+def cast_qr(data: str):
+    """QR (SVG) del link da inquadrare col telefono/tablet."""
+    try:
+        import qrcode
+        import qrcode.image.svg
+        import io as _io
+        img = qrcode.make(data, image_factory=qrcode.image.svg.SvgImage, box_size=11, border=2)
+        buf = _io.BytesIO()
+        img.save(buf)
+        return Response(content=buf.getvalue(), media_type="image/svg+xml",
+                        headers={"Cache-Control": "no-store"})
+    except Exception:
+        raise HTTPException(status_code=501,
+                            detail="Generatore QR non disponibile: chiudi e RIAVVIA SC Portal (installa qrcode).")
 
 @app.post("/api/save")
 def save_all():

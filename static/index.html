@@ -8,9 +8,9 @@
     <!-- Google Fonts: Outfit -->
     <!-- HLS.js for streaming -->
     <script src="hls.min.js?v=1.5.8"></script>
-    <link rel="icon" type="image/x-icon" href="favicon.ico?v=49">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=50">
     <link rel="apple-touch-icon" href="app-icon.png">
-    <link rel="stylesheet" href="styles.css?v=49">
+    <link rel="stylesheet" href="styles.css?v=50">
 </head>
 <body>
     <header class="app-header">
@@ -119,6 +119,8 @@
                 <div id="privacy-banner" class="privacy-banner hidden">
                     <span>🔒 Se <b>non</b> stai usando una VPN/WARP, il tuo IP e' visibile ai siti. Se ne usi gia' una (ProtonVPN, Cloudflare WARP…), sei protetto: nascondi pure questo avviso.</span>
                     <button id="privacy-vpn-ok" class="secondary-btn small-btn" type="button">Uso una VPN — non mostrare piu'</button>
+                    <button id="privacy-check-ip" class="secondary-btn small-btn" type="button">Verifica IP</button>
+                    <span id="privacy-ip-result" class="privacy-ip-result"></span>
                     <button id="privacy-dismiss" class="icon-btn" type="button" title="Chiudi">✕</button>
                 </div>
             </div>
@@ -278,6 +280,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=49"></script>
+    <script src="app.js?v=50"></script>
 </body>
 </html>

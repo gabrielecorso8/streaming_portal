@@ -909,6 +909,36 @@ def proxy_image(u: str):
     return Response(content=r.content, media_type=ct,
                     headers={"Cache-Control": "public, max-age=86400"})
 
+
+@app.get("/api/ip-check")
+def ip_check():
+    """IP pubblico e paese che i SITI vedono davvero (la richiesta esce dalla
+    stessa connessione dell'app: se hai una VPN/WARP di sistema attiva, qui vedi
+    l'IP di uscita della VPN). Cloudflare 'trace' riporta anche lo stato WARP."""
+    try:
+        r = session.get("https://www.cloudflare.com/cdn-cgi/trace",
+                        headers=get_headers(), timeout=8, verify=False, proxies=get_proxies())
+        if r.status_code == 200 and "ip=" in (r.text or ""):
+            d = {}
+            for line in r.text.splitlines():
+                if "=" in line:
+                    k, v = line.split("=", 1)
+                    d[k.strip()] = v.strip()
+            return {"ip": d.get("ip", ""), "country": d.get("loc", ""),
+                    "warp": d.get("warp", ""), "colo": d.get("colo", "")}
+    except Exception:
+        pass
+    # fallback: solo IP
+    try:
+        r = session.get("https://api.ipify.org?format=json",
+                        headers=get_headers(), timeout=8, verify=False, proxies=get_proxies())
+        j = r.json()
+        if j.get("ip"):
+            return {"ip": j["ip"], "country": "", "warp": "", "colo": ""}
+    except Exception:
+        pass
+    raise HTTPException(status_code=502, detail="Impossibile verificare l'IP (sei connesso a Internet?)")
+
 @app.post("/api/save")
 def save_all():
     """Force a VERIFIED persist of the current library + settings (folders,

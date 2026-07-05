@@ -1424,3 +1424,8 @@ body {
 }
 .privacy-banner span { flex: 1; }
 .privacy-banner .icon-btn { flex: 0 0 auto; color: #fde68a; }
+
+/* Risultato "Verifica IP" nel banner privacy */
+.privacy-ip-result { font-size: .82rem; color: var(--text-secondary); }
+.privacy-ip-result.ok { color: #86efac; }
+.privacy-ip-result.err { color: #fca5a5; }

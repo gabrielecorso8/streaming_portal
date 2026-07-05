@@ -52,6 +52,8 @@ const el = {
     privacyBanner: document.getElementById("privacy-banner"),
     privacyDismiss: document.getElementById("privacy-dismiss"),
     privacyVpnOk: document.getElementById("privacy-vpn-ok"),
+    privacyCheckIp: document.getElementById("privacy-check-ip"),
+    privacyIpResult: document.getElementById("privacy-ip-result"),
     searchClear: document.getElementById("search-clear"),
     openFolderBtn: document.getElementById("open-folder-btn"),
     shutdownBtn: document.getElementById("shutdown-btn"),
@@ -224,6 +226,7 @@ async function init() {
     };
     if (el.privacyDismiss) el.privacyDismiss.addEventListener("click", _dismissPrivacy);
     if (el.privacyVpnOk) el.privacyVpnOk.addEventListener("click", _dismissPrivacy);
+    if (el.privacyCheckIp) el.privacyCheckIp.addEventListener("click", checkEgressIp);
     refreshProxyState();
     if (el.searchClear) el.searchClear.addEventListener("click", clearSearch);
     if (el.urlInput) el.urlInput.addEventListener("input", toggleClearBtn);
@@ -815,6 +818,27 @@ async function convertDirectUrl() {
         }
     } catch (e) {
         showToast("Errore durante l'analisi dell'URL");
+    }
+}
+
+async function checkEgressIp() {
+    const out = el.privacyIpResult;
+    if (out) { out.textContent = "Verifico\u2026"; out.className = "privacy-ip-result"; }
+    if (el.privacyCheckIp) el.privacyCheckIp.disabled = true;
+    try {
+        const r = await fetch("/api/ip-check");
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.ip) throw new Error(d.detail || "no ip");
+        const warp = (d.warp === "on" || d.warp === "plus") ? " \u00b7 WARP attivo" : (d.warp === "off" ? " \u00b7 WARP off" : "");
+        const country = d.country ? " (" + d.country + ")" : "";
+        const msg = "IP visto dai siti: " + d.ip + country + warp;
+        if (out) { out.textContent = "\u2705 " + msg; out.className = "privacy-ip-result ok"; }
+        showToast(msg + " \u2014 se e' quello della tua VPN, sei protetto.", 8000);
+    } catch (e) {
+        if (out) { out.textContent = "\u26a0 Verifica non riuscita"; out.className = "privacy-ip-result err"; }
+        showToast("Verifica IP non riuscita (connessione assente?)", 5000);
+    } finally {
+        if (el.privacyCheckIp) el.privacyCheckIp.disabled = false;
     }
 }
 

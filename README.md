@@ -84,9 +84,9 @@ streaming_portal/
 ├── downloader.py                  # Motore download HLS parallelo, coda, resume, merge
 ├── vidxgo.py                      # Risoluzione embed dei cloni (vidxgo)
 ├── requirements.txt               # Dipendenze Python
-├── settings.json                  # Dominio attivo, domini noti, cartelle, proxy (tracked)
-├── library.json                   # Titoli, preferiti (tracked)
-├── covers/                        # Locandine caricate (tracked)
+├── settings.json                  # Dominio/cartelle/proxy — LOCALE, non versionato
+├── library.json                   # Titoli/preferiti — LOCALE, non versionato
+├── covers/                        # Locandine — LOCALE, non versionato
 ├── static/                        # Frontend: index.html, app.js, styles.css, favicon
 ├── launcher_exe.py                # Entry point dell'eseguibile PyInstaller
 ├── SC Portal.spec                 # Specifica di build PyInstaller
@@ -97,9 +97,11 @@ streaming_portal/
 └── Crea EXE.bat                   # Genera l'eseguibile standalone
 ```
 
-`settings.json`, `library.json` e `covers/` sono versionati intenzionalmente per
-distribuire la collezione curata insieme al codice. Sono ignorati da Git:
-`venv/`, `bin/` (FFmpeg), `downloads/`, `build/`, `dist/`, `*.exe`, `server.log`.
+`settings.json`, `library.json`, `covers/` e `library_state.json` contengono **dati
+personali** (la tua collezione e la cronologia) e **non** sono versionati: restano
+solo sul tuo PC. Un clone pulito parte con libreria vuota. Sono ignorati da Git
+anche: `venv/`, `bin/` (FFmpeg), `downloads/`, `build/`, `dist/`, `*.exe`,
+`server.log`, `CLAUDE.md` (note di sviluppo interne).
 
 ---
 

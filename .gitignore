@@ -31,3 +31,9 @@ dist/
 *.bak_nullfix
 *.bak_truncated
 static/hls.min.js
+# Dati PERSONALI: collezione/cronologia, mai nel repo (solo locali)
+library.json
+settings.json
+covers/
+# Note di sviluppo interne (handoff), non nel repo pubblico
+CLAUDE.md

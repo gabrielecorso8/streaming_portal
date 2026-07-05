@@ -87,6 +87,7 @@ const el = {
     refreshDownloadsBtn: document.getElementById("refresh-downloads-btn"),
     castBtn: document.getElementById("cast-btn"),
     phonecastBtn: document.getElementById("phonecast-btn"),
+    headerCastBtn: document.getElementById("header-cast-btn"),
     headerSearchBtn: document.getElementById("header-search-btn"),
     headerFavoritesBtn: document.getElementById("header-favorites-btn"),
     headerDownloadsBtn: document.getElementById("header-downloads-btn"),
@@ -176,6 +177,7 @@ async function init() {
     if (el.refreshDownloadsBtn) el.refreshDownloadsBtn.addEventListener("click", refreshDownloads);
     if (el.castBtn) el.castBtn.addEventListener("click", castToTV);
     if (el.phonecastBtn) el.phonecastBtn.addEventListener("click", openPhoneCast);
+    if (el.headerCastBtn) el.headerCastBtn.addEventListener("click", openPhoneCast);
     if (el.videoPlayer && "disableRemotePlayback" in el.videoPlayer) el.videoPlayer.disableRemotePlayback = false;
     if (el.headerSearchBtn) el.headerSearchBtn.addEventListener("click", () => {
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -873,6 +875,24 @@ function warnNoProxyOnce() {
     showToast("⚠ Nessun proxy/VPN: il tuo IP e visibile ai siti. Valuta una VPN o imposta un proxy.", 6000);
 }
 
+function _lanToken() {
+    try {
+        var t = new URLSearchParams(location.search).get("t");
+        if (t) return t;
+        var m = document.cookie.match(/(?:^|;\s*)sc_token=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : "";
+    } catch (e) { return ""; }
+}
+
+function withLanToken(url) {
+    // Sul PC (loopback) niente token. Da telefono/tablet (host di rete) accoda il
+    // token: serve alla TV per scaricare il video quando trasmetti (casting).
+    if (!url || location.hostname === "localhost" || location.hostname === "127.0.0.1") return url;
+    var tok = _lanToken();
+    if (!tok) return url;
+    return url + (url.indexOf("?") >= 0 ? "&" : "?") + "t=" + encodeURIComponent(tok);
+}
+
 function playStreamMp4(streamUrl, title) {
     closePlayer();
     currentPlayTitle = title || "";
@@ -882,7 +902,7 @@ function playStreamMp4(streamUrl, title) {
     setQualityControls(false);
     if (el.iframePlayer) el.iframePlayer.classList.add("hidden");
     el.videoPlayer.classList.remove("hidden");
-    el.videoPlayer.src = streamUrl;
+    el.videoPlayer.src = withLanToken(streamUrl);
     el.videoPlayer.play().catch(() => {});
     currentMediaForCast = { src: streamUrl, hls: false, title: title || "SC Portal" };
     playbackCtx = null;
@@ -1293,6 +1313,7 @@ function handleHlsError(data, onRefetch) {
 // "fresco" (token rigenerati) quando lo stream cade per scadenza token o rete,
 // e la riproduzione riprende dalla stessa posizione.
 function playStream(streamSrc, getSrc, iframeFallback) {
+    streamSrc = withLanToken(streamSrc);
     streamReloadAttempts = 0; fragErrCount = 0; netRetryCount = 0;
     currentMediaForCast = { src: streamSrc, hls: true, title: _castTitle() };
     el.videoPlayer.classList.remove("hidden");
@@ -1326,7 +1347,7 @@ function playStream(streamSrc, getSrc, iframeFallback) {
         const t = el.videoPlayer.currentTime || 0;
         showToast("Riconnessione allo stream...");
         let src = null;
-        try { src = getSrc ? await getSrc() : streamSrc; } catch (e) { src = null; }
+        try { src = getSrc ? withLanToken(await getSrc()) : streamSrc; } catch (e) { src = null; }
         if (!src) { if (iframeFallback) playIframe(iframeFallback); return; }
         if (activeHls) { try { activeHls.destroy(); } catch (e) {} activeHls = null; }
         if (Hls.isSupported()) {
@@ -1797,7 +1818,7 @@ function playDownloaded(id, title, key) {
     setQualityControls(false);
     if (el.iframePlayer) el.iframePlayer.classList.add("hidden");
     el.videoPlayer.classList.remove("hidden");
-    el.videoPlayer.src = `/api/download/play/${encodeURIComponent(id)}`;
+    el.videoPlayer.src = withLanToken(`/api/download/play/${encodeURIComponent(id)}`);
     currentMediaForCast = { src: `/api/download/play/${encodeURIComponent(id)}`, hls: false, title: title || "SC Portal" };
     el.videoPlayer.play().catch(() => {});
     const ep = parseEpisode(title);

@@ -1676,12 +1676,17 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None, type
             results.sort(key=lambda x: x.get("release_date") or "", reverse=True)
         elif sort == "oldest":
             results.sort(key=lambda x: x.get("release_date") or "9999")
+        # Le fonti EXTRA (AnimeWorld ecc.) sono gia' filtrate per rilevanza, quindi
+        # vanno messe IN CIMA: per un titolo anime StreamingCommunity restituisce
+        # spesso molti risultati fuzzy/sbagliati, che finirebbero sopra a quelli
+        # giusti di AnimeWorld. Le fonti extra prima, poi StreamingCommunity.
+        extra = []
         if not wanted_genre:
             for d in SETTINGS.get("source_domains", []):
                 if "animeworld" in (d or "").lower():
                     try:
                         for it in animeworld.search(q, host=normalize_source_domain(d) or "www.animeworld.ac", proxies=get_proxies()):
-                            results.append({
+                            extra.append({
                                 "id": "", "name": it["title"], "slug": "",
                                 "id_and_slug": it["key"], "type": "tv", "score": None,
                                 "release_date": "", "genres": [], "cover": it["cover"],
@@ -1691,8 +1696,8 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None, type
                     except Exception as _e:
                         print(f"[animeworld] search merge failed: {_e}")
                 else:
-                    results.extend(search_source_domain(d, q))
-        return results
+                    extra.extend(search_source_domain(d, q))
+        return extra + results
     except HTTPException:
         raise
     except Exception as e:

@@ -865,7 +865,32 @@ function warnNoProxyOnce() {
     showToast("⚠ Nessun proxy/VPN: il tuo IP e visibile ai siti. Valuta una VPN o imposta un proxy.", 6000);
 }
 
+function _lanToken() {
+    try {
+        var t = new URLSearchParams(location.search).get("t");
+        if (t) return t;
+        var m = document.cookie.match(/(?:^|;\s*)sc_token=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : "";
+    } catch (e) { return ""; }
+}
+
+function isRemoteDevice() {
+    // true se l'app e' aperta da telefono/tablet (via IP di rete), non dal PC
+    return location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
+}
+
+function maybeUseOptimizedPlayer(src, hls, title) {
+    if (!isRemoteDevice() || !src) return false;
+    var tok = _lanToken();
+    var u = "/phone.html?src=" + encodeURIComponent(src) + "&hls=" + (hls ? "1" : "0")
+          + "&title=" + encodeURIComponent(title || "SC Portal")
+          + (tok ? "&t=" + encodeURIComponent(tok) : "");
+    location.href = u;
+    return true;
+}
+
 function playStreamMp4(streamUrl, title) {
+    if (maybeUseOptimizedPlayer(streamUrl, false, title || "SC Portal")) return;
     closePlayer();
     currentPlayTitle = title || "";
     if (el.playingTitle) el.playingTitle.textContent = `Riproduzione: ${title || "episodio"}`;
@@ -1285,6 +1310,7 @@ function handleHlsError(data, onRefetch) {
 // "fresco" (token rigenerati) quando lo stream cade per scadenza token o rete,
 // e la riproduzione riprende dalla stessa posizione.
 function playStream(streamSrc, getSrc, iframeFallback) {
+    if (maybeUseOptimizedPlayer(streamSrc, true, _castTitle())) return;
     streamReloadAttempts = 0; fragErrCount = 0; netRetryCount = 0;
     currentMediaForCast = { src: streamSrc, hls: true, title: _castTitle() };
     el.videoPlayer.classList.remove("hidden");
@@ -1781,6 +1807,7 @@ function setQualityControls(show) {
 // Riproduce un file GIA' scaricato direttamente nel player (file locale: niente
 // HLS, niente selettori qualita'/audio). Funziona anche da telefono.
 function playDownloaded(id, title, key) {
+    if (maybeUseOptimizedPlayer("/api/download/play/" + encodeURIComponent(id), false, title || "SC Portal")) return;
     closePlayer();
     currentPlayTitle = title || "";
     if (el.playingTitle) el.playingTitle.textContent = `Riproduzione: ${title || "download"}`;

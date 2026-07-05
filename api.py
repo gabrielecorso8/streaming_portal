@@ -2513,7 +2513,8 @@ def resolve_stream_info(id, episode_id=None):
 
 @app.get("/api/stream/master.m3u8")
 def get_master_playlist(url: Optional[str] = None, video_id: Optional[int] = None,
-                        token: Optional[str] = None, expires: Optional[str] = None):
+                        token: Optional[str] = None, expires: Optional[str] = None,
+                        t: Optional[str] = None):
     if not url:
         if not video_id or not token or not expires:
             raise HTTPException(status_code=400, detail="Playlist URL mancante")
@@ -2532,7 +2533,8 @@ def get_master_playlist(url: Optional[str] = None, video_id: Optional[int] = Non
         content = resp.text
         lines = content.splitlines()
         rewritten_lines = []
-        
+        _tq = ("&t=" + urllib.parse.quote(t)) if t else ""  # propaga il token LAN
+
         for line in lines:
             line = line.strip()
             if not line:
@@ -2544,21 +2546,21 @@ def get_master_playlist(url: Optional[str] = None, video_id: Optional[int] = Non
                     if uri_match:
                         abs_uri = urllib.parse.urljoin(url, uri_match.group(1))
                         encoded_url = urllib.parse.quote(abs_uri, safe="")
-                        rewritten_uri = f"/api/stream/subplaylist.m3u8?url={encoded_url}&video_id={video_id or 0}"
+                        rewritten_uri = f"/api/stream/subplaylist.m3u8?url={encoded_url}&video_id={video_id or 0}{_tq}"
                         line = line.replace(uri_match.group(1), rewritten_uri)
                 rewritten_lines.append(line)
             else:
                 # URI della variante video: puo' essere ASSOLUTO o RELATIVO -> risolvi e proxa
                 abs_url = urllib.parse.urljoin(url, line)
                 encoded_url = urllib.parse.quote(abs_url, safe="")
-                rewritten_lines.append(f"/api/stream/subplaylist.m3u8?url={encoded_url}&video_id={video_id or 0}")
+                rewritten_lines.append(f"/api/stream/subplaylist.m3u8?url={encoded_url}&video_id={video_id or 0}{_tq}")
                 
         return Response(content="\n".join(rewritten_lines), media_type="application/vnd.apple.mpegurl")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Errore interno del server")
 
 @app.get("/api/stream/subplaylist.m3u8")
-def get_sub_playlist(url: str, video_id: int):
+def get_sub_playlist(url: str, video_id: int, t: Optional[str] = None):
     if not _is_safe_remote_url(url):
         raise HTTPException(status_code=400, detail="URL non consentito")
     try:
@@ -2569,7 +2571,8 @@ def get_sub_playlist(url: str, video_id: int):
         content = resp.text
         lines = content.splitlines()
         rewritten_lines = []
-        
+        _tq = ("&t=" + urllib.parse.quote(t)) if t else ""  # propaga il token LAN
+
         # Extract token and expires from original URL to use in key referrer
         parsed_url = urllib.parse.urlparse(url)
         query_params = urllib.parse.parse_qs(parsed_url.query)
@@ -2590,7 +2593,7 @@ def get_sub_playlist(url: str, video_id: int):
                     encoded_key_url = urllib.parse.quote(orig_key_url, safe="")
                     encoded_referer = urllib.parse.quote(referer, safe="")
                     
-                    local_key_url = f"/api/stream/key?url={encoded_key_url}&referer={encoded_referer}"
+                    local_key_url = f"/api/stream/key?url={encoded_key_url}&referer={encoded_referer}{_tq}"
                     line = line.replace(orig_key_url, local_key_url)
                 rewritten_lines.append(line)
             elif line.startswith("#") or not line:
@@ -2602,7 +2605,7 @@ def get_sub_playlist(url: str, video_id: int):
                 referer = f"https://vixcloud.co/embed/{video_id}?token={token_render}&referer=1&expires={expires}"
                 encoded_seg_url = urllib.parse.quote(absolute_ts_url, safe="")
                 encoded_referer = urllib.parse.quote(referer, safe="")
-                rewritten_lines.append(f"/api/stream/segment?url={encoded_seg_url}&referer={encoded_referer}")
+                rewritten_lines.append(f"/api/stream/segment?url={encoded_seg_url}&referer={encoded_referer}{_tq}")
                 
         return Response(content="\n".join(rewritten_lines), media_type="application/vnd.apple.mpegurl")
     except Exception as e:

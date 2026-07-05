@@ -715,7 +715,9 @@ async function resolveDirectUrl(urlArg, titleName) {
         });
         if (resp.ok) {
             const data = await resp.json();
-            if (data.is_clone) {
+            if (data.is_animeworld) {
+                renderAnimeWorld(data, url);
+            } else if (data.is_clone) {
                 addToLibrary(url, {
                     key: url, name: data.title, cover: data.cover,
                     type: data.is_series ? "tv" : "movie", is_clone: true
@@ -752,7 +754,7 @@ async function convertDirectUrl() {
         if (resp.ok) {
             const data = await resp.json();
             el.urlInput.value = "";
-            
+            if (data.is_animeworld) { renderAnimeWorld(data, url); return; }
             if (data.is_clone) {
                 addToLibrary(url, {
                     key: url, name: data.title, cover: data.cover,
@@ -792,6 +794,91 @@ async function convertDirectUrl() {
     } catch (e) {
         showToast("Errore durante l'analisi dell'URL");
     }
+}
+
+function playStreamMp4(streamUrl, title) {
+    closePlayer();
+    currentPlayTitle = title || "";
+    if (el.playingTitle) el.playingTitle.textContent = `Riproduzione: ${title || "episodio"}`;
+    el.playerSection.classList.remove("hidden");
+    if (el.qualityBar) el.qualityBar.classList.remove("hidden");
+    setQualityControls(false);
+    if (el.iframePlayer) el.iframePlayer.classList.add("hidden");
+    el.videoPlayer.classList.remove("hidden");
+    el.videoPlayer.src = streamUrl;
+    el.videoPlayer.play().catch(() => {});
+    playbackCtx = null;
+    updatePlaybackNav();
+}
+
+function renderAnimeWorld(data, url) {
+    const host = data.host || "www.animeworld.ac";
+    const eps = data.episodes || [];
+    const overlay = document.createElement("div");
+    overlay.className = "picker-overlay";
+    const epRows = eps.map(e => `
+        <div class="aw-ep" data-epurl="${escapeHtml(e.url)}" data-epid="${escapeHtml(e.id)}">
+            <span class="aw-epn">Ep ${escapeHtml(e.num || "")}</span>
+            <span class="aw-ep-actions">
+                <button class="secondary-btn small-btn aw-play">\u25b6 Riproduci</button>
+                <button class="secondary-btn small-btn aw-dl">\u2b07 Scarica</button>
+            </span>
+        </div>`).join("");
+    overlay.innerHTML = `
+      <div class="picker-panel glass aw-panel">
+        <div class="aw-head">
+          ${data.cover ? `<img class="aw-cover" src="${escapeHtml(data.cover)}" alt="">` : ""}
+          <div class="aw-head-meta">
+            <h3>${escapeHtml(data.title || "AnimeWorld")}</h3>
+            <p class="picker-hint">${eps.length} episodi \u00b7 fonte AnimeWorld</p>
+            <button class="secondary-btn small-btn aw-save">\u2605 Salva in libreria</button>
+          </div>
+        </div>
+        <input type="text" class="picker-search aw-search" placeholder="Filtra episodi (numero)\u2026" autocomplete="off">
+        <div class="picker-list aw-list">${epRows || '<div class="no-downloads">Nessun episodio trovato.</div>'}</div>
+        <div class="picker-actions"><button class="secondary-btn picker-cancel">Chiudi</button></div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    overlay.querySelector(".picker-cancel").addEventListener("click", close);
+    const save = overlay.querySelector(".aw-save");
+    if (save) save.addEventListener("click", () => {
+        addToLibrary(url, { key: data.id_and_slug || url, name: data.title, cover: data.cover, type: "tv", is_clone: true });
+        showToast("Serie salvata in libreria");
+    });
+    const sr = overlay.querySelector(".aw-search");
+    if (sr) sr.addEventListener("input", () => {
+        const q = sr.value.trim().toLowerCase();
+        overlay.querySelectorAll(".aw-ep").forEach(r => {
+            const n = r.querySelector(".aw-epn");
+            r.style.display = (!q || (n && n.textContent.toLowerCase().includes(q))) ? "" : "none";
+        });
+    });
+    overlay.querySelectorAll(".aw-ep").forEach(row => {
+        const epurl = row.getAttribute("data-epurl"), epid = row.getAttribute("data-epid");
+        const num = row.querySelector(".aw-epn").textContent;
+        row.querySelector(".aw-play").addEventListener("click", async () => {
+            showToast("Risolvo l'episodio\u2026");
+            try {
+                const r = await fetch(`/api/animeworld/stream?url=${encodeURIComponent(epurl)}`);
+                const d = await r.json().catch(() => ({}));
+                if (r.ok && d.stream_url) playStreamMp4(d.stream_url, `${data.title} ${num}`);
+                else showToast(d.detail || "Episodio non disponibile");
+            } catch (e) { showToast("Errore risoluzione episodio"); }
+        });
+        row.querySelector(".aw-dl").addEventListener("click", async () => {
+            showToast("Avvio download episodio\u2026");
+            try {
+                const r = await fetch("/api/animeworld/download", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: epurl, id: epid, host: host, title: `${data.title} ${num}` })
+                });
+                const d = await r.json().catch(() => ({}));
+                showToast(r.ok ? "Download avviato" : (d.detail || "Download non disponibile"));
+            } catch (e) { showToast("Errore download"); }
+        });
+    });
 }
 
 function renderCloneDetails(data, libKey) {

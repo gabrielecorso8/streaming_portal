@@ -78,6 +78,7 @@ from downloader import (
     clear_downloads, cancel_download, set_max_concurrent,
 )
 import vidxgo
+import animeworld
 import subprocess
 import sys
 
@@ -1677,7 +1678,20 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None, type
             results.sort(key=lambda x: x.get("release_date") or "9999")
         if not wanted_genre:
             for d in SETTINGS.get("source_domains", []):
-                results.extend(search_source_domain(d, q))
+                if "animeworld" in (d or "").lower():
+                    try:
+                        for it in animeworld.search(q, host=normalize_source_domain(d) or "www.animeworld.ac", proxies=get_proxies()):
+                            results.append({
+                                "id": "", "name": it["title"], "slug": "",
+                                "id_and_slug": it["key"], "type": "tv", "score": None,
+                                "release_date": "", "genres": [], "cover": it["cover"],
+                                "url": it["url"], "is_clone": True, "is_animeworld": True,
+                                "source": "animeworld",
+                            })
+                    except Exception as _e:
+                        print(f"[animeworld] search merge failed: {_e}")
+                else:
+                    results.extend(search_source_domain(d, q))
         return results
     except HTTPException:
         raise
@@ -1884,6 +1898,56 @@ class CloneDownloadRequest(BaseModel):
     mode: str = "tv"
 
 
+class AWEpisode(BaseModel):
+    url: Optional[str] = ""
+    id: Optional[str] = ""
+    host: Optional[str] = "www.animeworld.ac"
+    title: Optional[str] = ""
+
+
+def _aw_resolve_mp4(url="", ep_id="", host="www.animeworld.ac"):
+    info = animeworld.resolve_episode(url=url or None, episode_id=ep_id or None,
+                                      host=host or "www.animeworld.ac", proxies=get_proxies())
+    mp4 = info.get("mp4_url", "")
+    if not mp4 or not _is_safe_remote_url(mp4):
+        raise HTTPException(status_code=502, detail="Flusso AnimeWorld non disponibile")
+    return info, mp4
+
+
+@app.get("/api/animeworld/resolve")
+def animeworld_resolve(url: str):
+    """Serie AnimeWorld con la lista episodi (per il frontend)."""
+    try:
+        return animeworld.get_series(url, proxies=get_proxies())
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get("/api/animeworld/stream")
+def animeworld_stream(url: Optional[str] = "", id: Optional[str] = "", host: Optional[str] = "www.animeworld.ac"):
+    """Risolve un episodio AnimeWorld nell'mp4 diretto (per la riproduzione)."""
+    info, mp4 = _aw_resolve_mp4(url or "", id or "", host or "www.animeworld.ac")
+    return {"stream_url": mp4, "title": info.get("title", ""), "cover": info.get("cover", "")}
+
+
+@app.post("/api/animeworld/download")
+def animeworld_download(payload: AWEpisode):
+    """Risolve un episodio AnimeWorld e ne avvia il download (mp4 diretto)."""
+    info, mp4 = _aw_resolve_mp4(payload.url or "", payload.id or "", payload.host or "www.animeworld.ac")
+    download_id = str(uuid.uuid4())
+    start_download_task(
+        download_id=download_id,
+        title=payload.title or info.get("title") or "AnimeWorld",
+        m3u8_video=mp4,
+        m3u8_audio=None,
+        key_info=None,
+        extra_headers={"Referer": f"https://{payload.host or 'www.animeworld.ac'}/"},
+        vidxgo_meta=None,
+        proxies=get_proxies(),
+    )
+    return {"download_id": download_id}
+
+
 @app.get("/api/clone/episodes")
 def clone_episodes(tmdb_tv_id: int, season: int, iframe_url: str):
     """List episodes (names/plots) for a vidxgo series season."""
@@ -1961,6 +2025,25 @@ def resolve_url(payload: ResolveUrlRequest):
             "iframe_url": "",
             "stream_url": url,
             "id_and_slug": f"direct-{uuid.uuid4().hex[:8]}"
+        }
+
+    # 1b. AnimeWorld (player/grabber proprio, non Vixcloud)
+    if animeworld.is_animeworld_url(url):
+        try:
+            info = animeworld.get_series(url, proxies=get_proxies())
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"AnimeWorld non raggiungibile: {e}")
+        return {
+            "is_clone": True,
+            "is_animeworld": True,
+            "title": info.get("title") or "AnimeWorld",
+            "cover": info.get("cover", ""),
+            "plot": info.get("plot", ""),
+            "iframe_url": "",
+            "stream_url": "",
+            "host": info.get("host", ""),
+            "episodes": info.get("episodes", []),
+            "id_and_slug": animeworld._key_for(url),
         }
 
     # 2. Check if it's a vidxgo URL

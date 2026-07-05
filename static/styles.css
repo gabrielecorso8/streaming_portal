@@ -1397,3 +1397,15 @@ body {
 .download-folder-season > .download-folder-head { background: rgba(255,255,255,.03); }
 .download-folder-body { flex-flow: column nowrap; align-items: stretch; }
 .download-folder-body > .download-item { width: 100%; }
+
+/* AnimeWorld: pannello episodi */
+.aw-panel { max-width: 640px; width: 92vw; }
+.aw-head { display: flex; gap: .9rem; align-items: flex-start; margin-bottom: .6rem; }
+.aw-cover { width: 84px; height: 118px; object-fit: cover; border-radius: 10px; flex: 0 0 auto; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+.aw-head-meta { min-width: 0; }
+.aw-head-meta h3 { margin: 0 0 .2rem; }
+.aw-list { max-height: 55vh; overflow-y: auto; display: flex; flex-direction: column; gap: .3rem; }
+.aw-ep { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .4rem .6rem; border-radius: 9px; background: rgba(255,255,255,.04); }
+.aw-ep:hover { background: rgba(139,92,246,.12); }
+.aw-epn { font-weight: 700; }
+.aw-ep-actions { display: flex; gap: .35rem; flex: 0 0 auto; }

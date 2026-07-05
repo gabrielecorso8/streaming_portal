@@ -55,7 +55,21 @@
             "parent": "",
             "cover": "/covers/28807726.jpg",
             "items": [],
-            "favorite": false
+            "favorite": false,
+            "order": [
+                "f:66f65556",
+                "f:484da798",
+                "f:e96e205d",
+                "f:ea5946c6",
+                "f:b676c848",
+                "f:1f929c6a",
+                "f:0cf6a667",
+                "f:fc85d3a7",
+                "f:f6ea40f8",
+                "f:f1e55804",
+                "f:367b994d",
+                "f:439ee93d"
+            ]
         },
         {
             "id": "048a1c59",
@@ -1641,7 +1655,7 @@
             ]
         }
     ],
-    "source_domains": [],
-    "custom_filters": [],
-    "filter_covers": {}
+    "source_domains": [
+        "animeworld.ac"
+    ]
 }

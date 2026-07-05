@@ -72,38 +72,57 @@ def _abs(base, u):
 #  Ricerca
 # --------------------------------------------------------------------------- #
 def search(query, host=DEFAULT_HOST, proxies=None, limit=40):
-    """Cerca serie su AnimeWorld. Ritorna [{title, url, cover, key}]."""
+    """Cerca serie su AnimeWorld. Ritorna [{title, url, cover, key}].
+
+    La pagina di ricerca contiene ANCHE sidebar (Top Anime, Nuove aggiunte,
+    Correlati) piene di link /play/ non pertinenti: per non pescarli ci limitiamo
+    al PRIMO contenitore .film-list (i risultati veri) e in piu' filtriamo per
+    rilevanza rispetto alla query.
+    """
     base = f"https://{host}"
     s = _session(proxies)
     out = []
+    q_tokens = [t for t in re.split(r"\W+", (query or "").lower()) if len(t) >= 2]
+
+    def _relevant(title):
+        if not q_tokens:
+            return True
+        nt = (title or "").lower()
+        return any(t in nt for t in q_tokens)
+
+    def _collect(anchors):
+        seen, res = set(), []
+        for a in anchors:
+            href = a.get("href") or ""
+            m = re.search(r"/play/([^/?#]+)", href)
+            if not m:
+                continue
+            pid = m.group(1)
+            if pid in seen:
+                continue
+            title = (a.get("data-jtitle") or a.get_text(strip=True) or a.get("title") or "").strip()
+            if not title or not _relevant(title):
+                continue
+            seen.add(pid)
+            par = a.find_parent(class_="item") or a.parent
+            img = par.find("img") if par else None
+            cover = _abs(base, (img.get("src") or img.get("data-src")) if img else "")
+            full = _abs(base, href)
+            res.append({"title": title, "url": full, "cover": cover, "key": _key_for(full)})
+            if len(res) >= limit:
+                break
+        return res
+
     try:
         r = s.get(f"{base}/search", params={"keyword": query}, timeout=15)
         if r.status_code != 200:
             return out
         soup = BeautifulSoup(r.text, "lxml")
-        # I risultati sono in .film-list .item (a.poster + .name)
-        items = soup.select(".film-list .item") or soup.select("div.item")
-        for it in items:
-            a = it.select_one("a.poster") or it.select_one("a.name") or it.find("a")
-            if not a or not a.get("href"):
-                continue
-            href = _abs(base, a.get("href"))
-            name_el = it.select_one(".name") or a
-            title = (name_el.get("data-jtitle") or name_el.text or a.get("data-jtitle") or "").strip()
-            if not title:
-                title = (a.get("title") or "").strip()
-            img = it.find("img")
-            cover = ""
-            if img:
-                cover = _abs(base, img.get("src") or img.get("data-src") or "")
-            out.append({
-                "title": title or "Senza titolo",
-                "url": href,
-                "cover": cover,
-                "key": _key_for(href),
-            })
-            if len(out) >= limit:
-                break
+        container = soup.select_one("div.film-list") or soup.select_one(".film-list")
+        if container:
+            out = _collect(container.select("a[href*='/play/']"))
+        if not out:
+            out = _collect(soup.select("a[href*='/play/']"))
     except Exception as e:
         print(f"[animeworld] search error: {e}")
     return out

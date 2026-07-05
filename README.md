@@ -10,6 +10,35 @@ Il progetto è a scopo esclusivamente educativo e dimostrativo.
 
 ---
 
+## ⚠️ Prima di iniziare — privacy e sicurezza (leggere)
+
+SC Portal è già protetto lato applicazione (server solo su `127.0.0.1`, anti-CSRF/
+SSRF/DNS-rebinding, CSP senza terze parti, locandine via proxy locale, nessuna
+telemetria). Ciò che l'app **non** può nascondere da sola è il tuo **IP verso i
+siti di streaming**: per quello serve mascherare la connessione a livello di
+sistema. Prima di usare SC Portal:
+
+1. **Installa e tieni SEMPRE acceso Cloudflare WARP** (app gratuita "1.1.1.1"):
+   [cloudflare.com/warp](https://one.one.one.one/) o
+   [1.1.1.1](https://1.1.1.1/). Instrada tutto il traffico e maschera l'IP.
+2. **Installa e tieni SEMPRE acceso ProtonVPN**:
+   [protonvpn.com](https://protonvpn.com/). Una VPN no‑log seria è la protezione
+   più completa per nascondere l'IP ai siti.
+3. **Accendi WARP e/o ProtonVPN PRIMA di aprire SC Portal**, e verifica che siano
+   connessi. Con la VPN attiva **lascia vuoto il campo proxy** dell'app: il
+   traffico è già coperto a livello di sistema.
+
+> In sintesi: **VPN/WARP acceso → poi apri SC Portal**. Se apri l'app senza
+> protezione attiva, il tuo IP di casa è visibile ai siti (un banner nell'app te
+> lo ricorda). Non usare proxy gratuiti presi da liste pubbliche: possono
+> registrare e manomettere il tuo traffico.
+
+Nota tecnica: la connessione verso i siti di streaming non verifica il
+certificato TLS (i loro certificati ruotano spesso); WARP/VPN riduce molto il
+rischio di intercettazione su quel percorso.
+
+---
+
 ## Architettura
 
 L'applicazione segue un'architettura a tre livelli eseguita interamente in

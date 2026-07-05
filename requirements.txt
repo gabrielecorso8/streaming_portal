@@ -1,11 +1,13 @@
-requests>=2.31.0
-PySocks>=1.7.1  # enables socks5:// proxies in requests (optional, for SC_PROXY)
-beautifulsoup4>=4.12.0
-lxml>=4.9.0
-tqdm>=4.66.0
-rich>=13.7.0
-ffmpeg-python>=0.2.0
-cryptography>=41.0.0
-m3u8>=4.0.0
-fastapi>=0.110.0
-uvicorn>=0.28.0
+# Dipendenze pinnate con limite superiore di major: evita che un aggiornamento
+# major inatteso (o una release compromessa) venga tirato dentro automaticamente.
+requests>=2.31.0,<3
+PySocks>=1.7.1,<2          # abilita i proxy socks5:// in requests (per SC_PROXY)
+beautifulsoup4>=4.12.0,<5
+lxml>=4.9.0,<7
+tqdm>=4.66.0,<5
+rich>=13.7.0,<15
+ffmpeg-python>=0.2.0,<1
+cryptography>=41.0.0,<50
+m3u8>=4.0.0,<7
+fastapi>=0.110.0,<1
+uvicorn>=0.28.0,<1

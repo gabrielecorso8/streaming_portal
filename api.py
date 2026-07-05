@@ -1577,7 +1577,7 @@ def search_legacy(q: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
 
 
 def search_source_domain(domain, q, limit=12):
@@ -1746,7 +1746,7 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None,
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
 
 @app.get("/api/search/list")
 def search_list(q: str):
@@ -1834,7 +1834,7 @@ def get_details(id_and_slug: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
 
 @app.get("/api/details/{id_and_slug}/season/{season_number}")
 def get_season_episodes(id_and_slug: str, season_number: int, version: str):
@@ -1879,7 +1879,7 @@ def get_season_episodes(id_and_slug: str, season_number: int, version: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
 
 def build_vidxgo_response(iframe_url, referer, title, cover="", plot=""):
     """Resolve a vidxgo embed into a portal resolve-url response.
@@ -1970,7 +1970,7 @@ def animeworld_resolve(url: str):
     try:
         return animeworld.get_series(url, proxies=get_proxies())
     except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        raise HTTPException(status_code=502, detail="Errore interno del server")
 
 
 @app.get("/api/animeworld/stream")
@@ -2004,7 +2004,7 @@ def clone_episodes(tmdb_tv_id: int, season: int, iframe_url: str):
     try:
         return vidxgo.list_episodes(tmdb_tv_id, season, iframe_url)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
 
 
 @app.post("/api/clone/download")
@@ -2385,7 +2385,7 @@ def resolve_stream_info(id, episode_id=None):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
 
 @app.get("/api/stream/master.m3u8")
 def get_master_playlist(url: Optional[str] = None, video_id: Optional[int] = None,
@@ -2431,7 +2431,7 @@ def get_master_playlist(url: Optional[str] = None, video_id: Optional[int] = Non
                 
         return Response(content="\n".join(rewritten_lines), media_type="application/vnd.apple.mpegurl")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
 
 @app.get("/api/stream/subplaylist.m3u8")
 def get_sub_playlist(url: str, video_id: int):
@@ -2482,7 +2482,7 @@ def get_sub_playlist(url: str, video_id: int):
                 
         return Response(content="\n".join(rewritten_lines), media_type="application/vnd.apple.mpegurl")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
 
 @app.get("/api/stream/segment")
 def get_stream_segment(url: str, referer: str):
@@ -2499,7 +2499,7 @@ def get_stream_segment(url: str, referer: str):
         content_type = resp.headers.get("content-type") or "video/mp2t"
         return Response(content=resp.content, media_type=content_type)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
 
 @app.get("/api/stream/key")
 def get_stream_key(url: str, referer: str):
@@ -2516,7 +2516,7 @@ def get_stream_key(url: str, referer: str):
         else:
             raise HTTPException(status_code=resp.status_code, detail="Failed to fetch key")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
 
 @app.post("/api/download")
 def download_media(payload: DownloadRequest):
@@ -2876,7 +2876,7 @@ def open_download(payload: dict):
     try:
         _open_in_os(path, reveal=False)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
     return {"ok": True, "path": path}
 
 
@@ -2887,7 +2887,7 @@ def reveal_download(payload: dict):
     try:
         _open_in_os(path, reveal=True)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
     return {"ok": True, "path": path}
 
 
@@ -2987,7 +2987,7 @@ def open_downloads_folder():
         else:
             subprocess.Popen(["xdg-open", target])
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Errore interno del server")
     return {"ok": True, "path": DOWNLOADS_DIR}
 
 # Serve uploaded folder cover images

@@ -51,6 +51,7 @@ const el = {
     srcAw: document.getElementById("src-aw"),
     privacyBanner: document.getElementById("privacy-banner"),
     privacyDismiss: document.getElementById("privacy-dismiss"),
+    privacyVpnOk: document.getElementById("privacy-vpn-ok"),
     searchClear: document.getElementById("search-clear"),
     openFolderBtn: document.getElementById("open-folder-btn"),
     shutdownBtn: document.getElementById("shutdown-btn"),
@@ -216,10 +217,13 @@ async function init() {
     if (el.searchType) el.searchType.addEventListener("change", rerunSearchIfAny);
     if (el.srcSc) el.srcSc.addEventListener("change", rerunSearchIfAny);
     if (el.srcAw) el.srcAw.addEventListener("change", rerunSearchIfAny);
-    if (el.privacyDismiss) el.privacyDismiss.addEventListener("click", function () {
+    var _dismissPrivacy = function () {
         try { localStorage.setItem("privacy_dismissed", "1"); } catch (e) {}
+        _proxyWarned = true;
         if (el.privacyBanner) el.privacyBanner.classList.add("hidden");
-    });
+    };
+    if (el.privacyDismiss) el.privacyDismiss.addEventListener("click", _dismissPrivacy);
+    if (el.privacyVpnOk) el.privacyVpnOk.addEventListener("click", _dismissPrivacy);
     refreshProxyState();
     if (el.searchClear) el.searchClear.addEventListener("click", clearSearch);
     if (el.urlInput) el.urlInput.addEventListener("input", toggleClearBtn);
@@ -830,6 +834,7 @@ function refreshProxyState() {
 
 function warnNoProxyOnce() {
     if (proxyConfigured || _proxyWarned) return;
+    try { if (localStorage.getItem("privacy_dismissed") === "1") return; } catch (e) {}
     _proxyWarned = true;
     showToast("⚠ Nessun proxy/VPN: il tuo IP e visibile ai siti. Valuta una VPN o imposta un proxy.", 6000);
 }

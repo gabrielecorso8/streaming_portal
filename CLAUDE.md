@@ -1,9 +1,5 @@
 # Handoff per Claude Code
 
-Data: 2026-06-28
-Progetto: streaming_portal
-Workspace: C:\Users\Gabri\Desktop\fucina-ai\03_laboratorio\streaming_portal
-
 ## Obiettivo della piattaforma
 
 Portale locale FastAPI + frontend statico per cercare titoli su StreamingCommunity, salvarli in libreria/preferiti, aprire streaming e scaricare contenuti HLS in background.

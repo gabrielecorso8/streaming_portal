@@ -87,6 +87,7 @@ const el = {
     refreshDownloadsBtn: document.getElementById("refresh-downloads-btn"),
     castBtn: document.getElementById("cast-btn"),
     phonecastBtn: document.getElementById("phonecast-btn"),
+    remoteBtn: document.getElementById("remote-btn"),
     headerCastBtn: document.getElementById("header-cast-btn"),
     headerSearchBtn: document.getElementById("header-search-btn"),
     headerFavoritesBtn: document.getElementById("header-favorites-btn"),
@@ -232,6 +233,8 @@ async function init() {
     if (el.privacyVpnOk) el.privacyVpnOk.addEventListener("click", _dismissPrivacy);
     if (el.privacyCheckIp) el.privacyCheckIp.addEventListener("click", checkEgressIp);
     refreshProxyState();
+    startRemoteHost();
+    if (el.remoteBtn) el.remoteBtn.addEventListener("click", openRemoteQr);
     // Vista "solo download" per telefono/tablet (aperta dal QR): mostra soltanto
     // la sezione "I tuoi download" e carica i file gia' scaricati.
     try {
@@ -882,6 +885,48 @@ function _lanToken() {
         var m = document.cookie.match(/(?:^|;\s*)sc_token=([^;]+)/);
         return m ? decodeURIComponent(m[1]) : "";
     } catch (e) { return ""; }
+}
+
+function isRemoteDevice() {
+    return location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
+}
+
+// --- TELECOMANDO: il PC fa da "host", il telefono (remote.html) comanda -------
+let _remoteHost = null;
+let _remoteSeq = 0;
+function startRemoteHost() {
+    if (isRemoteDevice() || _remoteHost) return;   // solo il PC ospita il player
+    _remoteHost = setInterval(async () => {
+        const v = el.videoPlayer;
+        if (!v || !el.playerSection || el.playerSection.classList.contains("hidden")) return;
+        try {
+            await fetch("/api/remote/state", { method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title: (currentPlayTitle || _castTitle() || "SC Portal"),
+                    playing: !v.paused, time: v.currentTime || 0, duration: v.duration || 0,
+                    canPrev: !!(playbackCtx && playbackCtx.items && playbackCtx.index > 0),
+                    canNext: !!(playbackCtx && playbackCtx.items && playbackCtx.index < playbackCtx.items.length - 1)
+                }) });
+        } catch (e) {}
+        try {
+            const r = await fetch("/api/remote/cmd?since=" + _remoteSeq, { cache: "no-store" });
+            const c = await r.json();
+            if (c && c.action && c.seq > _remoteSeq) { _remoteSeq = c.seq; execRemoteCmd(c.action, c.value); }
+            else if (c && typeof c.seq === "number") { _remoteSeq = Math.max(_remoteSeq, c.seq); }
+        } catch (e) {}
+    }, 1000);
+}
+function execRemoteCmd(action, value) {
+    const v = el.videoPlayer; if (!v) return;
+    if (action === "play") v.play().catch(() => {});
+    else if (action === "pause") v.pause();
+    else if (action === "toggle") { v.paused ? v.play().catch(() => {}) : v.pause(); }
+    else if (action === "seek") { try { v.currentTime = value || 0; } catch (e) {} }
+    else if (action === "seekBy") { try { v.currentTime = Math.max(0, (v.currentTime || 0) + (value || 0)); } catch (e) {} }
+    else if (action === "next") { try { navigatePlayback(1); } catch (e) {} }
+    else if (action === "prev") { try { navigatePlayback(-1); } catch (e) {} }
+    else if (action === "stop") { try { closePlayer(); } catch (e) {} }
+    else if (action === "fs") { try { (v.requestFullscreen || v.webkitEnterFullscreen || v.webkitRequestFullscreen || function () {}).call(v); } catch (e) {} }
 }
 
 function withLanToken(url) {
@@ -1859,13 +1904,35 @@ async function openPhoneCast() {
     showPhoneCastOverlay(url);
 }
 
+async function openRemoteQr() {
+    let info;
+    try { info = await (await fetch("/api/cast/info")).json(); }
+    catch (e) { showToast("Errore nel recupero dei dati"); return; }
+    if (!info || !info.lan_enabled) {
+        if (!confirm("Per usare il telefono come telecomando devi attivare l'accesso dalla rete locale (protetto da un codice). Attivarlo ora? Poi RIAVVIA SC Portal.")) return;
+        try {
+            await fetch("/api/cast/enable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: true }) });
+            showToast("Accesso di rete attivato. Chiudi e RIAVVIA SC Portal, poi ripremi Telecomando.", 9000);
+        } catch (e) { showToast("Errore nell'attivazione"); }
+        return;
+    }
+    const url = "http://" + info.lan_ip + ":" + info.port + "/remote.html?t=" + encodeURIComponent(info.token || "");
+    showQrOverlay(url, "\ud83d\udcf1 Telecomando (telefono \u2192 TV)",
+        "Il PC riproduce (anche sulla TV via HDMI). Scansiona col telefono: diventa il telecomando del player \u2014 play/pausa, avanti/indietro, episodio prec./succ. Stessa Wi-Fi.");
+}
+
 function showPhoneCastOverlay(url) {
+    showQrOverlay(url, "\ud83d\udcf1 I tuoi download su telefono/tablet",
+        "Inquadra il QR col telefono o tablet (anche Apple): si apriranno SOLO i tuoi download, pronti da riprodurre. Stessa rete Wi-Fi di questo PC.");
+}
+
+function showQrOverlay(url, heading, hint) {
     const overlay = document.createElement("div");
     overlay.className = "picker-overlay";
     overlay.innerHTML = `
       <div class="picker-panel glass phonecast-panel">
-        <h3>\ud83d\udcf1 I tuoi download su telefono/tablet</h3>
-        <p class="picker-hint">Inquadra il QR col telefono o tablet (anche Apple): si apriranno SOLO i tuoi download, pronti da riprodurre. Stessa rete Wi-Fi di questo PC.</p>
+        <h3>${escapeHtml(heading)}</h3>
+        <p class="picker-hint">${escapeHtml(hint)}</p>
         <div class="phonecast-qr"><img alt="QR" src="/api/cast/qr?data=${encodeURIComponent(url)}"></div>
         <input type="text" class="phonecast-link" readonly value="${escapeHtml(url)}">
         <div class="picker-actions">

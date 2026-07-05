@@ -1448,3 +1448,11 @@ body.downloads-only #search-results-section,
 body.downloads-only #privacy-banner,
 body.downloads-only .header-search-btn { display: none !important; }
 body.downloads-only #downloads-section { margin-top: 1rem; }
+/* Sul telefono/tablet nascondi i comandi che aprirebbero internet (scheda,
+   scarica seguente, cartella PC): solo riproduzione locale, meno superficie d'attacco. */
+body.downloads-only .open-card-btn,
+body.downloads-only .dl-next-btn,
+body.downloads-only .reveal-file-btn,
+body.downloads-only #remote-btn,
+body.downloads-only #cast-btn,
+body.downloads-only #header-cast-btn { display: none !important; }

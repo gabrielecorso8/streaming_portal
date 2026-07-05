@@ -1033,6 +1033,54 @@ def cast_qr(data: str):
         raise HTTPException(status_code=501,
                             detail="Generatore QR non disponibile: chiudi e RIAVVIA SC Portal (installa qrcode).")
 
+
+# --------------------------------------------------------------------------- #
+#  Telecomando: il telefono controlla il player del PC (ponte PC<->TV).
+# --------------------------------------------------------------------------- #
+_REMOTE = {"state": {}, "seq": 0, "cmd": None}
+
+
+class RemoteState(BaseModel):
+    title: Optional[str] = ""
+    playing: bool = False
+    time: float = 0
+    duration: float = 0
+    canPrev: bool = False
+    canNext: bool = False
+
+
+@app.post("/api/remote/state")
+def remote_set_state(payload: RemoteState):
+    _REMOTE["state"] = payload.dict()
+    return {"ok": True}
+
+
+@app.get("/api/remote/state")
+def remote_get_state():
+    st = dict(_REMOTE.get("state") or {})
+    st["seq"] = _REMOTE["seq"]
+    return st
+
+
+class RemoteCmd(BaseModel):
+    action: str
+    value: Optional[float] = None
+
+
+@app.post("/api/remote/cmd")
+def remote_set_cmd(payload: RemoteCmd):
+    _REMOTE["seq"] += 1
+    _REMOTE["cmd"] = {"seq": _REMOTE["seq"], "action": payload.action, "value": payload.value}
+    return {"ok": True, "seq": _REMOTE["seq"]}
+
+
+@app.get("/api/remote/cmd")
+def remote_poll(since: int = 0):
+    c = _REMOTE.get("cmd")
+    if c and c["seq"] > since:
+        return c
+    return {"seq": _REMOTE["seq"], "action": None, "value": None}
+
 @app.post("/api/save")
 def save_all():
     """Force a VERIFIED persist of the current library + settings (folders,

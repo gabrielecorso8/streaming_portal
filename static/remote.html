@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Telecomando — SC Portal</title>
+<style>
+  :root { color-scheme: dark; }
+  html,body{margin:0;height:100%;background:#0b0b12;color:#eee;font-family:system-ui,-apple-system,sans-serif;}
+  #rc{max-width:420px;margin:0 auto;padding:18px;display:flex;flex-direction:column;gap:14px;min-height:100%;box-sizing:border-box;justify-content:center;}
+  h1{font-size:1rem;margin:0;color:#a78bfa;letter-spacing:.02em;}
+  #title{font-size:1.15rem;font-weight:700;text-align:center;min-height:1.4em;}
+  #seek{width:100%;}
+  #times{display:flex;justify-content:space-between;font-size:.85rem;color:#aaa;}
+  .row{display:flex;gap:10px;justify-content:center;align-items:center;}
+  button{background:#1c1c28;color:#fff;border:1px solid #33334a;border-radius:14px;padding:16px;font-size:1.1rem;cursor:pointer;flex:1;}
+  button:active{background:#2a2a3d;}
+  #pp{flex:1.4;font-size:1.5rem;background:#7c3aed;border-color:#7c3aed;}
+  #stop{background:#3a1c1c;border-color:#5a2a2a;color:#fca5a5;}
+  #status{text-align:center;font-size:.8rem;color:#888;}
+</style>
+</head>
+<body>
+<div id="rc">
+  <h1>📱 Telecomando SC Portal</h1>
+  <div id="title">—</div>
+  <input type="range" id="seek" min="0" max="1000" value="0" step="1">
+  <div id="times"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+  <div class="row">
+    <button data-a="prev" title="Precedente">⏮</button>
+    <button data-a="seekBy" data-v="-10">-10s</button>
+    <button id="pp" data-a="toggle">⏯</button>
+    <button data-a="seekBy" data-v="10">+10s</button>
+    <button data-a="next" title="Successivo">⏭</button>
+  </div>
+  <div class="row">
+    <button data-a="fs">⛶ Schermo intero</button>
+    <button id="stop" data-a="stop">⏹ Stop</button>
+  </div>
+  <div id="status">Connesso al PC…</div>
+</div>
+<script src="remote.js?v=1"></script>
+</body>
+</html>

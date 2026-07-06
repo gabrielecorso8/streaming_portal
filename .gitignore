@@ -6,17 +6,14 @@ __pycache__/
 *.pyc
 tmp/
 
-# Downloaded media + runtime download state (not shared)
+# Downloaded media, logs, and runtime state (not shared)
 downloads/
-server.log
+*.log
 downloads_state.json
 library_state.json
 
 # Local binaries (ffmpeg) — too large for the repo
 bin/
-
-# NOTE: library.json, settings.json and covers/ are intentionally TRACKED
-# so the curated collection (titles, folders, cover images) ships with the repo.
 
 # PyInstaller build output (l'eseguibile si rigenera con "Crea EXE.bat")
 build/
@@ -25,15 +22,24 @@ dist/
 
 # File locali dell'agente (non vanno nel repo)
 .claude/
+.agents/
+.codex/
 
 # Backup locali della migrazione link
 *.bak_link_migration
 *.bak_nullfix
 *.bak_truncated
 static/hls.min.js
-# Dati PERSONALI: collezione/cronologia, mai nel repo (solo locali)
-library.json
+
+# Segreti/impostazioni locali: settings.json contiene il TOKEN di accesso -> MAI nel repo
 settings.json
-covers/
+
+# NB: library.json (libreria + preferiti) e covers/ (locandine attuali) sono INCLUSI
+#     di proposito nel repository.
+
+# Config/segreti locali
+.env
+.env.*
+
 # Note di sviluppo interne (handoff), non nel repo pubblico
 CLAUDE.md

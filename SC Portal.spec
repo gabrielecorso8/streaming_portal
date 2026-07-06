@@ -3,7 +3,7 @@ from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
 hidden = []
 for pkg in ["uvicorn", "fastapi", "starlette", "anyio", "m3u8",
-            "bs4", "lxml", "cryptography", "requests", "socks"]:
+            "bs4", "lxml", "cryptography", "requests", "socks", "qrcode"]:
     try:
         hidden += collect_submodules(pkg)
     except Exception:

@@ -9,6 +9,7 @@ import sys
 import time
 import threading
 import webbrowser
+import json
 
 BASE = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) \
     else os.path.dirname(os.path.abspath(__file__))
@@ -73,7 +74,16 @@ def main():
     print("=" * 52)
     import uvicorn
     import api
-    uvicorn.run(api.app, host="0.0.0.0", port=8082, reload=False)
+    bind_host = "127.0.0.1"
+    try:
+        with open(os.path.join(BASE, "settings.json"), "r", encoding="utf-8") as f:
+            if json.load(f).get("lan_enabled"):
+                bind_host = "0.0.0.0"
+    except Exception:
+        pass
+    if os.environ.get("SC_LAN") == "1":
+        bind_host = "0.0.0.0"
+    uvicorn.run(api.app, host=bind_host, port=8082, reload=False)
 
 
 if __name__ == "__main__":

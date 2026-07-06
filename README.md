@@ -1,8 +1,7 @@
 # SC Portal
 
-Portale locale per cercare, guardare in streaming nel browser e scaricare film ed
-episodi, con riproduzione anche da telefono/tablet e telecomando. Backend FastAPI +
-frontend statico, avviabile come app desktop "a doppio clic".
+App locale per cercare, guardare e scaricare film ed episodi, con riproduzione anche
+da telefono/tablet e un telecomando per comandare il player dal telefono.
 
 > Progetto a scopo educativo e dimostrativo. Usalo in modo responsabile e nel
 > rispetto delle leggi sul diritto d'autore in vigore nel tuo Paese.
@@ -17,8 +16,8 @@ frontend statico, avviabile come app desktop "a doppio clic".
    Serve a nascondere il tuo IP verso i siti: **tienilo sempre acceso** prima di
    aprire SC Portal. Con la VPN attiva lascia **vuoto** il campo "proxy" dell'app.
 
-FFmpeg (per unire i video) e il player `hls.min.js` vengono scaricati in automatico
-al primo avvio: non devi installarli a mano.
+Non serve installare altro a mano: le componenti mancanti vengono scaricate in
+automatico al primo avvio.
 
 ---
 
@@ -50,8 +49,8 @@ python start.py
 
 Si apre il browser su `http://127.0.0.1:8082`.
 
-In alternativa, su Windows puoi generare un eseguibile a doppio clic con
-**`Crea EXE.bat`** (crea `SC Portal.exe` in `dist/`).
+In alternativa, su Windows puoi generare un'app a doppio clic con **`Crea EXE.bat`**
+(crea `SC Portal.exe` in `dist/`).
 
 ---
 
@@ -78,7 +77,6 @@ Come si usa:
 ## 5. Privacy
 
 - Tieni **ProtonVPN acceso** durante ricerca e download.
-- Tutti i dati personali (libreria, preferiti, impostazioni, copertine, file
-  scaricati) restano **solo sul tuo PC** e non vengono inclusi nel repository.
-- Il server ascolta solo su `127.0.0.1`; l'accesso da telefono/tablet sulla LAN va
-  attivato manualmente ed è protetto da un codice per-installazione.
+- Il server è raggiungibile solo dal tuo PC; l'accesso da telefono/tablet sulla Wi-Fi
+  di casa va attivato a mano ed è protetto da un codice per-installazione.
+- Il codice di accesso e le impostazioni personali restano solo sul tuo computer.

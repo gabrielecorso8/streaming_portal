@@ -1,11 +1,11 @@
 /* SC Portal — service worker minimale.
    Serve solo a rendere installabili le app in home (telecomando + download).
    NON tocca /api/ né i media: quelli devono sempre passare dal server live. */
-const SHELL = "scp-shell-v2";
+const SHELL = "scp-shell-v3";
 const ASSETS = [
   "/index.html", "/app.js", "/styles.css",
   "/remote.html", "/remote.js",
-  "/sc-192.png", "/sc-512.png", "/remote-192.png", "/remote-512.png",
+  "/icon-app-192.png", "/icon-app-512.png", "/icon-remote-192.png", "/icon-remote-512.png",
 ];
 
 self.addEventListener("install", (e) => {

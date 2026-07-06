@@ -1046,8 +1046,8 @@ def pwa_manifest(kind: str = "mobile", t: str = ""):
             "description": "Telecomando SC Portal: comanda dal telefono il player sul PC/TV.",
             "start_url": "/remote.html?pwa=1" + tq,
             "icons": [
-                {"src": "/remote-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-                {"src": "/remote-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+                {"src": "/icon-remote-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+                {"src": "/icon-remote-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
             ],
         }
     else:
@@ -1056,8 +1056,8 @@ def pwa_manifest(kind: str = "mobile", t: str = ""):
             "description": "I tuoi download SC Portal, pronti alla riproduzione sul telefono.",
             "start_url": "/?view=downloads&pwa=1" + tq,
             "icons": [
-                {"src": "/sc-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-                {"src": "/sc-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+                {"src": "/icon-app-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+                {"src": "/icon-app-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
             ],
         }
     m.update({"scope": "/", "display": "standalone", "orientation": "portrait",

@@ -86,6 +86,8 @@ const el = {
     qualitySelect: document.getElementById("quality-select"),
     refreshDownloadsBtn: document.getElementById("refresh-downloads-btn"),
     castBtn: document.getElementById("cast-btn"),
+    videoContainer: document.querySelector(".video-container"),
+    fsBtn: document.getElementById("player-fs-btn"),
     phonecastBtn: document.getElementById("phonecast-btn"),
     remoteBtn: document.getElementById("remote-btn"),
     headerCastBtn: document.getElementById("header-cast-btn"),
@@ -178,6 +180,7 @@ async function init() {
     });
     if (el.refreshDownloadsBtn) el.refreshDownloadsBtn.addEventListener("click", refreshDownloads);
     if (el.castBtn) el.castBtn.addEventListener("click", castToTV);
+    if (el.fsBtn) el.fsBtn.addEventListener("click", requestPlayerFullscreen);
     if (el.phonecastBtn) el.phonecastBtn.addEventListener("click", openPhoneCast);
     if (el.headerCastBtn) el.headerCastBtn.addEventListener("click", openPhoneCast);
     if (el.headerRemoteBtn) el.headerRemoteBtn.addEventListener("click", openRemoteQr);
@@ -978,7 +981,7 @@ function execRemoteCmd(action, value) {
     else if (action === "next") { try { navigatePlayback(1); } catch (e) {} }
     else if (action === "prev") { try { navigatePlayback(-1); } catch (e) {} }
     else if (action === "stop") { try { closePlayer(); } catch (e) {} }
-    else if (action === "fs") { try { (v.requestFullscreen || v.webkitEnterFullscreen || v.webkitRequestFullscreen || function () {}).call(v); } catch (e) {} }
+    else if (action === "fs") { requestPlayerFullscreen(); }
 }
 
 function withLanToken(url) {
@@ -1911,12 +1914,26 @@ function _isVideoFs() {
     return !!(document.fullscreenElement === v || document.webkitFullscreenElement === v || (v && v.webkitDisplayingFullscreen));
 }
 
+function requestPlayerFullscreen() {
+    // Schermo intero sul CONTENITORE del video (non sul <video>): cosi' il
+    // cambio episodio non fa uscire dal fullscreen e la TV (mirroring scheda o
+    // HDMI) continua a mostrare la riproduzione.
+    var box = el.videoContainer || el.videoPlayer;
+    try {
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+            (document.exitFullscreen || document.webkitExitFullscreen || function () {}).call(document);
+        } else {
+            var fn = box.requestFullscreen || box.webkitRequestFullscreen || el.videoPlayer.webkitEnterFullscreen;
+            if (fn) fn.call(box.requestFullscreen || box.webkitRequestFullscreen ? box : el.videoPlayer);
+        }
+    } catch (e) {}
+}
+
 function playDownloaded(id, title, key, opts) {
     opts = opts || {};
     // "inPlace": cambia episodio SENZA smontare il player, cosi' la TV
     // (AirPlay/schermo intero via HDMI) non si disconnette al passaggio.
     var inPlace = opts.inPlace && el.playerSection && !el.playerSection.classList.contains("hidden");
-    var wasFs = inPlace && _isVideoFs();
     if (!inPlace) {
         closePlayer();
     } else if (activeHls) {
@@ -1932,18 +1949,10 @@ function playDownloaded(id, title, key, opts) {
     el.videoPlayer.classList.remove("hidden");
     el.videoPlayer.src = withLanToken(`/api/download/play/${encodeURIComponent(id)}`);
     currentMediaForCast = { src: `/api/download/play/${encodeURIComponent(id)}`, hls: false, title: title || "SC Portal" };
-    if (inPlace) { try { el.videoPlayer.load(); } catch (e) {} }
+    // NB: nessun load() qui. Impostare .src avvia gia' il caricamento del nuovo
+    // episodio; evitando load() la sessione TV (Remote Playback/Chromecast o
+    // schermo intero sul contenitore) puo' proseguire invece di chiudersi.
     el.videoPlayer.play().catch(() => {});
-    if (wasFs) {
-        var _v = el.videoPlayer;
-        var _reFs = function () {
-            _v.removeEventListener("loadeddata", _reFs);
-            if (!_isVideoFs()) {
-                try { (_v.webkitEnterFullscreen || _v.requestFullscreen || _v.webkitRequestFullscreen || function () {}).call(_v); } catch (e) {}
-            }
-        };
-        _v.addEventListener("loadeddata", _reFs);
-    }
     const ep = parseEpisode(title);
     if (ep) {
         playbackCtx = buildEpisodeContext(title);   // serie: naviga tra le puntate

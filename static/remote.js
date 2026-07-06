@@ -1,5 +1,17 @@
 (function () {
   var tok = (new URLSearchParams(location.search).get("t")) || "";
+  // Persisti il token: l'app installata in home riparte gia' autenticata.
+  try {
+    if (tok) localStorage.setItem("sc_tok", tok);
+    else tok = localStorage.getItem("sc_tok") || "";
+  } catch (e) {}
+  // Manifest col token (per Aggiungi a Home) + service worker (installabile).
+  try {
+    var mf = document.getElementById("mf-link");
+    if (mf && tok) mf.href = "/api/pwa/manifest?kind=remote&t=" + encodeURIComponent(tok);
+  } catch (e) {}
+  if ("serviceWorker" in navigator) { try { navigator.serviceWorker.register("/sw.js"); } catch (e) {} }
+
   function api(u) { return u + (u.indexOf("?") >= 0 ? "&" : "?") + (tok ? "t=" + encodeURIComponent(tok) : ""); }
 
   var elTitle = document.getElementById("title");
@@ -72,7 +84,6 @@
 
   function applyNav() {
     elPrev.classList.toggle("disabled", !nav.canPrev);
-    // "next" resta cliccabile anche se non scaricato: serve a mostrare il messaggio
     elNext.classList.toggle("disabled", !nav.canNext && !nav.moreExists);
   }
 
@@ -97,7 +108,12 @@
       elPPicon.innerHTML = st.playing ? ICON_PAUSE : ICON_PLAY;
       applyNav();
     } catch (e) {
-      if (++missed >= 2) { elHdr.classList.remove("live"); elConn.textContent = "Nessuna connessione — stessa Wi-Fi?"; }
+      if (++missed >= 2) {
+        elHdr.classList.remove("live");
+        elConn.textContent = "SC Portal chiuso o non raggiungibile — stessa Wi-Fi?";
+        elTitle.textContent = "Nessuna connessione col PC";
+        elSub.textContent = "";
+      }
     }
   }
   poll();

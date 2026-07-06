@@ -1034,6 +1034,45 @@ def cast_qr(data: str):
                             detail="Generatore QR non disponibile: chiudi e RIAVVIA SC Portal (installa qrcode).")
 
 
+@app.get("/api/pwa/manifest")
+def pwa_manifest(kind: str = "mobile", t: str = ""):
+    """Manifest PWA generato al volo: il token va nello start_url cosi' l'app
+    installata in home (anche iOS, che isola i cookie) riparte gia' autenticata
+    e ritrova il server sulla stessa Wi-Fi."""
+    tq = ("&t=" + urllib.parse.quote(t)) if t else ""
+    if kind == "remote":
+        m = {
+            "name": "SC Telecomando", "short_name": "Telecomando",
+            "description": "Telecomando SC Portal: comanda dal telefono il player sul PC/TV.",
+            "start_url": "/remote.html?pwa=1" + tq,
+            "icons": [
+                {"src": "/remote-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+                {"src": "/remote-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+            ],
+        }
+    else:
+        m = {
+            "name": "SC Portal", "short_name": "SC Portal",
+            "description": "I tuoi download SC Portal, pronti alla riproduzione sul telefono.",
+            "start_url": "/?view=downloads&pwa=1" + tq,
+            "icons": [
+                {"src": "/sc-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+                {"src": "/sc-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+            ],
+        }
+    m.update({"scope": "/", "display": "standalone", "orientation": "portrait",
+              "background_color": "#0a0a10", "theme_color": "#7c5cff"})
+    import json as _json
+    return Response(content=_json.dumps(m), media_type="application/manifest+json",
+                    headers={"Cache-Control": "no-store"})
+
+
+@app.get("/api/ping")
+def ping():
+    """Sonda leggera: le app in home la usano per capire se SC Portal e' acceso."""
+    return {"ok": True, "app": "sc-portal"}
+
+
 # --------------------------------------------------------------------------- #
 #  Telecomando: il telefono controlla il player del PC (ponte PC<->TV).
 # --------------------------------------------------------------------------- #

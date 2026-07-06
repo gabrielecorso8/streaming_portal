@@ -234,6 +234,8 @@ async function init() {
     if (el.privacyDismiss) el.privacyDismiss.addEventListener("click", _dismissPrivacy);
     if (el.privacyVpnOk) el.privacyVpnOk.addEventListener("click", _dismissPrivacy);
     if (el.privacyCheckIp) el.privacyCheckIp.addEventListener("click", checkEgressIp);
+    _setupPwa();
+    _ensureServerUp();
     refreshProxyState();
     startRemoteHost();
     if (el.remoteBtn) el.remoteBtn.addEventListener("click", openRemoteQr);
@@ -883,10 +885,43 @@ function warnNoProxyOnce() {
 function _lanToken() {
     try {
         var t = new URLSearchParams(location.search).get("t");
-        if (t) return t;
+        if (t) { try { localStorage.setItem("sc_tok", t); } catch (e) {} return t; }
         var m = document.cookie.match(/(?:^|;\s*)sc_token=([^;]+)/);
-        return m ? decodeURIComponent(m[1]) : "";
+        if (m) return decodeURIComponent(m[1]);
+        return localStorage.getItem("sc_tok") || "";
     } catch (e) { return ""; }
+}
+
+// PWA: manifest col token (per ripartire autenticati dall'app in home) + service worker.
+function _setupPwa() {
+    try {
+        var tok = _lanToken();
+        var mf = document.getElementById("mf-link");
+        if (mf && tok) mf.href = "/api/pwa/manifest?kind=mobile&t=" + encodeURIComponent(tok);
+    } catch (e) {}
+    if ("serviceWorker" in navigator) { try { navigator.serviceWorker.register("/sw.js"); } catch (e) {} }
+}
+
+// Le app in home cercano SC Portal sulla stessa Wi-Fi: se non risponde, avvisano.
+function _showServerOffline(retry) {
+    var id = "sc-offline";
+    if (document.getElementById(id)) return;
+    var o = document.createElement("div");
+    o.id = id;
+    o.style.cssText = "position:fixed;inset:0;z-index:9999;background:#0a0a10;color:#f2f2f7;" +
+        "display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px;text-align:center;font-family:system-ui,sans-serif;";
+    o.innerHTML = '<img src="/sc-192.png" width="76" height="76" style="border-radius:18px;opacity:.9" alt="">' +
+        '<div style="font-size:1.15rem;font-weight:700">SC Portal non raggiungibile</div>' +
+        '<div style="color:#8b8ba3;max-width:320px;line-height:1.5">Apri SC Portal sul computer e assicurati che telefono e PC siano sulla stessa rete Wi-Fi.</div>' +
+        '<button id="sc-offline-retry" style="margin-top:6px;background:linear-gradient(180deg,#9d7bff,#7c5cff);color:#fff;border:none;border-radius:14px;padding:14px 26px;font-size:1rem;font-weight:600;cursor:pointer">Riprova</button>';
+    document.body.appendChild(o);
+    o.querySelector("#sc-offline-retry").addEventListener("click", function () { o.remove(); retry(); });
+}
+function _ensureServerUp() {
+    if (!isRemoteDevice()) return;   // sul PC il server c'e' sempre
+    fetch("/api/ping", { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw 0; })
+        .catch(function () { _showServerOffline(_ensureServerUp); });
 }
 
 function isRemoteDevice() {

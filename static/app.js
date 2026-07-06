@@ -1906,8 +1906,23 @@ function setQualityControls(show) {
 
 // Riproduce un file GIA' scaricato direttamente nel player (file locale: niente
 // HLS, niente selettori qualita'/audio). Funziona anche da telefono.
-function playDownloaded(id, title, key) {
-    closePlayer();
+function _isVideoFs() {
+    var v = el.videoPlayer;
+    return !!(document.fullscreenElement === v || document.webkitFullscreenElement === v || (v && v.webkitDisplayingFullscreen));
+}
+
+function playDownloaded(id, title, key, opts) {
+    opts = opts || {};
+    // "inPlace": cambia episodio SENZA smontare il player, cosi' la TV
+    // (AirPlay/schermo intero via HDMI) non si disconnette al passaggio.
+    var inPlace = opts.inPlace && el.playerSection && !el.playerSection.classList.contains("hidden");
+    var wasFs = inPlace && _isVideoFs();
+    if (!inPlace) {
+        closePlayer();
+    } else if (activeHls) {
+        try { activeHls.destroy(); } catch (e) {}
+        activeHls = null;
+    }
     currentPlayTitle = title || "";
     if (el.playingTitle) el.playingTitle.textContent = `Riproduzione: ${title || "download"}`;
     el.playerSection.classList.remove("hidden");
@@ -1917,7 +1932,18 @@ function playDownloaded(id, title, key) {
     el.videoPlayer.classList.remove("hidden");
     el.videoPlayer.src = withLanToken(`/api/download/play/${encodeURIComponent(id)}`);
     currentMediaForCast = { src: `/api/download/play/${encodeURIComponent(id)}`, hls: false, title: title || "SC Portal" };
+    if (inPlace) { try { el.videoPlayer.load(); } catch (e) {} }
     el.videoPlayer.play().catch(() => {});
+    if (wasFs) {
+        var _v = el.videoPlayer;
+        var _reFs = function () {
+            _v.removeEventListener("loadeddata", _reFs);
+            if (!_isVideoFs()) {
+                try { (_v.webkitEnterFullscreen || _v.requestFullscreen || _v.webkitRequestFullscreen || function () {}).call(_v); } catch (e) {}
+            }
+        };
+        _v.addEventListener("loadeddata", _reFs);
+    }
     const ep = parseEpisode(title);
     if (ep) {
         playbackCtx = buildEpisodeContext(title);   // serie: naviga tra le puntate
@@ -2282,7 +2308,7 @@ function navigatePlayback(delta) {
     const next = (ni >= 0 && ni < playbackCtx.items.length) ? playbackCtx.items[ni] : null;
     if (next) {
         const pid = getPlayableId(next);
-        if (pid) { playbackCtx.index = ni; playDownloaded(pid, next.name, next.key); return; }
+        if (pid) { playbackCtx.index = ni; playDownloaded(pid, next.name, next.key, { inPlace: true }); return; }
     }
     if (playbackCtx.isEpisode) {
         const cur = parseEpisode((playbackCtx.items[playbackCtx.index] || {}).name || "") || playbackCtx.ep;

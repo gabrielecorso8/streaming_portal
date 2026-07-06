@@ -1500,8 +1500,8 @@ body.cinema-on .player-section:not(.hidden) .video-container {
     width: 100vw !important; height: 100vh !important; max-height: 100vh !important;
     aspect-ratio: auto !important; border: 0 !important; border-radius: 0 !important; }
 body.cinema-on .player-section:not(.hidden) #video-player {
-    width: 100% !important; height: 100vh !important; max-height: 100vh !important;
-    border-radius: 0 !important; object-fit: contain; background: #000; }
+    width: 100vw !important; height: 100vh !important; max-height: 100vh !important;
+    border-radius: 0 !important; object-fit: cover !important; background: #000; }
 /* In cinema nascondi header/controlli/banner: resta solo il video pieno. */
 body.cinema-on .player-header,
 body.cinema-on .player-controls-bar,

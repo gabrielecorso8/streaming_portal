@@ -230,12 +230,28 @@ def _token_ok(request):
     return bool(given) and secrets.compare_digest(str(given), tok)
 
 
+def _is_public_asset(path):
+    """Risorse non sensibili raggiungibili SENZA token: icone app, favicon,
+    manifest PWA, sonda ping e service worker. Servono perche' iOS/Android, al
+    momento di 'Aggiungi a Home', scaricano icona e manifest SENZA inviare il
+    cookie del token; se le bloccassimo, il sistema mostrerebbe la lettera del
+    nome app (una 'S'/'T') invece dell'icona."""
+    p = (path or "").lower()
+    if p in ("/favicon.ico", "/sw.js", "/api/pwa/manifest", "/api/ping"):
+        return True
+    if p.startswith("/icon-") and p.endswith(".png"):
+        return True
+    if p.startswith("/apple-touch"):
+        return True
+    return False
+
+
 @app.middleware("http")
 async def security_headers(request, call_next):
     if not _host_allowed(request.headers.get("host", "")):
         return Response("Host non consentito", status_code=400)
     # Accesso da rete locale (telefono/tablet): serve il token. Questo PC (loopback) e' esente.
-    if not _client_is_local(request) and not _token_ok(request):
+    if not _client_is_local(request) and not _token_ok(request) and not _is_public_asset(request.url.path):
         return Response("Accesso non autorizzato: apri il link/QR con il codice.", status_code=403)
     if request.method in ("POST", "PUT", "PATCH", "DELETE") and not _same_origin(request):
         return Response("Richiesta cross-origin non consentita", status_code=403)

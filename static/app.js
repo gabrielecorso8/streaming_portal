@@ -88,6 +88,7 @@ const el = {
     castBtn: document.getElementById("cast-btn"),
     videoContainer: document.querySelector(".video-container"),
     fsBtn: document.getElementById("player-fs-btn"),
+    playerLibraryBtn: document.getElementById("player-library-btn"),
     phonecastBtn: document.getElementById("phonecast-btn"),
     remoteBtn: document.getElementById("remote-btn"),
     headerCastBtn: document.getElementById("header-cast-btn"),
@@ -181,6 +182,7 @@ async function init() {
     if (el.refreshDownloadsBtn) el.refreshDownloadsBtn.addEventListener("click", refreshDownloads);
     if (el.castBtn) el.castBtn.addEventListener("click", castToTV);
     if (el.fsBtn) el.fsBtn.addEventListener("click", requestPlayerFullscreen);
+    if (el.playerLibraryBtn) el.playerLibraryBtn.addEventListener("click", openPlayerLibrary);
     if (el.phonecastBtn) el.phonecastBtn.addEventListener("click", openPhoneCast);
     if (el.headerCastBtn) el.headerCastBtn.addEventListener("click", openPhoneCast);
     if (el.headerRemoteBtn) el.headerRemoteBtn.addEventListener("click", openRemoteQr);
@@ -1914,6 +1916,36 @@ function _isVideoFs() {
     return !!(document.fullscreenElement === v || document.webkitFullscreenElement === v || (v && v.webkitDisplayingFullscreen));
 }
 
+function openPlayerLibrary() {
+    var files = (localFiles || []).slice();
+    if (!files.length) { showToast("Nessun download disponibile"); return; }
+    files.sort(function (x, y) { return (x.name || "").localeCompare(y.name || "", "it", { numeric: true }); });
+    var old = document.getElementById("player-lib-overlay"); if (old) old.remove();
+    var ov = document.createElement("div");
+    ov.id = "player-lib-overlay"; ov.className = "picker-overlay";
+    var rows = files.map(function (f) {
+        var label = episodeLabel(f.name) || (f.name || "").replace(/\.(mp4|mkv|webm|m4v)$/i, "");
+        return '<button class="player-lib-item" data-id="' + escapeHtml(String(f.id)) + '" data-name="' + escapeHtml(f.name || "") + '">' +
+               '<span class="pli-play">\u25b6</span><span class="pli-name">' + escapeHtml(label) + '</span></button>';
+    }).join("");
+    ov.innerHTML = '<div class="picker-panel glass player-lib-panel">' +
+        '<h3>\ud83d\udce5 Scegli dai tuoi download</h3>' +
+        '<p class="picker-hint">Parte subito nel player: se stai trasmettendo la scheda alla TV, cambi titolo senza tornare al PC.</p>' +
+        '<div class="player-lib-list">' + rows + '</div>' +
+        '<div class="picker-actions"><button class="secondary-btn picker-cancel">Chiudi</button></div></div>';
+    document.body.appendChild(ov);
+    var close = function () { ov.remove(); };
+    ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
+    ov.querySelector(".picker-cancel").addEventListener("click", close);
+    Array.prototype.forEach.call(ov.querySelectorAll(".player-lib-item"), function (b) {
+        b.addEventListener("click", function () {
+            var id = b.getAttribute("data-id"), name = b.getAttribute("data-name");
+            close();
+            playDownloaded(id, name, null, { inPlace: true });
+        });
+    });
+}
+
 function requestPlayerFullscreen() {
     // Schermo intero sul CONTENITORE del video (non sul <video>): cosi' il
     // cambio episodio non fa uscire dal fullscreen e la TV (mirroring scheda o
@@ -2041,16 +2073,41 @@ function showQrOverlay(url, heading, hint) {
 }
 
 function castToTV() {
+    // Per muoversi liberamente tra i titoli SENZA che la TV si disconnetta serve
+    // trasmettere l'INTERA scheda (mirroring), non il singolo video: i browser
+    // chiudono il cast del <video> a ogni cambio sorgente. Mettiamo quindi il
+    // player a schermo intero e spieghiamo come avviare "Trasmetti scheda".
+    requestPlayerFullscreen();
     const v = el.videoPlayer;
-    if (v && v.remote && typeof v.remote.prompt === "function") {
-        v.remote.prompt().then(() => {
-            showToast("Trasmissione avviata: l'audio va sulla TV.");
-        }).catch(() => {
-            showToast("Trasmissione annullata o nessun dispositivo trovato.");
-        });
-    } else {
-        showToast("Il browser non supporta la trasmissione diretta. Usa Chrome (tasto Trasmetti).");
-    }
+    const hasElementCast = v && v.remote && typeof v.remote.prompt === "function";
+    showCastGuide(hasElementCast);
+}
+
+function showCastGuide(hasElementCast) {
+    var old = document.getElementById("cast-guide-overlay"); if (old) old.remove();
+    var ov = document.createElement("div");
+    ov.id = "cast-guide-overlay"; ov.className = "picker-overlay";
+    var extra = hasElementCast
+        ? '<button class="secondary-btn cast-elem-btn">Trasmetti solo questo titolo</button>'
+        : '';
+    ov.innerHTML = '<div class="picker-panel glass"><h3>\ud83d\udcfa Trasmetti alla TV</h3>' +
+        '<p class="picker-hint" style="text-align:left;line-height:1.6">Per vedere sulla TV e <b>cambiare titolo o episodio liberamente</b> senza tornare al PC:</p>' +
+        '<ol style="text-align:left;color:var(--dim,#aaa);line-height:1.7;margin:0 0 6px 18px;padding:0">' +
+        '<li>In Chrome apri il menu <b>\u22ee</b> in alto a destra</li>' +
+        '<li>Scegli <b>Trasmetti\u2026</b> \u2192 in \u201cSorgenti\u201d seleziona <b>Trasmetti scheda</b></li>' +
+        '<li>Scegli la tua TV/Chromecast</li></ol>' +
+        '<p class="picker-hint" style="text-align:left">Il player \u00e8 gi\u00e0 a schermo intero: usa \u201c\ud83d\udce5 Scegli download\u201d e il telefono come telecomando per navigare tutto dalla TV.</p>' +
+        '<div class="picker-actions">' + extra +
+        '<button class="secondary-btn picker-cancel">Ho capito</button></div></div>';
+    document.body.appendChild(ov);
+    var close = function () { ov.remove(); };
+    ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
+    ov.querySelector(".picker-cancel").addEventListener("click", close);
+    var eb = ov.querySelector(".cast-elem-btn");
+    if (eb) eb.addEventListener("click", function () {
+        close();
+        try { el.videoPlayer.remote.prompt().catch(function () {}); } catch (e) {}
+    });
 }
 
 function normName(str) { return (str || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }

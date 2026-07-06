@@ -1456,3 +1456,14 @@ body.downloads-only .reveal-file-btn,
 body.downloads-only #remote-btn,
 body.downloads-only #cast-btn,
 body.downloads-only #header-cast-btn { display: none !important; }
+
+/* Selettore download dentro al player (per scegliere il titolo anche in casting) */
+.player-lib-panel { max-width: 560px; width: 92%; }
+.player-lib-list { max-height: 58vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+.player-lib-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); color: #fff; cursor: pointer;
+    text-align: left; font-size: .95rem; transition: background .15s; }
+.player-lib-item:hover { background: rgba(124,92,255,.18); }
+.player-lib-item:active { transform: scale(.99); }
+.pli-play { color: #9d7bff; font-size: .85rem; }
+.pli-name { flex: 1; }

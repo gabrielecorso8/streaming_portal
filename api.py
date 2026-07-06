@@ -1047,6 +1047,8 @@ class RemoteState(BaseModel):
     duration: float = 0
     canPrev: bool = False
     canNext: bool = False
+    moreExists: bool = False
+    moreLabel: Optional[str] = ""
 
 
 @app.post("/api/remote/state")

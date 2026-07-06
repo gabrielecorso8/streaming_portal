@@ -89,6 +89,7 @@ const el = {
     phonecastBtn: document.getElementById("phonecast-btn"),
     remoteBtn: document.getElementById("remote-btn"),
     headerCastBtn: document.getElementById("header-cast-btn"),
+    headerRemoteBtn: document.getElementById("header-remote-btn"),
     headerSearchBtn: document.getElementById("header-search-btn"),
     headerFavoritesBtn: document.getElementById("header-favorites-btn"),
     headerDownloadsBtn: document.getElementById("header-downloads-btn"),
@@ -179,6 +180,7 @@ async function init() {
     if (el.castBtn) el.castBtn.addEventListener("click", castToTV);
     if (el.phonecastBtn) el.phonecastBtn.addEventListener("click", openPhoneCast);
     if (el.headerCastBtn) el.headerCastBtn.addEventListener("click", openPhoneCast);
+    if (el.headerRemoteBtn) el.headerRemoteBtn.addEventListener("click", openRemoteQr);
     if (el.videoPlayer && "disableRemotePlayback" in el.videoPlayer) el.videoPlayer.disableRemotePlayback = false;
     if (el.headerSearchBtn) el.headerSearchBtn.addEventListener("click", () => {
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -892,6 +894,19 @@ function isRemoteDevice() {
 }
 
 // --- TELECOMANDO: il PC fa da "host", il telefono (remote.html) comanda -------
+function _remoteNav() {
+    const c = playbackCtx;
+    if (!c || !c.items || !c.items.length) return { canPrev: false, canNext: false, moreExists: false, moreLabel: "" };
+    const prevItem = c.index > 0 ? c.items[c.index - 1] : null;
+    const nextItem = c.index < c.items.length - 1 ? c.items[c.index + 1] : null;
+    const canPrev = !!(prevItem && getPlayableId(prevItem));
+    const canNext = !!(nextItem && getPlayableId(nextItem));
+    // esiste un "prossimo" concettuale non ancora scaricato? (episodio successivo di una serie,
+    // oppure una voce in coda presente ma senza file locale) -> il telefono avvisa di scaricarlo dal PC
+    const moreExists = (!canNext) && (!!c.isEpisode || (!!nextItem && /^\d+-/.test(nextItem.key || "")));
+    const moreLabel = (nextItem && nextItem.name) ? nextItem.name : "";
+    return { canPrev, canNext, moreExists, moreLabel };
+}
 let _remoteHost = null;
 let _remoteSeq = 0;
 function startRemoteHost() {
@@ -904,8 +919,10 @@ function startRemoteHost() {
                 body: JSON.stringify({
                     title: (currentPlayTitle || _castTitle() || "SC Portal"),
                     playing: !v.paused, time: v.currentTime || 0, duration: v.duration || 0,
-                    canPrev: !!(playbackCtx && playbackCtx.items && playbackCtx.index > 0),
-                    canNext: !!(playbackCtx && playbackCtx.items && playbackCtx.index < playbackCtx.items.length - 1)
+                    canPrev: _remoteNav().canPrev,
+                    canNext: _remoteNav().canNext,
+                    moreExists: _remoteNav().moreExists,
+                    moreLabel: _remoteNav().moreLabel
                 }) });
         } catch (e) {}
         try {

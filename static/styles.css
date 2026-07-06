@@ -1492,3 +1492,10 @@ body.downloads-only #header-cast-btn { display: none !important; }
     margin: 0 !important; padding: 0 !important; aspect-ratio: auto !important;
     background: #000 !important; border: 0 !important; border-radius: 0 !important;
     z-index: 9998 !important; display: flex !important; align
+/* In modalità cinema, gli antenati non devono avere backdrop-filter/filter/transform:
+   creerebbero un nuovo "contenitore" per il position:fixed, rimpicciolendo il video. */
+body.cinema-on .main-container,
+body.cinema-on .player-section,
+body.cinema-on .player-card {
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    filter: none !important; transform: none !important; }

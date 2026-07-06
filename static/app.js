@@ -1927,6 +1927,9 @@ function requestPlayerFullscreen() {
     var box = el.videoContainer; if (!box) return;
     var on = !box.classList.contains("cinema");
     box.classList.toggle("cinema", on);
+    // Neutralizza backdrop-filter/transform degli antenati: altrimenti "trappolano"
+    // il position:fixed e il video resta una finestrella (bug schermo intero da telefono).
+    document.body.classList.toggle("cinema-on", on);
     try {
         if (on) {
             var fn = box.requestFullscreen || box.webkitRequestFullscreen;
@@ -1941,6 +1944,7 @@ function _syncCinema() {
     // Se esco dallo schermo intero reale (es. tasto Esc) tolgo anche la modalita' cinema.
     if (!(document.fullscreenElement || document.webkitFullscreenElement) && el.videoContainer) {
         el.videoContainer.classList.remove("cinema");
+        document.body.classList.remove("cinema-on");
     }
 }
 

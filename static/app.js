@@ -242,6 +242,8 @@ async function init() {
     refreshProxyState();
     startRemoteHost();
     setupCastLock();
+    document.addEventListener("fullscreenchange", _syncCinema);
+    document.addEventListener("webkitfullscreenchange", _syncCinema);
     if (el.remoteBtn) el.remoteBtn.addEventListener("click", openRemoteQr);
     // Vista "solo download" per telefono/tablet (aperta dal QR): mostra soltanto
     // la sezione "I tuoi download" e carica i file gia' scaricati.
@@ -1917,18 +1919,29 @@ function _isVideoFs() {
 }
 
 function requestPlayerFullscreen() {
-    // Schermo intero sul CONTENITORE del video (non sul <video>): cosi' il
-    // cambio episodio non fa uscire dal fullscreen e la TV (mirroring scheda o
-    // HDMI) continua a mostrare la riproduzione.
-    var box = el.videoContainer || el.videoPlayer;
+    // "Cinema": una classe CSS che fa riempire l'intera scheda al contenitore
+    // del video. Funziona SEMPRE (anche dal telecomando, che non ha il "gesto
+    // utente" richiesto dall'API Fullscreen) ed e' perfetto col mirroring della
+    // scheda alla TV. Sul PC proviamo in piu' lo schermo intero reale (col
+    // gesto del click funziona), cosi' si nasconde anche la cornice del browser.
+    var box = el.videoContainer; if (!box) return;
+    var on = !box.classList.contains("cinema");
+    box.classList.toggle("cinema", on);
     try {
-        if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (on) {
+            var fn = box.requestFullscreen || box.webkitRequestFullscreen;
+            if (fn) { var p = fn.call(box); if (p && p.catch) p.catch(function () {}); }
+        } else if (document.fullscreenElement || document.webkitFullscreenElement) {
             (document.exitFullscreen || document.webkitExitFullscreen || function () {}).call(document);
-        } else {
-            var fn = box.requestFullscreen || box.webkitRequestFullscreen || el.videoPlayer.webkitEnterFullscreen;
-            if (fn) fn.call(box.requestFullscreen || box.webkitRequestFullscreen ? box : el.videoPlayer);
         }
     } catch (e) {}
+}
+
+function _syncCinema() {
+    // Se esco dallo schermo intero reale (es. tasto Esc) tolgo anche la modalita' cinema.
+    if (!(document.fullscreenElement || document.webkitFullscreenElement) && el.videoContainer) {
+        el.videoContainer.classList.remove("cinema");
+    }
 }
 
 function playDownloaded(id, title, key, opts) {

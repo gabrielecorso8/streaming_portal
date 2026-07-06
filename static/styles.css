@@ -1481,21 +1481,38 @@ body.downloads-only #header-cast-btn { display: none !important; }
 .cast-lock-inner span { font-size: 1.1rem; font-weight: 700; }
 .cast-lock-inner small { color: #8b8ba3; max-width: 280px; }
 
-/* Schermo intero "cinema": il contenitore del video riempie la scheda/lo schermo.
-   Usato dal pulsante ⛶ e dal telecomando; combinato col mirroring riempie la TV. */
-/* !important perché la regola ".player-section:not(.hidden) .video-container"
-   (max-height:82vh, aspect-ratio) ha specificità maggiore e altrimenti lascia il
-   video piccolo: piccola finestra sul telefono e margini spessi sulla TV. */
-.video-container.cinema {
-    position: fixed !important; inset: 0 !important;
+/* --- Schermo intero "cinema" ------------------------------------------------
+   Il player e' gia' un overlay a tutto schermo (.player-section:not(.hidden) e'
+   position:fixed inset:0). Per lo schermo intero NON usiamo position:fixed sul
+   video (verrebbe intrappolato dai backdrop-filter degli antenati -> finestrella
+   sul telefono): togliamo semplicemente i limiti di dimensione dell'overlay, che
+   cosi' riempie davvero il viewport (e quindi la scheda specchiata sulla TV).
+   Attivato dal pulsante e dal telecomando via classe body.cinema-on. */
+body.cinema-on .player-section:not(.hidden) {
+    padding: 0 !important; background: #000 !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+body.cinema-on .player-section:not(.hidden) .player-card {
+    width: 100vw !important; height: 100vh !important; max-width: none !important; max-height: 100vh !important;
+    margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important;
+    background: #000 !important; overflow: hidden !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+body.cinema-on .player-section:not(.hidden) .video-container {
+    width: 100vw !important; height: 100vh !important; max-height: 100vh !important;
+    aspect-ratio: auto !important; border: 0 !important; border-radius: 0 !important; }
+body.cinema-on .player-section:not(.hidden) #video-player {
+    width: 100% !important; height: 100vh !important; max-height: 100vh !important;
+    border-radius: 0 !important; object-fit: contain; background: #000; }
+/* In cinema nascondi header/controlli/banner: resta solo il video pieno. */
+body.cinema-on .player-header,
+body.cinema-on .player-controls-bar,
+body.cinema-on #next-banner { display: none !important; }
+
+/* Schermo intero REALE sul PC (API Fullscreen sul contenitore): riempi il video. */
+.video-container:fullscreen, .video-container:-webkit-full-screen {
     width: 100vw !important; height: 100vh !important; max-height: none !important;
-    margin: 0 !important; padding: 0 !important; aspect-ratio: auto !important;
-    background: #000 !important; border: 0 !important; border-radius: 0 !important;
-    z-index: 9998 !important; display: flex !important; align
-/* In modalità cinema, gli antenati non devono avere backdrop-filter/filter/transform:
-   creerebbero un nuovo "contenitore" per il position:fixed, rimpicciolendo il video. */
-body.cinema-on .main-container,
-body.cinema-on .player-section,
-body.cinema-on .player-card {
-    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
-    filter: none !important; transform: none !important; }
+    aspect-ratio: auto !important; background: #000 !important;
+    display: flex !important; align-items: center !important; justify-content: center !important; }
+.video-container:fullscreen #video-player,
+.video-container:-webkit-full-screen #video-player {
+    width: 100% !important; height: 100% !important; max-height: none !important;
+    border-radius: 0 !important; object-fit: contain; }

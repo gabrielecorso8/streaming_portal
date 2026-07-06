@@ -1925,10 +1925,10 @@ function requestPlayerFullscreen() {
     // scheda alla TV. Sul PC proviamo in piu' lo schermo intero reale (col
     // gesto del click funziona), cosi' si nasconde anche la cornice del browser.
     var box = el.videoContainer; if (!box) return;
-    var on = !box.classList.contains("cinema");
-    box.classList.toggle("cinema", on);
-    // Neutralizza backdrop-filter/transform degli antenati: altrimenti "trappolano"
-    // il position:fixed e il video resta una finestrella (bug schermo intero da telefono).
+    var on = !document.body.classList.contains("cinema-on");
+    // "cinema": espande l'overlay del player fino a riempire il viewport (funziona
+    // sempre, anche dal telecomando senza gesto). Sul PC proviamo in piu' lo
+    // schermo intero reale (col clic il gesto c'e') per nascondere la cornice.
     document.body.classList.toggle("cinema-on", on);
     try {
         if (on) {
@@ -1942,8 +1942,7 @@ function requestPlayerFullscreen() {
 
 function _syncCinema() {
     // Se esco dallo schermo intero reale (es. tasto Esc) tolgo anche la modalita' cinema.
-    if (!(document.fullscreenElement || document.webkitFullscreenElement) && el.videoContainer) {
-        el.videoContainer.classList.remove("cinema");
+    if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
         document.body.classList.remove("cinema-on");
     }
 }

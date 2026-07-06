@@ -166,6 +166,14 @@
   });
   elSeek.addEventListener("input", function () { seeking = true; });
   elSeek.addEventListener("change", function () { if (duration > 0) send("seek", (elSeek.value / 1000) * duration); setTimeout(function () { seeking = false; }, 400); });
+  // Spegnimento server dal telecomando
+  var elPower = document.getElementById("power-btn");
+  if (elPower) elPower.addEventListener("click", function () {
+    if (!confirm("Spegnere SC Portal? Il server verra' chiuso.")) return;
+    fetch(api("/api/shutdown"), { method: "POST" }).catch(function () {});
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;padding:2rem;color:#8b8ba3;font-family:system-ui,sans-serif"><div><h2 style="color:#fff;margin:0 0 .5rem">SC Portal spento</h2><p>Puoi chiudere questa scheda.</p></div></div>';
+  });
+
   function applyNav() { elPrev.classList.toggle("disabled", !nav.canPrev); elNext.classList.toggle("disabled", !nav.canNext && !nav.moreExists); }
 
   var missed = 0;

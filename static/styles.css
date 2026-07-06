@@ -1448,6 +1448,7 @@ body.downloads-only #search-results-section,
 body.downloads-only #privacy-banner,
 body.downloads-only .header-search-btn { display: none !important; }
 body.downloads-only #downloads-section { margin-top: 1rem; }
+body.downloads-only .settings-box { display: none !important; }
 /* Sul telefono/tablet nascondi i comandi che aprirebbero internet (scheda,
    scarica seguente, cartella PC): solo riproduzione locale, meno superficie d'attacco. */
 body.downloads-only .open-card-btn,
@@ -1497,10 +1498,14 @@ body.cinema-on .player-section:not(.hidden) .player-card {
     background: #000 !important; overflow: hidden !important;
     backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 body.cinema-on .player-section:not(.hidden) .video-container {
+    position: relative !important; display: block !important;
     width: 100vw !important; height: 100vh !important; max-height: 100vh !important;
     aspect-ratio: auto !important; border: 0 !important; border-radius: 0 !important; }
+/* Video in posizione assoluta che riempie il contenitore: cosi' occupa davvero
+   TUTTO (anche in verticale) e la barra dei controlli nativi e' larga quanto lo schermo. */
 body.cinema-on .player-section:not(.hidden) #video-player {
-    width: 100vw !important; height: 100vh !important; max-height: 100vh !important;
+    position: absolute !important; inset: 0 !important;
+    width: 100% !important; height: 100% !important; max-height: none !important;
     border-radius: 0 !important; object-fit: cover !important; background: #000; }
 /* In cinema nascondi header/controlli/banner: resta solo il video pieno. */
 body.cinema-on .player-header,

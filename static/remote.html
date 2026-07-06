@@ -33,6 +33,8 @@
   header .status{margin-left:auto;display:flex;align-items:center;gap:7px;text-transform:uppercase;}
   header .dot{width:8px;height:8px;border-radius:50%;background:#3a3a4d;transition:background .3s;}
   header.live .dot{background:#4ade80;box-shadow:0 0 10px #4ade80aa;}
+  .pw-btn{margin-left:10px;width:34px;height:34px;flex:none;border-radius:10px;background:#1e1420;border:1px solid #3a2230;color:var(--danger);display:flex;align-items:center;justify-content:center;}
+  .pw-btn:active{transform:scale(.92);}
 
   /* Menù a tendina download */
   .dl{border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden;}
@@ -120,6 +122,9 @@
   <header id="hdr">
     <span class="brand"><img src="/icon-remote-192.png" alt="">Telecomando</span>
     <span class="status"><span class="dot"></span><span id="conn">Connessione…</span></span>
+    <button id="power-btn" class="pw-btn" title="Spegni SC Portal" aria-label="Spegni SC Portal">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+    </button>
   </header>
 
   <div class="dl" id="dl">
@@ -172,6 +177,6 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="remote.js?v=6"></script>
+<script src="remote.js?v=7"></script>
 </body>
 </html>

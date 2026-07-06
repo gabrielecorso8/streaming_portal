@@ -2818,7 +2818,7 @@ async function nestFolder(childId, parentId) {
 
 async function shutdownApp() {
     if (!confirm("Spegnere SC Portal? Il server verra' chiuso.")) return;
-    try { await fetch("/api/shutdown", { method: "POST" }); } catch (e) {}
+    try { await fetch(withLanToken("/api/shutdown"), { method: "POST" }); } catch (e) {}
     document.body.innerHTML =
         '<div style="display:flex;align-items:center;justify-content:center;height:100vh;'
         + 'font-family:sans-serif;color:#9ca3af;text-align:center;padding:2rem">'

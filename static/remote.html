@@ -103,6 +103,14 @@
   #pp{border-radius:20px;background:linear-gradient(180deg,var(--accent2),var(--accent));border:none;box-shadow:0 10px 22px -10px var(--accent);}
   #pp svg{width:30px;height:30px;}
 
+  .vol{display:flex;align-items:center;gap:10px;margin-top:14px;}
+  .vbtn{width:46px;height:46px;flex:none;border-radius:14px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;transition:transform .08s,background .15s;}
+  .vbtn:active{transform:scale(.92);background:var(--panel3);}
+  .vbtn svg{width:22px;height:22px;}
+  .vbtn.muted{color:var(--danger);border-color:#3a2230;background:#1e1420;}
+  .vlevel{flex:1;height:6px;border-radius:999px;background:var(--panel3);overflow:hidden;}
+  .vfill{height:100%;width:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px;transition:width .12s;}
+
   .footer{display:flex;gap:10px;margin-top:2px;}
   .flat{flex:1;height:50px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);
       display:flex;align-items:center;justify-content:center;gap:8px;font-size:.9rem;font-weight:600;transition:transform .08s,background .15s;}
@@ -148,19 +156,32 @@
       <button class="rc-btn" id="prev" data-a="prev" title="Precedente" aria-label="Precedente">
         <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"></polygon><rect x="4" y="4" width="2.4" height="16" rx="1.2"></rect></svg>
       </button>
-      <button class="rc-btn" data-a="seekBy" data-v="-10" title="-10 secondi" aria-label="Indietro 10 secondi">
+      <button class="rc-btn" data-a="seekBy" data-v="-30" title="-30 secondi" aria-label="Indietro 30 secondi">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a8 8 0 1 1-7.6 5.5"></path><polyline points="3 3 3.4 9 9 8.4"></polyline></svg>
-        <span class="n">10</span>
+        <span class="n">30</span>
       </button>
       <button class="rc-btn" id="pp" data-a="toggle" title="Play/Pausa" aria-label="Play o pausa">
         <svg id="ppicon" viewBox="0 0 24 24" fill="currentColor"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg>
       </button>
-      <button class="rc-btn" data-a="seekBy" data-v="10" title="+10 secondi" aria-label="Avanti 10 secondi">
+      <button class="rc-btn" data-a="seekBy" data-v="30" title="+30 secondi" aria-label="Avanti 30 secondi">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4a8 8 0 1 0 7.6 5.5"></path><polyline points="21 3 20.6 9 15 8.4"></polyline></svg>
-        <span class="n">10</span>
+        <span class="n">30</span>
       </button>
       <button class="rc-btn" id="next" data-a="next" title="Successivo" aria-label="Successivo">
         <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"></polygon><rect x="17.6" y="4" width="2.4" height="16" rx="1.2"></rect></svg>
+      </button>
+    </div>
+
+    <div class="vol">
+      <button class="vbtn" id="mute" data-a="mute" title="Muto" aria-label="Muto">
+        <svg id="muteicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+      </button>
+      <button class="vbtn" data-a="volDown" title="Volume giù" aria-label="Volume giù">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+      </button>
+      <div class="vlevel"><div class="vfill" id="vfill"></div></div>
+      <button class="vbtn" data-a="volUp" title="Volume su" aria-label="Volume su">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
       </button>
     </div>
   </div>
@@ -177,6 +198,6 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="remote.js?v=8"></script>
+<script src="remote.js?v=9"></script>
 </body>
 </html>

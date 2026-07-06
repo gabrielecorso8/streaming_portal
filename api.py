@@ -943,6 +943,7 @@ class DownloadRequest(BaseModel):
     sc_id: Optional[int] = None        # StreamingCommunity title id (for token refresh)
     episode_id: Optional[int] = None
     lib_key: Optional[str] = ""        # library key (per collegare il file al titolo)
+    cover: Optional[str] = ""          # cover remota/proxy da congelare in /covers
 
 @app.get("/api/settings")
 def get_settings():
@@ -968,6 +969,65 @@ def proxy_image(u: str):
         ct = "image/jpeg"
     return Response(content=r.content, media_type=ct,
                     headers={"Cache-Control": "public, max-age=86400"})
+
+
+def _remote_cover_url(url: str) -> str:
+    """Accetta sia URL remoti sia il proxy locale /api/img?u=... e restituisce
+    l'URL remoto originale. Le cover locali restano locali."""
+    url = (url or "").strip()
+    if not url or url.startswith("/covers/") or url.startswith("data:"):
+        return ""
+    if url.startswith("/api/img?"):
+        try:
+            qs = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+            return (qs.get("u") or [""])[0]
+        except Exception:
+            return ""
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    return ""
+
+
+def cache_cover_local(key: str, cover_url: str) -> str:
+    """Scarica una locandina remota in /covers e ritorna il path locale.
+    Viene chiamata durante le fasi online/download, quindi usa la stessa VPN/
+    proxy configurata dell'app. In riproduzione LAN poi basta servire /covers."""
+    key = (key or "").strip()
+    remote = _remote_cover_url(cover_url)
+    if not key or not remote or not _is_safe_remote_url(remote):
+        return ""
+    h = hashlib.md5(key.encode("utf-8")).hexdigest()[:12]
+    try:
+        for fn in os.listdir(COVERS_DIR):
+            if fn.startswith("lib_" + h + "."):
+                return "/covers/" + fn
+    except OSError:
+        pass
+    try:
+        r = session.get(remote, headers=get_headers(), timeout=12, verify=False, proxies=get_proxies())
+    except Exception:
+        return ""
+    if r.status_code != 200 or len(r.content) > 8 * 1024 * 1024:
+        return ""
+    ct = (r.headers.get("content-type") or "").lower()
+    ext = ".jpg"
+    if "png" in ct:
+        ext = ".png"
+    elif "webp" in ct:
+        ext = ".webp"
+    elif "gif" in ct:
+        ext = ".gif"
+    else:
+        path_ext = os.path.splitext(urllib.parse.urlparse(remote).path)[1].lower()
+        if path_ext in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+            ext = path_ext
+    fname = f"lib_{h}{ext}"
+    try:
+        with open(os.path.join(COVERS_DIR, fname), "wb") as fh:
+            fh.write(r.content)
+        return f"/covers/{fname}"
+    except OSError:
+        return ""
 
 
 @app.get("/api/ip-check")
@@ -1104,6 +1164,8 @@ class RemoteState(BaseModel):
     canNext: bool = False
     moreExists: bool = False
     moreLabel: Optional[str] = ""
+    muted: bool = False
+    volume: float = 1.0
 
 
 @app.post("/api/remote/state")
@@ -2178,6 +2240,8 @@ class CloneDownloadRequest(BaseModel):
     episode: int
     title: Optional[str] = None
     mode: str = "tv"
+    lib_key: Optional[str] = ""
+    cover: Optional[str] = ""
 
 
 class AWEpisode(BaseModel):
@@ -2185,6 +2249,8 @@ class AWEpisode(BaseModel):
     id: Optional[str] = ""
     host: Optional[str] = "www.animeworld.ac"
     title: Optional[str] = ""
+    lib_key: Optional[str] = ""
+    cover: Optional[str] = ""
 
 
 def _aw_resolve_mp4(url="", ep_id="", host="www.animeworld.ac"):
@@ -2217,6 +2283,14 @@ def animeworld_download(payload: AWEpisode):
     """Risolve un episodio AnimeWorld e ne avvia il download (mp4 diretto)."""
     info, mp4 = _aw_resolve_mp4(payload.url or "", payload.id or "", payload.host or "www.animeworld.ac")
     download_id = str(uuid.uuid4())
+    if payload.lib_key:
+        DOWNLOAD_KEYS[download_id] = payload.lib_key
+        local_cover = cache_cover_local(payload.lib_key, payload.cover or info.get("cover", ""))
+        if local_cover:
+            e = next((x for x in LIBRARY if x.get("key") == payload.lib_key), None)
+            if e and e.get("cover") != local_cover:
+                e["cover"] = local_cover
+                save_library(LIBRARY)
     start_download_task(
         download_id=download_id,
         title=payload.title or info.get("title") or "AnimeWorld",
@@ -2253,6 +2327,14 @@ def clone_download(payload: CloneDownloadRequest):
 
     download_id = str(uuid.uuid4())
     title = payload.title or f"Episodio S{payload.season:02d}E{payload.episode:02d}"
+    if payload.lib_key:
+        DOWNLOAD_KEYS[download_id] = payload.lib_key
+        local_cover = cache_cover_local(payload.lib_key, payload.cover or "")
+        if local_cover:
+            e = next((x for x in LIBRARY if x.get("key") == payload.lib_key), None)
+            if e and e.get("cover") != local_cover:
+                e["cover"] = local_cover
+                save_library(LIBRARY)
     start_download_task(
         download_id=download_id,
         title=title,
@@ -2763,6 +2845,16 @@ def download_media(payload: DownloadRequest):
     vixcloud_meta = {"sc_id": payload.sc_id, "episode_id": payload.episode_id} if payload.sc_id else None
     if payload.lib_key:
         DOWNLOAD_KEYS[download_id] = payload.lib_key
+        cover = payload.cover or ""
+        if not cover:
+            e = next((x for x in LIBRARY if x.get("key") == payload.lib_key), None)
+            cover = (e or {}).get("cover", "")
+        local_cover = cache_cover_local(payload.lib_key, cover)
+        if local_cover:
+            e = next((x for x in LIBRARY if x.get("key") == payload.lib_key), None)
+            if e and e.get("cover") != local_cover:
+                e["cover"] = local_cover
+                save_library(LIBRARY)
     start_download_task(
         download_id=download_id,
         title=payload.title,
@@ -2871,7 +2963,13 @@ def download_next_episode(payload: NextEpisode):
         raise HTTPException(status_code=400, detail="Stream dell'episodio non disponibile")
     label = f"{details.get('name') or q} S{next_season:02d}E{next_ep:02d}"
     download_id = str(uuid.uuid4())
-    DOWNLOAD_KEYS[download_id] = ""
+    DOWNLOAD_KEYS[download_id] = id_and_slug
+    local_cover = cache_cover_local(id_and_slug, details.get("cover", "") or match.get("cover", ""))
+    if local_cover:
+        e = next((x for x in LIBRARY if x.get("key") == id_and_slug), None)
+        if e and e.get("cover") != local_cover:
+            e["cover"] = local_cover
+            save_library(LIBRARY)
     start_download_task(
         download_id=download_id, title=label,
         m3u8_video=dl["video_url"], m3u8_audio=dl.get("audio_url"),
@@ -2894,6 +2992,38 @@ _dl.set_stream_resolver(resolve_stream_info)
 DOWNLOAD_KEYS = {}  # download_id -> library key (collega i file ai titoli)
 
 
+def _norm_title(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", (value or "").lower())
+
+
+def _episode_series_name(title: str) -> str:
+    m = re.search(r"(.+?)\s+S\d{1,2}E\d{1,2}\b", title or "", re.I)
+    return (m.group(1).strip() if m else "")
+
+
+def _library_item_for_download(item: dict):
+    key = (item or {}).get("key") or ""
+    if key:
+        found = next((e for e in LIBRARY if e.get("key") == key), None)
+        if found:
+            return found
+    title = (item or {}).get("title") or (item or {}).get("name") or ""
+    nt = _norm_title(title)
+    if not nt:
+        return None
+    found = next((e for e in LIBRARY if _norm_title(e.get("name", "")) == nt), None)
+    if found:
+        return found
+    series = _norm_title(_episode_series_name(title))
+    if series:
+        found = next((e for e in LIBRARY if _norm_title(e.get("name", "")) == series), None)
+        if found:
+            return found
+    return next((e for e in LIBRARY
+                 if len(_norm_title(e.get("name", ""))) > 2
+                 and (nt in _norm_title(e.get("name", "")) or _norm_title(e.get("name", "")) in nt)), None)
+
+
 @app.get("/api/download/status")
 def get_download_status():
     out = []
@@ -2902,6 +3032,9 @@ def get_download_status():
         item = dict(d)
         did = item.get("id")
         item["key"] = DOWNLOAD_KEYS.get(did)
+        info = _library_item_for_download(item)
+        if info and info.get("cover"):
+            item["cover"] = cover_out(info.get("cover", ""))
         # Un download completato il cui file e' stato ELIMINATO dal disco non deve
         # piu' comparire (altrimenti resta una voce "morta" che non si riproduce):
         # lo togliamo dallo stato in memoria cosi' sparisce dalla lista.
@@ -2963,6 +3096,7 @@ def add_library(entry: LibraryEntry):
     if not key:
         raise HTTPException(status_code=400, detail="Voce libreria senza chiave/URL")
     now = int(time.time())
+    local_cover = cache_cover_local(key, entry.cover or "")
     existing = next((e for e in LIBRARY if e.get("key") == key), None)
     if existing:
         # Re-opening a title must NOT wipe the user's customisations: a renamed
@@ -2971,7 +3105,9 @@ def add_library(entry: LibraryEntry):
         if not (existing.get("name") or "").strip():
             existing["name"] = entry.name or existing.get("name")
         cur_cover = existing.get("cover", "")
-        if not (isinstance(cur_cover, str) and cur_cover.startswith("/covers/")):
+        if local_cover:
+            existing["cover"] = local_cover
+        elif not (isinstance(cur_cover, str) and cur_cover.startswith("/covers/")):
             existing["cover"] = entry.cover or cur_cover
         existing["type"] = entry.type or existing.get("type")
         if not (existing.get("release_date") or "").strip():
@@ -2982,7 +3118,7 @@ def add_library(entry: LibraryEntry):
             "key": key,
             "url": entry.url,
             "name": entry.name or "Senza titolo",
-            "cover": entry.cover or "",
+            "cover": local_cover or entry.cover or "",
             "type": entry.type or "",
             "release_date": entry.release_date or "",
             "is_clone": bool(entry.is_clone),
@@ -3153,7 +3289,13 @@ def list_local_downloads():
             continue
         did = "local:" + hashlib.md5(fn.encode("utf-8")).hexdigest()[:12]
         download_paths[did] = p   # abilita /api/download/play/{id}
-        out.append({"id": did, "name": os.path.splitext(fn)[0], "file": fn})
+        item = {"id": did, "name": os.path.splitext(fn)[0], "title": os.path.splitext(fn)[0], "file": fn}
+        info = _library_item_for_download(item)
+        if info:
+            item["key"] = info.get("key", "")
+            if info.get("cover"):
+                item["cover"] = cover_out(info.get("cover", ""))
+        out.append(item)
     return out
 
 

@@ -963,7 +963,9 @@ function startRemoteHost() {
                     canPrev: _remoteNav().canPrev,
                     canNext: _remoteNav().canNext,
                     moreExists: _remoteNav().moreExists,
-                    moreLabel: _remoteNav().moreLabel
+                    moreLabel: _remoteNav().moreLabel,
+                    muted: !!v.muted,
+                    volume: (typeof v.volume === "number" ? v.volume : 1)
                 }) });
         } catch (e) {}
         try {
@@ -986,6 +988,9 @@ function execRemoteCmd(action, value, arg, label) {
     else if (action === "prev") { try { navigatePlayback(-1); } catch (e) {} }
     else if (action === "stop") { try { closePlayer(); } catch (e) {} }
     else if (action === "fs") { requestPlayerFullscreen(); }
+    else if (action === "mute") { v.muted = !v.muted; }
+    else if (action === "volUp") { v.muted = false; try { v.volume = Math.min(1, (v.volume || 0) + 0.1); } catch (e) {} }
+    else if (action === "volDown") { try { v.volume = Math.max(0, (v.volume || 0) - 0.1); } catch (e) {} }
 }
 
 function withLanToken(url) {
@@ -1075,7 +1080,14 @@ function renderAnimeWorld(data, url) {
             try {
                 const r = await fetch("/api/animeworld/download", {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ url: epurl, id: epid, host: host, title: `${data.title} ${num}` })
+                    body: JSON.stringify({
+                        url: epurl,
+                        id: epid,
+                        host: host,
+                        title: `${data.title} ${num}`,
+                        lib_key: data.id_and_slug || url,
+                        cover: data.cover || ""
+                    })
                 });
                 const d = await r.json().catch(() => ({}));
                 showToast(r.ok ? "Download avviato" : (d.detail || "Download non disponibile"));
@@ -1325,7 +1337,9 @@ async function cloneEpisodeDownload(season, episode, label) {
                 mode: "tv",
                 season: season,
                 episode: episode,
-                title: label
+                title: label,
+                lib_key: currentLibKey || currentTitle.id || "",
+                cover: currentTitle.cover || ""
             })
         });
         if (resp.ok) {
@@ -1578,7 +1592,9 @@ async function triggerDownload(label, titleId, episodeId = null) {
                 m3u8_audio: null,
                 key_info: null,
                 stream_headers: currentTitle.stream_headers || null,
-                vidxgo: currentTitle.vidxgo || null
+                vidxgo: currentTitle.vidxgo || null,
+                lib_key: currentLibKey || currentTitle.id || "",
+                cover: currentTitle.cover || ""
             };
             
             const dlResp = await fetch("/api/download", {
@@ -1622,7 +1638,8 @@ async function triggerDownload(label, titleId, episodeId = null) {
                 stream_headers: data.download.headers || null,
                 sc_id: titleId,
                 episode_id: episodeId || null,
-                lib_key: currentLibKey || ""
+                lib_key: currentLibKey || "",
+                cover: (currentTitle && currentTitle.cover) || ""
             };
             const dlResp = await fetch("/api/download", {
                 method: "POST",
@@ -1653,7 +1670,9 @@ async function triggerDownload(label, titleId, episodeId = null) {
             key_info: {
                 key_url: "https://vixcloud.co/storage/enc.key",
                 referer: `https://vixcloud.co/embed/${data.video_id}?token=${renderToken}&referer=1&expires=${data.params.expires}`
-            }
+            },
+            lib_key: currentLibKey || "",
+            cover: (currentTitle && currentTitle.cover) || ""
         };
         
         const dlResp = await fetch("/api/download", {
@@ -1763,8 +1782,9 @@ function renderDownloads(downloads) {
             : "";
 
         const info = libInfoForDownload(dl);
-        const cover = info && info.cover
-            ? `<img class="library-cover dl-cover" src="${escapeHtml(info.cover)}" alt="" loading="lazy">`
+        const coverSrc = (dl && dl.cover) || (info && info.cover) || "";
+        const cover = coverSrc
+            ? `<img class="library-cover dl-cover" src="${escapeHtml(coverSrc)}" alt="" loading="lazy">`
             : `<div class="library-cover placeholder dl-cover"></div>`;
         const typeBadge = info ? (info.type === "tv" ? "Serie" : (info.type === "movie" ? "Film" : "")) : "";
         const _ep = parseEpisode(dl.title);
@@ -2157,14 +2177,14 @@ async function refreshLocalDownloads() {
         localFiles.forEach(f => { const n = normName(f.name); if (n) localByName[n] = f.id; });
         // popola anche la lista download (così i titoli gia' scaricati compaiono
         // automaticamente all'avvio, con la locandina)
-        localDownloads = localFiles.map(f => ({ id: f.id, title: f.name, status: "completed", progress: 100, local: true }));
+        localDownloads = localFiles.map(f => ({ id: f.id, title: f.name, key: f.key || "", cover: f.cover || "", status: "completed", progress: 100, local: true }));
     } catch (e) {}
 }
 
 async function refreshDownloads() {
     showToast("Aggiorno i download…");
     await refreshLocalDownloads();
-    localDownloads = (localFiles || []).map(f => ({ id: f.id, title: f.name, status: "completed", progress: 100, local: true }));
+    localDownloads = (localFiles || []).map(f => ({ id: f.id, title: f.name, key: f.key || "", cover: f.cover || "", status: "completed", progress: 100, local: true }));
     try { const sresp = await fetch("/api/download/status"); renderDownloads(sresp.ok ? await sresp.json() : []); }
     catch (e) { renderDownloads([]); }
     showToast(`Trovati ${localDownloads.length} titoli scaricati in /downloads`);

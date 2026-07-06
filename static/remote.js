@@ -11,6 +11,7 @@
   var elSeek = document.getElementById("seek"), elPPicon = document.getElementById("ppicon");
   var elPrev = document.getElementById("prev"), elNext = document.getElementById("next");
   var elHdr = document.getElementById("hdr"), elConn = document.getElementById("conn"), elToast = document.getElementById("toast");
+  var elMute = document.getElementById("mute"), elMuteIcon = document.getElementById("muteicon"), elVfill = document.getElementById("vfill");
   var elDl = document.getElementById("dl"), elDlToggle = document.getElementById("dl-toggle");
   var elDlList = document.getElementById("dl-list"), elDlCount = document.getElementById("dl-count");
 
@@ -20,6 +21,8 @@
 
   var ICON_PLAY = '<polygon points="7 4 20 12 7 20 7 4"></polygon>';
   var ICON_PAUSE = '<rect x="6" y="4" width="4" height="16" rx="1.4"></rect><rect x="14" y="4" width="4" height="16" rx="1.4"></rect>';
+  var ICON_VOL = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>';
+  var ICON_MUTE = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>';
   var PLAY_MINI = '<svg viewBox="0 0 24 24" width="26" height="26" fill="#fff"><polygon points="8 5 20 12 8 19 8 5"></polygon></svg>';
 
   function esc(s) { return (s || "").replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -157,7 +160,7 @@
   // ---- Trasporto + navigazione ---------------------------------------------
   function goNext() { if (nav.canNext) { send("next"); return; } toast(nav.moreExists ? "Prossimo episodio non ancora scaricato — scaricalo dal computer" : "Nessun titolo successivo"); }
   function goPrev() { if (nav.canPrev) { send("prev"); return; } toast("Nessun titolo precedente"); }
-  Array.prototype.forEach.call(document.querySelectorAll(".controls [data-a], .footer [data-a]"), function (b) {
+  Array.prototype.forEach.call(document.querySelectorAll(".controls [data-a], .vol [data-a], .footer [data-a]"), function (b) {
     b.addEventListener("click", function () {
       var a = b.getAttribute("data-a");
       if (a === "next") return goNext();
@@ -166,7 +169,7 @@
       send(a, v != null ? parseFloat(v) : null);
     });
   });
-  elSeek.addEventListener("input", function () { seeking = true; });
+  elSeek.addEventListener("input", function () { seeking = true; if (duration > 0) elCur.textContent = fmt((elSeek.value / 1000) * duration); });
   elSeek.addEventListener("change", function () { if (duration > 0) send("seek", (elSeek.value / 1000) * duration); setTimeout(function () { seeking = false; }, 400); });
   // Spegnimento server dal telecomando
   var elPower = document.getElementById("power-btn");
@@ -191,6 +194,9 @@
       elCur.textContent = fmt(st.time); elDur.textContent = fmt(duration);
       if (!seeking && duration > 0) elSeek.value = Math.round((st.time / duration) * 1000);
       elPPicon.innerHTML = st.playing ? ICON_PAUSE : ICON_PLAY;
+      if (elMuteIcon) elMuteIcon.innerHTML = st.muted ? ICON_MUTE : ICON_VOL;
+      if (elMute) elMute.classList.toggle("muted", !!st.muted);
+      if (elVfill) elVfill.style.width = Math.round((st.muted ? 0 : (typeof st.volume === "number" ? st.volume : 1)) * 100) + "%";
       if ((st.title || "") !== curTitle) { curTitle = st.title || ""; if (dlLoaded) renderDownloads(); }
       applyNav();
     } catch (e) {

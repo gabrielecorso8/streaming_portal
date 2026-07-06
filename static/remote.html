@@ -42,18 +42,40 @@
   .dl.open .dl-toggle .chev{transform:rotate(180deg);}
   .dl-ic{width:22px;height:22px;color:var(--accent2);}
   .dl-count{color:var(--dim);font-weight:500;font-size:.85rem;}
-  .dl-body{max-height:0;overflow:hidden;transition:max-height .28s ease;}
-  .dl.open .dl-body{max-height:46vh;overflow-y:auto;}
-  .dl-list{display:flex;flex-direction:column;padding:4px;gap:4px;}
-  .dl-item{display:flex;align-items:center;gap:12px;padding:12px 12px;border-radius:11px;
-      background:var(--panel2);border:1px solid transparent;color:var(--txt);font:inherit;
-      text-align:left;cursor:pointer;transition:background .15s;}
-  .dl-item:active{background:var(--panel3);}
-  .dl-item.playing{border-color:var(--accent);background:rgba(124,92,255,.15);}
-  .dl-item .dot-play{width:26px;height:26px;flex:none;border-radius:8px;background:var(--accent);
-      display:flex;align-items:center;justify-content:center;color:#fff;}
-  .dl-item .nm{flex:1;font-size:.92rem;line-height:1.25;}
-  .dl-empty{padding:16px;color:var(--dim);text-align:center;font-size:.9rem;}
+  .dl-body{max-height:0;overflow:hidden;transition:max-height .3s ease;}
+  .dl.open .dl-body{max-height:64vh;overflow-y:auto;}
+  .dl-list{padding:4px 4px 8px;}
+  .dl-empty{padding:18px;color:var(--dim);text-align:center;font-size:.9rem;}
+
+  /* Vista download in stile SC Portal: locandine + stagioni */
+  .rdl-sec{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);margin:10px 6px 6px;}
+  .rdl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 4px 6px;}
+  .rdl-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;padding:0;display:flex;flex-direction:column;text-align:left;cursor:pointer;color:var(--txt);}
+  .rdl-card:active{transform:scale(.97);}
+  .rdl-thumb{aspect-ratio:2/3;width:100%;background:linear-gradient(135deg,#26263a,#191926);position:relative;}
+  .rdl-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .rdl-thumb .pl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;background:rgba(10,10,16,.35);}
+  .rdl-card:active .rdl-thumb .pl{opacity:1;}
+  .rdl-card-nm{font-size:.72rem;padding:6px 7px;line-height:1.25;color:var(--txt);}
+  .rdl-card.playing{outline:2px solid var(--accent);}
+
+  .rdl-series{border:1px solid var(--line);border-radius:12px;margin:6px 4px;overflow:hidden;background:var(--panel2);}
+  .rdl-series-head{display:flex;align-items:center;gap:10px;width:100%;padding:8px;background:none;border:none;color:var(--txt);cursor:pointer;text-align:left;}
+  .rdl-poster{width:46px;height:66px;border-radius:8px;overflow:hidden;flex:none;background:linear-gradient(135deg,#26263a,#191926);}
+  .rdl-poster img{width:100%;height:100%;object-fit:cover;display:block;}
+  .rdl-s-meta{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+  .rdl-s-name{font-weight:600;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rdl-s-sub{color:var(--dim);font-size:.78rem;}
+  .rdl-series .chev{color:var(--dim);transition:transform .25s;flex:none;}
+  .rdl-series.open .chev{transform:rotate(180deg);}
+  .rdl-seasons{max-height:0;overflow:hidden;transition:max-height .3s ease;}
+  .rdl-series.open .rdl-seasons{max-height:2400px;}
+  .rdl-season-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--accent2);padding:9px 12px 3px;}
+  .rdl-ep{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:10px 12px;background:none;border:none;border-top:1px solid var(--line);color:var(--txt);font-size:.86rem;cursor:pointer;}
+  .rdl-ep:active{background:var(--panel3);}
+  .rdl-ep .en{flex:none;width:20px;color:var(--dim);font-variant-numeric:tabular-nums;}
+  .rdl-ep.playing{color:var(--accent2);font-weight:700;}
+  .rdl-ep.playing .en{color:var(--accent2);}
 
   .card{background:linear-gradient(180deg,var(--panel) 0%,#101019 100%);
       border:1px solid var(--line);border-radius:20px;padding:20px 18px;box-shadow:0 18px 40px -22px #000;}
@@ -106,7 +128,7 @@
       <span>I tuoi download</span><span class="dl-count" id="dl-count"></span>
       <svg class="chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
     </button>
-    <div class="dl-body"><div class="dl-list" id="dl-list"><div class="dl-empty">Carico…</div></div></div>
+    <div class="dl-body"><div class="dl-list" id="dl-list"><div class="dl-empty">Apri per vedere i tuoi download</div></div></div>
   </div>
 
   <div class="card">
@@ -150,6 +172,6 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="remote.js?v=5"></script>
+<script src="remote.js?v=6"></script>
 </body>
 </html>

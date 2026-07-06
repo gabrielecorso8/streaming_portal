@@ -2042,6 +2042,15 @@ function showQrOverlay(url, heading, hint) {
     });
 }
 
+function _mountOverlay(ov) {
+    // Deve comparire SOPRA il player anche a schermo intero: in fullscreen un
+    // overlay figlio di <body> non si vede, quindi lo agganciamo all'elemento
+    // realmente a schermo intero.
+    ov.style.zIndex = "100000";
+    var host = document.fullscreenElement || document.webkitFullscreenElement || document.body;
+    host.appendChild(ov);
+}
+
 function castToTV() {
     var v = el.videoPlayer;
     var hasCast = v && v.remote && typeof v.remote.prompt === "function";
@@ -2053,7 +2062,7 @@ function castToTV() {
         '<button class="secondary-btn cast-one">\u25b6 Un solo titolo<small>Trasmette questo video alla TV</small></button>' +
         '<button class="secondary-btn cast-many">\ud83d\udcfa Pi\u00f9 titoli di fila<small>Serie/pi\u00f9 film senza tornare al PC</small></button>' +
         '</div><div class="picker-actions"><button class="secondary-btn picker-cancel">Annulla</button></div></div>';
-    document.body.appendChild(ov);
+    _mountOverlay(ov);
     var close = function () { ov.remove(); };
     ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
     ov.querySelector(".picker-cancel").addEventListener("click", close);
@@ -2078,7 +2087,7 @@ function castToTV() {
             '<li>Premi <b>\u26f6 Schermo intero</b> qui nel player</li>' +
             '<li>Dal <b>telefono-telecomando</b> scegli e cambia i titoli</li></ol>' +
             '<div class="picker-actions"><button class="secondary-btn picker-cancel">Ho capito</button></div></div>';
-        document.body.appendChild(g);
+        _mountOverlay(g);
         var gc = function () { g.remove(); };
         g.addEventListener("click", function (e) { if (e.target === g) gc(); });
         g.querySelector(".picker-cancel").addEventListener("click", gc);

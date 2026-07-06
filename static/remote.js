@@ -42,15 +42,16 @@
     rest = rest.replace(/^[\s._\-–—]+/, "").trim();
     return rest || ("Episodio " + ep.episode);
   }
-  function coverUrl(name) {
-    var c = coverMap[normName(name)];
-    if (!c) return "";
-    if (/^https?:/i.test(c)) return api("/api/img?u=" + encodeURIComponent(c));
-    if (c.charAt(0) === "/") return api(c);
-    return c;
+  function coverSrc(url) {
+    if (!url) return "";
+    if (/^https?:/i.test(url)) return api("/api/img?u=" + encodeURIComponent(url));
+    if (url.charAt(0) === "/") return api(url);   // /covers/... (locale) col token
+    return url;
   }
-  function posterImg(name, cls) {
-    var u = coverUrl(name);
+  function coverUrl(name) { return coverSrc(coverMap[normName(name)]); }
+  // Preferisce la cover LOCALE fornita dal backend (/covers/...), poi la libreria.
+  function posterImg(url, name) {
+    var u = coverSrc(url) || coverUrl(name);
     return u ? '<img src="' + esc(u) + '" alt="" loading="lazy">' : '';
   }
 
@@ -79,11 +80,12 @@
       var base = baseName(f.name), ep = parseEpisode(base);
       if (ep) {
         var sk = normName(ep.series) || normName(base);
-        var s = series[sk] || (series[sk] = { name: ep.series || base, seasons: {}, count: 0 });
+        var s = series[sk] || (series[sk] = { name: ep.series || base, cover: "", seasons: {}, count: 0 });
+        if (!s.cover && f.cover) s.cover = f.cover;
         (s.seasons[ep.season] || (s.seasons[ep.season] = [])).push({ id: f.id, ep: ep.episode, label: episodeLabel(f.name), raw: base });
         s.count++;
       } else {
-        movies.push({ id: f.id, name: base });
+        movies.push({ id: f.id, name: base, cover: f.cover || "" });
       }
     });
     return { movies: movies, series: series };
@@ -98,7 +100,7 @@
       html += g.movies.map(function (m) {
         var on = (m.name === curTitle) ? " playing" : "";
         return '<button class="rdl-card' + on + '" data-id="' + esc(String(m.id)) + '" data-label="' + esc(m.name) + '">' +
-               '<span class="rdl-thumb">' + posterImg(m.name) + '<span class="pl">' + PLAY_MINI + '</span></span>' +
+               '<span class="rdl-thumb">' + posterImg(m.cover, m.name) + '<span class="pl">' + PLAY_MINI + '</span></span>' +
                '<span class="rdl-card-nm">' + esc(m.name) + '</span></button>';
       }).join("") + '</div>';
     }
@@ -116,7 +118,7 @@
         }).join("");
       }).join("");
       html += '<div class="rdl-series"><button class="rdl-series-head">' +
-              '<span class="rdl-poster">' + posterImg(s.name) + '</span>' +
+              '<span class="rdl-poster">' + posterImg(s.cover, s.name) + '</span>' +
               '<span class="rdl-s-meta"><span class="rdl-s-name">' + esc(s.name) + '</span>' +
               '<span class="rdl-s-sub">' + s.count + (s.count === 1 ? ' episodio' : ' episodi') + '</span></span>' +
               '<svg class="chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>' +

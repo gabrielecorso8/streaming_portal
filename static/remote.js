@@ -11,7 +11,7 @@
   var elSeek = document.getElementById("seek"), elPPicon = document.getElementById("ppicon");
   var elPrev = document.getElementById("prev"), elNext = document.getElementById("next");
   var elHdr = document.getElementById("hdr"), elConn = document.getElementById("conn"), elToast = document.getElementById("toast");
-  var elMute = document.getElementById("mute"), elMuteIcon = document.getElementById("muteicon"), elVfill = document.getElementById("vfill");
+  var elMute = document.getElementById("mute"), elMuteIcon = document.getElementById("muteicon"), elVol = document.getElementById("vol");
   var elDl = document.getElementById("dl"), elDlToggle = document.getElementById("dl-toggle");
   var elDlList = document.getElementById("dl-list"), elDlCount = document.getElementById("dl-count");
 
@@ -171,6 +171,11 @@
   });
   elSeek.addEventListener("input", function () { seeking = true; if (duration > 0) elCur.textContent = fmt((elSeek.value / 1000) * duration); });
   elSeek.addEventListener("change", function () { if (duration > 0) send("seek", (elSeek.value / 1000) * duration); setTimeout(function () { seeking = false; }, 400); });
+  var volSeeking = false;
+  if (elVol) {
+    elVol.addEventListener("input", function () { volSeeking = true; send("vol", elVol.value / 100); });
+    elVol.addEventListener("change", function () { send("vol", elVol.value / 100); setTimeout(function () { volSeeking = false; }, 400); });
+  }
   // Spegnimento server dal telecomando
   var elPower = document.getElementById("power-btn");
   if (elPower) elPower.addEventListener("click", function () {
@@ -196,7 +201,7 @@
       elPPicon.innerHTML = st.playing ? ICON_PAUSE : ICON_PLAY;
       if (elMuteIcon) elMuteIcon.innerHTML = st.muted ? ICON_MUTE : ICON_VOL;
       if (elMute) elMute.classList.toggle("muted", !!st.muted);
-      if (elVfill) elVfill.style.width = Math.round((st.muted ? 0 : (typeof st.volume === "number" ? st.volume : 1)) * 100) + "%";
+      if (elVol && !volSeeking) elVol.value = Math.round((st.muted ? 0 : (typeof st.volume === "number" ? st.volume : 1)) * 100);
       if ((st.title || "") !== curTitle) { curTitle = st.title || ""; if (dlLoaded) renderDownloads(); }
       applyNav();
     } catch (e) {

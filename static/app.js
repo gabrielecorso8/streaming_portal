@@ -991,6 +991,7 @@ function execRemoteCmd(action, value, arg, label) {
     else if (action === "mute") { v.muted = !v.muted; }
     else if (action === "volUp") { v.muted = false; try { v.volume = Math.min(1, (v.volume || 0) + 0.1); } catch (e) {} }
     else if (action === "volDown") { try { v.volume = Math.max(0, (v.volume || 0) - 0.1); } catch (e) {} }
+    else if (action === "vol") { try { var _vv = Math.max(0, Math.min(1, value || 0)); v.volume = _vv; v.muted = (_vv <= 0); } catch (e) {} }
 }
 
 function withLanToken(url) {

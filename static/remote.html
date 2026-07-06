@@ -107,7 +107,10 @@
   .vbtn{width:46px;height:46px;flex:none;border-radius:14px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;transition:transform .08s,background .15s;}
   .vbtn:active{transform:scale(.92);background:var(--panel3);}
   .vbtn svg{width:22px;height:22px;}
-  .vbtn.muted{color:var(--danger);border-color:#3a2230;background:#1e1420;}
+  .vbtn.muted{color:#fff;border-color:var(--accent);background:linear-gradient(180deg,var(--accent2),var(--accent));box-shadow:0 6px 16px -8px var(--accent);}
+  .vrange{flex:1;}
+  .vrange::-webkit-slider-thumb{width:18px;height:18px;}
+  .vrange::-moz-range-thumb{width:18px;height:18px;}
   .vlevel{flex:1;height:6px;border-radius:999px;background:var(--panel3);overflow:hidden;}
   .vfill{height:100%;width:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px;transition:width .12s;}
 
@@ -177,7 +180,7 @@
       <button class="vbtn" data-a="volDown" title="Volume giù" aria-label="Volume giù">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
       </button>
-      <div class="vlevel"><div class="vfill" id="vfill"></div></div>
+      <input type="range" id="vol" class="vrange" min="0" max="100" value="100" aria-label="Volume">
       <button class="vbtn" data-a="volUp" title="Volume su" aria-label="Volume su">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
       </button>
@@ -196,6 +199,6 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="remote.js?v=10"></script>
+<script src="remote.js?v=11"></script>
 </body>
 </html>

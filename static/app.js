@@ -88,7 +88,6 @@ const el = {
     castBtn: document.getElementById("cast-btn"),
     videoContainer: document.querySelector(".video-container"),
     fsBtn: document.getElementById("player-fs-btn"),
-    playerLibraryBtn: document.getElementById("player-library-btn"),
     phonecastBtn: document.getElementById("phonecast-btn"),
     remoteBtn: document.getElementById("remote-btn"),
     headerCastBtn: document.getElementById("header-cast-btn"),
@@ -182,7 +181,6 @@ async function init() {
     if (el.refreshDownloadsBtn) el.refreshDownloadsBtn.addEventListener("click", refreshDownloads);
     if (el.castBtn) el.castBtn.addEventListener("click", castToTV);
     if (el.fsBtn) el.fsBtn.addEventListener("click", requestPlayerFullscreen);
-    if (el.playerLibraryBtn) el.playerLibraryBtn.addEventListener("click", openPlayerLibrary);
     if (el.phonecastBtn) el.phonecastBtn.addEventListener("click", openPhoneCast);
     if (el.headerCastBtn) el.headerCastBtn.addEventListener("click", openPhoneCast);
     if (el.headerRemoteBtn) el.headerRemoteBtn.addEventListener("click", openRemoteQr);
@@ -243,6 +241,7 @@ async function init() {
     _ensureServerUp();
     refreshProxyState();
     startRemoteHost();
+    setupCastLock();
     if (el.remoteBtn) el.remoteBtn.addEventListener("click", openRemoteQr);
     // Vista "solo download" per telefono/tablet (aperta dal QR): mostra soltanto
     // la sezione "I tuoi download" e carica i file gia' scaricati.
@@ -968,13 +967,14 @@ function startRemoteHost() {
         try {
             const r = await fetch("/api/remote/cmd?since=" + _remoteSeq, { cache: "no-store" });
             const c = await r.json();
-            if (c && c.action && c.seq > _remoteSeq) { _remoteSeq = c.seq; execRemoteCmd(c.action, c.value); }
+            if (c && c.action && c.seq > _remoteSeq) { _remoteSeq = c.seq; execRemoteCmd(c.action, c.value, c.arg, c.label); }
             else if (c && typeof c.seq === "number") { _remoteSeq = Math.max(_remoteSeq, c.seq); }
         } catch (e) {}
     }, 1000);
 }
-function execRemoteCmd(action, value) {
+function execRemoteCmd(action, value, arg, label) {
     const v = el.videoPlayer; if (!v) return;
+    if (action === "playId") { try { playDownloaded(arg, label || "SC Portal", null, { inPlace: !!(el.playerSection && !el.playerSection.classList.contains("hidden")) }); } catch (e) {} return; }
     if (action === "play") v.play().catch(() => {});
     else if (action === "pause") v.pause();
     else if (action === "toggle") { v.paused ? v.play().catch(() => {}) : v.pause(); }
@@ -1916,36 +1916,6 @@ function _isVideoFs() {
     return !!(document.fullscreenElement === v || document.webkitFullscreenElement === v || (v && v.webkitDisplayingFullscreen));
 }
 
-function openPlayerLibrary() {
-    var files = (localFiles || []).slice();
-    if (!files.length) { showToast("Nessun download disponibile"); return; }
-    files.sort(function (x, y) { return (x.name || "").localeCompare(y.name || "", "it", { numeric: true }); });
-    var old = document.getElementById("player-lib-overlay"); if (old) old.remove();
-    var ov = document.createElement("div");
-    ov.id = "player-lib-overlay"; ov.className = "picker-overlay";
-    var rows = files.map(function (f) {
-        var label = episodeLabel(f.name) || (f.name || "").replace(/\.(mp4|mkv|webm|m4v)$/i, "");
-        return '<button class="player-lib-item" data-id="' + escapeHtml(String(f.id)) + '" data-name="' + escapeHtml(f.name || "") + '">' +
-               '<span class="pli-play">\u25b6</span><span class="pli-name">' + escapeHtml(label) + '</span></button>';
-    }).join("");
-    ov.innerHTML = '<div class="picker-panel glass player-lib-panel">' +
-        '<h3>\ud83d\udce5 Scegli dai tuoi download</h3>' +
-        '<p class="picker-hint">Parte subito nel player: se stai trasmettendo la scheda alla TV, cambi titolo senza tornare al PC.</p>' +
-        '<div class="player-lib-list">' + rows + '</div>' +
-        '<div class="picker-actions"><button class="secondary-btn picker-cancel">Chiudi</button></div></div>';
-    document.body.appendChild(ov);
-    var close = function () { ov.remove(); };
-    ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
-    ov.querySelector(".picker-cancel").addEventListener("click", close);
-    Array.prototype.forEach.call(ov.querySelectorAll(".player-lib-item"), function (b) {
-        b.addEventListener("click", function () {
-            var id = b.getAttribute("data-id"), name = b.getAttribute("data-name");
-            close();
-            playDownloaded(id, name, null, { inPlace: true });
-        });
-    });
-}
-
 function requestPlayerFullscreen() {
     // Schermo intero sul CONTENITORE del video (non sul <video>): cosi' il
     // cambio episodio non fa uscire dal fullscreen e la TV (mirroring scheda o
@@ -2073,41 +2043,74 @@ function showQrOverlay(url, heading, hint) {
 }
 
 function castToTV() {
-    // Per muoversi liberamente tra i titoli SENZA che la TV si disconnetta serve
-    // trasmettere l'INTERA scheda (mirroring), non il singolo video: i browser
-    // chiudono il cast del <video> a ogni cambio sorgente. Mettiamo quindi il
-    // player a schermo intero e spieghiamo come avviare "Trasmetti scheda".
-    requestPlayerFullscreen();
-    const v = el.videoPlayer;
-    const hasElementCast = v && v.remote && typeof v.remote.prompt === "function";
-    showCastGuide(hasElementCast);
-}
-
-function showCastGuide(hasElementCast) {
-    var old = document.getElementById("cast-guide-overlay"); if (old) old.remove();
+    var v = el.videoPlayer;
+    var hasCast = v && v.remote && typeof v.remote.prompt === "function";
     var ov = document.createElement("div");
-    ov.id = "cast-guide-overlay"; ov.className = "picker-overlay";
-    var extra = hasElementCast
-        ? '<button class="secondary-btn cast-elem-btn">Trasmetti solo questo titolo</button>'
-        : '';
+    ov.className = "picker-overlay"; ov.id = "cast-choice-overlay";
     ov.innerHTML = '<div class="picker-panel glass"><h3>\ud83d\udcfa Trasmetti alla TV</h3>' +
-        '<p class="picker-hint" style="text-align:left;line-height:1.6">Per vedere sulla TV e <b>cambiare titolo o episodio liberamente</b> senza tornare al PC:</p>' +
-        '<ol style="text-align:left;color:var(--dim,#aaa);line-height:1.7;margin:0 0 6px 18px;padding:0">' +
-        '<li>In Chrome apri il menu <b>\u22ee</b> in alto a destra</li>' +
-        '<li>Scegli <b>Trasmetti\u2026</b> \u2192 in \u201cSorgenti\u201d seleziona <b>Trasmetti scheda</b></li>' +
-        '<li>Scegli la tua TV/Chromecast</li></ol>' +
-        '<p class="picker-hint" style="text-align:left">Il player \u00e8 gi\u00e0 a schermo intero: usa \u201c\ud83d\udce5 Scegli download\u201d e il telefono come telecomando per navigare tutto dalla TV.</p>' +
-        '<div class="picker-actions">' + extra +
-        '<button class="secondary-btn picker-cancel">Ho capito</button></div></div>';
+        '<p class="picker-hint">Cosa vuoi guardare?</p>' +
+        '<div class="cast-choice">' +
+        '<button class="secondary-btn cast-one">\u25b6 Un solo titolo<small>Trasmette questo video alla TV</small></button>' +
+        '<button class="secondary-btn cast-many">\ud83d\udcfa Pi\u00f9 titoli di fila<small>Serie/pi\u00f9 film senza tornare al PC</small></button>' +
+        '</div><div class="picker-actions"><button class="secondary-btn picker-cancel">Annulla</button></div></div>';
     document.body.appendChild(ov);
     var close = function () { ov.remove(); };
     ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
     ov.querySelector(".picker-cancel").addEventListener("click", close);
-    var eb = ov.querySelector(".cast-elem-btn");
-    if (eb) eb.addEventListener("click", function () {
+    ov.querySelector(".cast-one").addEventListener("click", function () {
         close();
-        try { el.videoPlayer.remote.prompt().catch(function () {}); } catch (e) {}
+        if (hasCast) {
+            v.remote.prompt().then(function () { showToast("Trasmissione avviata sulla TV."); })
+                .catch(function () { showToast("Trasmissione annullata o nessun dispositivo trovato."); });
+        } else {
+            showToast("Il browser non supporta la trasmissione diretta. Usa Chrome.");
+        }
     });
+    ov.querySelector(".cast-many").addEventListener("click", function () {
+        close();
+        var g = document.createElement("div");
+        g.className = "picker-overlay";
+        g.innerHTML = '<div class="picker-panel glass"><h3>\ud83d\udcfa Pi\u00f9 titoli di fila</h3>' +
+            '<p class="picker-hint" style="text-align:left;line-height:1.6">Trasmettendo il singolo video, la TV si stacca a ogni cambio. Per una maratona senza tornare al PC trasmetti l\u2019intera scheda:</p>' +
+            '<ol style="text-align:left;color:var(--dim,#8b8ba3);line-height:1.8;margin:0 0 6px 18px;padding:0">' +
+            '<li>In Chrome: menu <b>\u22ee</b> \u2192 <b>Trasmetti\u2026</b></li>' +
+            '<li>In \u201cSorgenti\u201d scegli <b>Trasmetti scheda</b>, poi la TV</li>' +
+            '<li>Premi <b>\u26f6 Schermo intero</b> qui nel player</li>' +
+            '<li>Dal <b>telefono-telecomando</b> scegli e cambia i titoli</li></ol>' +
+            '<div class="picker-actions"><button class="secondary-btn picker-cancel">Ho capito</button></div></div>';
+        document.body.appendChild(g);
+        var gc = function () { g.remove(); };
+        g.addEventListener("click", function (e) { if (e.target === g) gc(); });
+        g.querySelector(".picker-cancel").addEventListener("click", gc);
+    });
+}
+
+// Blocca il player sul PC mentre si trasmette il singolo video (Remote Playback):
+// muta l'audio locale (niente doppio audio) e mostra un velo di "in riproduzione
+// sulla TV" sopra al video.
+function setupCastLock() {
+    var v = el.videoPlayer; if (!v || !v.remote) return;
+    var apply = function (connected) {
+        v.muted = !!connected;
+        var box = el.videoContainer;
+        if (!box) return;
+        var lock = document.getElementById("cast-lock");
+        if (connected) {
+            if (!lock) {
+                lock = document.createElement("div");
+                lock.id = "cast-lock";
+                lock.innerHTML = '<div class="cast-lock-inner"><span class="cast-lock-tv">\ud83d\udcfa</span>' +
+                    '<span>In riproduzione sulla TV</span>' +
+                    '<small>Controlla dal telefono-telecomando o dai tasti qui sotto</small></div>';
+                box.appendChild(lock);
+            }
+        } else if (lock) { lock.remove(); }
+    };
+    try {
+        v.remote.addEventListener("connect", function () { apply(true); });
+        v.remote.addEventListener("connecting", function () { apply(true); });
+        v.remote.addEventListener("disconnect", function () { apply(false); });
+    } catch (e) {}
 }
 
 function normName(str) { return (str || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }

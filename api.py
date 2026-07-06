@@ -1122,12 +1122,15 @@ def remote_get_state():
 class RemoteCmd(BaseModel):
     action: str
     value: Optional[float] = None
+    arg: Optional[str] = None      # es. id del download da riprodurre
+    label: Optional[str] = None    # nome leggibile del titolo scelto
 
 
 @app.post("/api/remote/cmd")
 def remote_set_cmd(payload: RemoteCmd):
     _REMOTE["seq"] += 1
-    _REMOTE["cmd"] = {"seq": _REMOTE["seq"], "action": payload.action, "value": payload.value}
+    _REMOTE["cmd"] = {"seq": _REMOTE["seq"], "action": payload.action,
+                      "value": payload.value, "arg": payload.arg, "label": payload.label}
     return {"ok": True, "seq": _REMOTE["seq"]}
 
 
@@ -1136,7 +1139,7 @@ def remote_poll(since: int = 0):
     c = _REMOTE.get("cmd")
     if c and c["seq"] > since:
         return c
-    return {"seq": _REMOTE["seq"], "action": None, "value": None}
+    return {"seq": _REMOTE["seq"], "action": None, "value": None, "arg": None, "label": None}
 
 @app.post("/api/save")
 def save_all():

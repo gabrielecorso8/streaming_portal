@@ -1467,3 +1467,16 @@ body.downloads-only #header-cast-btn { display: none !important; }
 .player-lib-item:active { transform: scale(.99); }
 .pli-play { color: #9d7bff; font-size: .85rem; }
 .pli-name { flex: 1; }
+
+/* Trasmetti alla TV: scelta uno/più titoli */
+.cast-choice { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+.cast-choice .secondary-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+    padding: 14px 16px; font-size: 1rem; font-weight: 600; }
+.cast-choice .secondary-btn small { font-weight: 400; opacity: .7; font-size: .8rem; }
+/* Velo "in riproduzione sulla TV" sopra al video quando si trasmette */
+#cast-lock { position: absolute; inset: 0; background: rgba(10,10,16,.86); backdrop-filter: blur(3px);
+    display: flex; align-items: center; justify-content: center; z-index: 5; border-radius: inherit; }
+.cast-lock-inner { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; color: #f2f2f7; padding: 20px; }
+.cast-lock-tv { font-size: 2.4rem; }
+.cast-lock-inner span { font-size: 1.1rem; font-weight: 700; }
+.cast-lock-inner small { color: #8b8ba3; max-width: 280px; }

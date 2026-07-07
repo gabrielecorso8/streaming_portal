@@ -282,6 +282,7 @@ else:
     PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
     RES_DIR = PROJECT_DIR
 SETTINGS_FILE = os.path.join(PROJECT_DIR, "settings.json")
+SETTINGS_TEMPLATE_FILE = os.path.join(PROJECT_DIR, "settings.template.json")
 DOWNLOADS_DIR = os.path.join(PROJECT_DIR, "downloads")
 LIBRARY_FILE = os.path.join(PROJECT_DIR, "library.json")
 COVERS_DIR = os.path.join(PROJECT_DIR, "covers")
@@ -354,9 +355,13 @@ def _salvage_settings(txt):
 
 def load_settings():
     data = {}
-    if os.path.exists(SETTINGS_FILE):
+    # Primo avvio / clone pulito: se manca settings.json (gitignorato perche'
+    # contiene il token), parti dal template pubblico settings.template.json, che
+    # porta cartelle, domini e fonti (senza token, generato dopo per-installazione).
+    _src = SETTINGS_FILE if os.path.exists(SETTINGS_FILE) else SETTINGS_TEMPLATE_FILE
+    if os.path.exists(_src):
         try:
-            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+            with open(_src, "r", encoding="utf-8") as f:
                 txt = f.read()
         except Exception:
             txt = ""

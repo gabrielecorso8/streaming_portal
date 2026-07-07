@@ -1397,6 +1397,12 @@ def delete_custom_filter(payload: CustomFilterPayload):
     return _folders_payload()
 
 
+class FilterCover(BaseModel):
+    name: str                # nome del filtro personalizzato (kind)
+    filename: Optional[str] = ""
+    data: str                # base64 (a "data:" prefix is accepted and stripped)
+
+
 @app.post("/api/filters/cover")
 def set_custom_filter_cover(payload: FilterCover):
     """Imposta/cambia la locandina di un filtro personalizzato (come le cartelle)."""
@@ -1493,11 +1499,6 @@ class FolderCover(BaseModel):
     filename: Optional[str] = ""
     data: str                # base64 (a "data:" prefix is accepted and stripped)
 
-
-class FilterCover(BaseModel):
-    name: str                # nome del filtro personalizzato (kind)
-    filename: Optional[str] = ""
-    data: str                # base64 (a "data:" prefix is accepted and stripped)
 
 
 def _folders():

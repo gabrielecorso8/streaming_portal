@@ -250,7 +250,6 @@ async function init() {
     try {
         if (new URLSearchParams(location.search).get("view") === "downloads") {
             document.body.classList.add("downloads-only");
-            ensureSavedSection(); renderSaved();
             if (typeof refreshDownloads === "function") refreshDownloads();
         }
     } catch (e) {}
@@ -928,21 +927,7 @@ function _ensureServerUp() {
     if (!isRemoteDevice()) return;   // sul PC il server c'e' sempre
     fetch("/api/ping", { cache: "no-store" })
         .then(function (r) { if (!r.ok) throw 0; })
-        .catch(function () { _goOfflineMode(); });
-}
-
-// Fuori casa (server irraggiungibile): se ho contenuti salvati offline mostro
-// "I tuoi salvati" invece del blocco; se non ho nulla, mostro l'avviso classico.
-function _goOfflineMode() {
-    ensureSavedSection(); renderSaved();
-    idbAll().then(function (items) {
-        if (items && items.length) {
-            document.body.classList.add("offline-mode");
-            showToast("Fuori rete: mostro 'I tuoi salvati' (offline).", 6000);
-        } else {
-            _showServerOffline(_ensureServerUp);
-        }
-    }).catch(function () { _showServerOffline(_ensureServerUp); });
+        .catch(function () { _showServerOffline(_ensureServerUp); });
 }
 
 function isRemoteDevice() {
@@ -1835,7 +1820,7 @@ function renderDownloads(downloads) {
             const pf = item.querySelector(".play-file-btn");
             if (pf) pf.addEventListener("click", (e) => { e.stopPropagation(); playDownloaded(dl.id, dl.title, dl.key); });
             const sf = item.querySelector(".save-file-btn");
-            if (sf) sf.addEventListener("click", (e) => { e.stopPropagation(); saveDownloadToDevice(dl.id, dl.file || dl.title, (info && info.cover) || dl.cover || "", dl.title || dl.file); });
+            if (sf) sf.addEventListener("click", (e) => { e.stopPropagation(); saveDownloadToDevice(dl.id, dl.file || dl.title); });
             const nb = item.querySelector(".dl-next-btn");
             if (nb) nb.addEventListener("click", (e) => {
                 e.stopPropagation();
@@ -1988,8 +1973,7 @@ function _syncCinema() {
     }
 }
 
-function saveDownloadToDevice(id, filename, cover, name) {
-    if (isRemoteDevice()) { saveToApp(id, name || filename, cover || ""); return; }
+function saveDownloadToDevice(id, filename) {
     // Salva il file sul dispositivo (telefono/tablet) per guardarlo offline, anche
     // fuori casa. Usa ?dl=1 -> il server risponde con "attachment" e il browser scarica.
     var url = withLanToken("/api/download/play/" + encodeURIComponent(id) + "?dl=1");
@@ -1998,7 +1982,7 @@ function saveDownloadToDevice(id, filename, cover, name) {
     var a = document.createElement("a");
     a.href = url; a.download = name; a.rel = "noopener";
     document.body.appendChild(a); a.click(); a.remove();
-    showToast("Salvataggio sul dispositivo avviato: controlla i Download / File.", 6000);
+    showToast("Salvataggio avviato: trovi il video nei Download / app File del telefono, poi lo guardi offline anche fuori casa.", 7000);
 }
 
 function playDownloaded(id, title, key, opts) {
@@ -3901,92 +3885,4 @@ async function toggleModalFavorite() {
 }
 
 // Start application
-// ===========================================================================
-//  "I tuoi salvati": copie offline dei titoli, dentro l'app (IndexedDB).
-//  Salvi a casa sulla Wi-Fi, poi riproduci ovunque anche senza connessione.
-// ===========================================================================
-var SAVED_DB = "scp_saved", SAVED_STORE = "media", _savedURL = null;
-function idbOpen() {
-    return new Promise(function (res, rej) {
-        var rq = indexedDB.open(SAVED_DB, 1);
-        rq.onupgradeneeded = function () { rq.result.createObjectStore(SAVED_STORE, { keyPath: "id" }); };
-        rq.onsuccess = function () { res(rq.result); };
-        rq.onerror = function () { rej(rq.error); };
-    });
-}
-function idbPut(rec) { return idbOpen().then(function (db) { return new Promise(function (res, rej) { var tx = db.transaction(SAVED_STORE, "readwrite"); tx.objectStore(SAVED_STORE).put(rec); tx.oncomplete = function () { res(); }; tx.onerror = function () { rej(tx.error); }; }); }); }
-function idbGet(id) { return idbOpen().then(function (db) { return new Promise(function (res, rej) { var rq = db.transaction(SAVED_STORE).objectStore(SAVED_STORE).get(id); rq.onsuccess = function () { res(rq.result); }; rq.onerror = function () { rej(rq.error); }; }); }); }
-function idbAll() { return idbOpen().then(function (db) { return new Promise(function (res, rej) { var rq = db.transaction(SAVED_STORE).objectStore(SAVED_STORE).getAll(); rq.onsuccess = function () { res(rq.result || []); }; rq.onerror = function () { rej(rq.error); }; }); }); }
-function idbDel(id) { return idbOpen().then(function (db) { return new Promise(function (res, rej) { var tx = db.transaction(SAVED_STORE, "readwrite"); tx.objectStore(SAVED_STORE).delete(id); tx.oncomplete = function () { res(); }; tx.onerror = function () { rej(tx.error); }; }); }); }
-
-async function saveToApp(id, name, cover) {
-    if (!("indexedDB" in window)) { showToast("Il browser non supporta il salvataggio offline"); return; }
-    showToast("Salvo nell'app… tieni aperta la pagina fino a fine.", 9000);
-    try {
-        var r = await fetch(withLanToken("/api/download/play/" + encodeURIComponent(id)));
-        if (!r.ok) throw 0;
-        var blob = await r.blob();
-        var coverBlob = null;
-        if (cover) { try { var cr = await fetch(withLanToken(cover)); if (cr.ok) coverBlob = await cr.blob(); } catch (e) {} }
-        await idbPut({ id: id, name: name || "Video", size: blob.size, savedAt: Date.now(), blob: blob, coverBlob: coverBlob });
-        showToast("Salvato! Ora è in 'I tuoi salvati' e funziona offline.", 6000);
-        ensureSavedSection(); renderSaved();
-    } catch (e) { showToast("Salvataggio non riuscito (spazio del telefono insufficiente?).", 6000); }
-}
-
-function ensureSavedSection() {
-    if (document.getElementById("saved-section")) return;
-    var ds = document.getElementById("downloads-section");
-    if (!ds || !ds.parentNode) return;
-    var sec = document.createElement("section");
-    sec.id = "saved-section"; sec.className = "saved-section";
-    sec.innerHTML = '<h2 class="saved-title">I tuoi salvati <small>sul telefono · offline</small></h2><div id="saved-list" class="saved-list"></div>';
-    ds.parentNode.insertBefore(sec, ds);
-}
-
-async function renderSaved() {
-    var list = document.getElementById("saved-list"); if (!list) return;
-    var sec = document.getElementById("saved-section");
-    var items = [];
-    try { items = await idbAll(); } catch (e) {}
-    if (!items.length) { if (sec) sec.style.display = "none"; return; }
-    if (sec) sec.style.display = "";
-    items.sort(function (a, b) { return b.savedAt - a.savedAt; });
-    list.innerHTML = "";
-    items.forEach(function (it) {
-        var card = document.createElement("div"); card.className = "saved-item";
-        var coverURL = it.coverBlob ? URL.createObjectURL(it.coverBlob) : "";
-        var label = (typeof episodeLabel === "function" ? episodeLabel(it.name) : it.name) || it.name;
-        card.innerHTML =
-            '<div class="saved-cover">' + (coverURL ? '<img src="' + coverURL + '" alt="">' : '') + '</div>' +
-            '<div class="saved-meta"><span class="saved-name">' + escapeHtml(label) + '</span>' +
-            '<span class="saved-sub">' + formatBytes(it.size) + ' · offline</span></div>' +
-            '<div class="saved-actions">' +
-            '<button class="primary-btn small-btn saved-play"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Riproduci</button>' +
-            '<button class="secondary-btn small-btn saved-del">Elimina</button></div>';
-        card.querySelector(".saved-play").addEventListener("click", function () { playSaved(it.id); });
-        card.querySelector(".saved-del").addEventListener("click", function () {
-            if (confirm("Eliminare '" + label + "' dal telefono? (resta comunque sul PC)")) idbDel(it.id).then(renderSaved);
-        });
-        list.appendChild(card);
-    });
-}
-
-async function playSaved(id) {
-    var rec; try { rec = await idbGet(id); } catch (e) {}
-    if (!rec || !rec.blob) { showToast("Salvataggio non trovato"); return; }
-    if (typeof closePlayer === "function") closePlayer();
-    currentPlayTitle = rec.name || "";
-    if (el.playingTitle) el.playingTitle.textContent = "Riproduzione: " + (rec.name || "salvato");
-    el.playerSection.classList.remove("hidden");
-    if (el.iframePlayer) el.iframePlayer.classList.add("hidden");
-    el.videoPlayer.classList.remove("hidden");
-    if (_savedURL) { try { URL.revokeObjectURL(_savedURL); } catch (e) {} }
-    _savedURL = URL.createObjectURL(rec.blob);
-    el.videoPlayer.src = _savedURL;
-    el.videoPlayer.play().catch(function () {});
-    playbackCtx = null; if (typeof updatePlaybackNav === "function") updatePlaybackNav();
-    try { el.playerSection.scrollIntoView({ behavior: "smooth" }); } catch (e) {}
-}
-
 window.addEventListener("DOMContentLoaded", init);

@@ -94,18 +94,28 @@ def search(query, host=DEFAULT_HOST, proxies=None, limit=40):
     rilevanza rispetto alla query.
     """
     q_tokens = [t for t in re.split(r"\W+", (query or "").lower()) if len(t) >= 2]
+    q_norm = re.sub(r"\W+", "", (query or "").lower())
+    # Query corte (1-2 parole): pretendo TUTTI i token. Query lunghe: almeno il 60%.
+    _min_ratio = 1.0 if len(q_tokens) <= 2 else 0.6
 
-    def _relevant(title):
+    def _score(title):
+        """Rilevanza 0..1 del titolo rispetto alla query: scarta gli anime della
+        sidebar (Top Anime / Correlati) che c'entrano poco con la ricerca."""
         if not q_tokens:
-            return True
+            return 1.0
         nt = (title or "").lower()
-        # tiene i titoli con almeno un token della query (scarta il "rumore"
-        # delle sidebar Top Anime / Nuove aggiunte / Correlati)
-        return any(t in nt for t in q_tokens)
+        hits = sum(1 for t in q_tokens if t in nt)
+        ratio = hits / len(q_tokens)
+        if q_norm and q_norm in re.sub(r"\W+", "", nt):
+            ratio = max(ratio, 0.95)
+        return ratio
 
     def _collect(soup, base):
-        seen, res = set(), []
-        for a in soup.select("a[href*='/play/']"):
+        # SOLO i risultati veri: il primo contenitore .film-list, cosi' non peschiamo
+        # i link /play/ delle sidebar (Top Anime, Nuove aggiunte, Correlati).
+        scope = soup.select_one(".film-list") or soup
+        seen, scored = set(), []
+        for a in scope.select("a[href*='/play/']"):
             href = a.get("href") or ""
             m = re.search(r"/play/([^/?#]+)", href)
             if not m:
@@ -114,17 +124,19 @@ def search(query, host=DEFAULT_HOST, proxies=None, limit=40):
             if pid in seen:
                 continue
             title = (a.get("data-jtitle") or a.get_text(strip=True) or a.get("title") or "").strip()
-            if not title or not _relevant(title):
+            if not title:
+                continue
+            sc = _score(title)
+            if sc < _min_ratio:
                 continue
             seen.add(pid)
             par = a.find_parent(class_="item") or a.parent
             img = par.find("img") if par else None
             cover = _abs(base, (img.get("src") or img.get("data-src")) if img else "")
             full = _abs(base, href)
-            res.append({"title": title, "url": full, "cover": cover, "key": _key_for(full)})
-            if len(res) >= limit:
-                break
-        return res
+            scored.append((sc, {"title": title, "url": full, "cover": cover, "key": _key_for(full)}))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [it for _s, it in scored[:limit]]
 
     for h in _host_candidates(host):
         base = f"https://{h}"

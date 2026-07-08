@@ -2026,7 +2026,10 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None,
 
         # Fonti EXTRA (AnimeWorld ecc.): gia' filtrate per rilevanza -> messe IN CIMA.
         extra = []
-        if "aw" in srcs and not wanted_genre:
+        # AnimeWorld/fonti extra: sono SERIE (anime). Le includiamo solo se l'utente
+        # non ha filtrato per "film" e non per genere, cosi' non inquinano le liste
+        # di film. Vengono aggiunte DOPO i risultati SC (primari).
+        if "aw" in srcs and not wanted_genre and wanted_type != "movie":
             for d in SETTINGS.get("source_domains", []):
                 if "animeworld" in (d or "").lower():
                     try:
@@ -2042,7 +2045,7 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None,
                         print(f"[animeworld] search merge failed: {_e}")
                 else:
                     extra.extend(search_source_domain(d, q))
-        return extra + results
+        return results + extra
     except HTTPException:
         raise
     except Exception as e:
@@ -3376,10 +3379,4 @@ def open_downloads_folder():
         raise HTTPException(status_code=500, detail="Errore interno del server")
     return {"ok": True, "path": DOWNLOADS_DIR}
 
-# Serve uploaded folder cover images
-app.mount("/covers", StaticFiles(directory=COVERS_DIR), name="covers")
-
-# Mount static folder
-static_path = os.path.join(RES_DIR, "static")
-if os.path.exists(static_path):
-    app.mount("/", StaticFiles(directory=static_path, html=True), name="static")
+# Serve uploaded folder cov

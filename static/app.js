@@ -1770,6 +1770,9 @@ function renderDownloads(downloads) {
                    <button class="primary-btn small-btn play-file-btn">
                        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Riproduci
                    </button>
+                   <button class="secondary-btn small-btn save-file-btn" title="Salva sul telefono/tablet per guardarlo offline anche fuori casa">
+                       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Salva
+                   </button>
                    ${nextBtn}
                    <button class="secondary-btn small-btn open-card-btn" title="Apri la scheda del titolo">Scheda</button>
                    <button class="secondary-btn small-btn reveal-file-btn">
@@ -1816,6 +1819,8 @@ function renderDownloads(downloads) {
             item.setAttribute("aria-label", dl.title ? `Riproduci ${dl.title}` : "Riproduci download");
             const pf = item.querySelector(".play-file-btn");
             if (pf) pf.addEventListener("click", (e) => { e.stopPropagation(); playDownloaded(dl.id, dl.title, dl.key); });
+            const sf = item.querySelector(".save-file-btn");
+            if (sf) sf.addEventListener("click", (e) => { e.stopPropagation(); saveDownloadToDevice(dl.id, dl.file || dl.title); });
             const nb = item.querySelector(".dl-next-btn");
             if (nb) nb.addEventListener("click", (e) => {
                 e.stopPropagation();
@@ -1966,6 +1971,18 @@ function _syncCinema() {
     if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
         document.body.classList.remove("cinema-on");
     }
+}
+
+function saveDownloadToDevice(id, filename) {
+    // Salva il file sul dispositivo (telefono/tablet) per guardarlo offline, anche
+    // fuori casa. Usa ?dl=1 -> il server risponde con "attachment" e il browser scarica.
+    var url = withLanToken("/api/download/play/" + encodeURIComponent(id) + "?dl=1");
+    var name = (filename || "video").replace(/[\\/:*?"<>|]+/g, "_");
+    if (!/\.(mp4|mkv|webm|m4v)$/i.test(name)) name += ".mp4";
+    var a = document.createElement("a");
+    a.href = url; a.download = name; a.rel = "noopener";
+    document.body.appendChild(a); a.click(); a.remove();
+    showToast("Salvataggio sul dispositivo avviato: controlla i Download / File.", 6000);
 }
 
 function playDownloaded(id, title, key, opts) {

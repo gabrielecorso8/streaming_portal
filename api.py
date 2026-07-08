@@ -3269,13 +3269,16 @@ def reveal_download(payload: dict):
 
 
 @app.get("/api/download/play/{download_id}")
-def play_download(download_id: str):
-    """Serve il file scaricato per la riproduzione nel player (anche da telefono).
-    FileResponse gestisce le richieste Range, quindi il video e' navigabile."""
+def play_download(download_id: str, dl: int = 0):
+    """Serve il file scaricato. Con ?dl=1 forza il SALVATAGGIO sul dispositivo
+    (Content-Disposition: attachment), cosi' dal telefono lo scarichi e lo guardi
+    offline anche fuori casa. Senza dl, riproduzione inline (Range supportate)."""
     path = _resolve_download_path(download_id)
     ext = os.path.splitext(path)[1].lower()
     mt = {".mp4": "video/mp4", ".m4v": "video/mp4", ".mkv": "video/x-matroska",
           ".webm": "video/webm"}.get(ext, "video/mp4")
+    if dl:
+        return FileResponse(path, media_type=mt, filename=os.path.basename(path))
     return FileResponse(path, media_type=mt, content_disposition_type="inline")
 
 

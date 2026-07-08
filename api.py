@@ -3381,4 +3381,10 @@ def open_downloads_folder():
         raise HTTPException(status_code=500, detail="Errore interno del server")
     return {"ok": True, "path": DOWNLOADS_DIR}
 
-# Serve uploaded folder cov
+# Serve uploaded folder cover images
+app.mount("/covers", StaticFiles(directory=COVERS_DIR), name="covers")
+
+# Mount static folder
+static_path = os.path.join(RES_DIR, "static")
+if os.path.exists(static_path):
+    app.mount("/", StaticFiles(directory=static_path, html=True), name="static")

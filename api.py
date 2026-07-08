@@ -2052,10 +2052,12 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None,
         raise HTTPException(status_code=500, detail="Errore interno del server")
 
 @app.get("/api/search/list")
-def search_list(q: str):
+def search_list(q: str, sources: Optional[str] = "sc"):
     """Ricerca a LISTA: piu' titoli separati da ';' (per importare al volo intere
-    saghe/collezioni generate dall'AI). Ritorna il miglior risultato per ciascun
-    titolo, con _found True/False, cercando in parallelo."""
+    saghe/collezioni). Ritorna il miglior risultato per ciascun titolo.
+    Di default cerca SOLO su StreamingCommunity ("sc"): l'import a lista serve per
+    film/serie e includere AnimeWorld farebbe finire anime a caso al posto dei film
+    che SC non trova esattamente."""
     terms = [t.strip() for t in (q or "").split(";") if t.strip()][:60]
     if not terms:
         return []
@@ -2064,7 +2066,7 @@ def search_list(q: str):
 
     def one(term):
         try:
-            r = search(term)
+            r = search(term, sources=sources)
             if r:
                 item = dict(r[0])
                 item["_term"] = term

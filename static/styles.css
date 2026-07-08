@@ -1525,3 +1525,17 @@ body.cinema-on #next-banner { display: none !important; }
 .video-container:-webkit-full-screen #video-player {
     width: 100% !important; height: 100% !important; max-height: none !important;
     border-radius: 0 !important; object-fit: contain; }
+
+/* "I tuoi salvati" (solo mobile): copie offline dentro l'app */
+.saved-section { margin: 1rem 0; }
+.saved-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 .6rem; display: flex; align-items: baseline; gap: .5rem; }
+.saved-title small { font-weight: 500; font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.saved-list { display: flex; flex-direction: column; gap: .5rem; }
+.saved-item { display: flex; align-items: center; gap: .75rem; padding: .5rem; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255,255,255,.03); }
+.saved-cover { width: 46px; height: 66px; flex: none; border-radius: 8px; overflow: hidden; background: #191926; }
+.saved-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.saved-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.saved-name { font-weight: 600; font-size: .95rem; }
+.saved-sub { color: var(--text-muted); font-size: .78rem; }
+.saved-actions { display: flex; flex-direction: column; gap: .35rem; flex: none; }
+body.offline-mode #downloads-section { display: none !important; }

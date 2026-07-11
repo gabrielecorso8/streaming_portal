@@ -346,19 +346,36 @@ def _browser_get_html(url, referer=None, timeout_ms=180000):
         os.makedirs(profile_dir, exist_ok=True)
     except Exception:
         pass
+    def _open(p):
+        kw = dict(
+            headless=False,
+            args=["--disable-blink-features=AutomationControlled",
+                  "--no-first-run", "--no-default-browser-check",
+                  "--disable-dev-shm-usage"],
+            viewport={"width": 1100, "height": 760},
+            locale="it-IT",
+            ignore_https_errors=True,
+            extra_http_headers=({"Referer": referer} if referer else {}))
+        # Prova col CHROME/EDGE REALE del sistema (Cloudflare "managed" lascia passare
+        # un browser vero, mentre blocca il Chromium di Playwright). Fallback: chromium.
+        for _ch in ("chrome", "msedge", None):
+            try:
+                kk = dict(kw)
+                if _ch:
+                    kk["channel"] = _ch
+                else:
+                    kk["user_agent"] = get_headers().get("User-Agent")
+                ctxx = p.chromium.launch_persistent_context(profile_dir, **kk)
+                print(f"[browser] avviato con canale: {_ch or 'chromium'}")
+                return ctxx
+            except Exception as e:
+                print(f"[browser] canale {_ch or 'chromium'} non disponibile: {e}")
+        return None
     try:
         with sync_playwright() as p:
-            ctx = p.chromium.launch_persistent_context(
-                profile_dir,
-                headless=False,
-                args=["--disable-blink-features=AutomationControlled",
-                      "--no-first-run", "--no-default-browser-check",
-                      "--disable-dev-shm-usage"],
-                user_agent=get_headers().get("User-Agent"),
-                viewport={"width": 1100, "height": 760},
-                locale="it-IT",
-                ignore_https_errors=True,
-                extra_http_headers=({"Referer": referer} if referer else {}))
+            ctx = _open(p)
+            if ctx is None:
+                return None
             try:
                 ctx.add_init_script(_stealth)
             except Exception:

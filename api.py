@@ -355,18 +355,34 @@ def _browser_get_html(url, referer=None, timeout_ms=45000):
             ctx.add_init_script(_stealth)
             page = ctx.new_page()
             page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
-            # attende che la challenge Cloudflare passi (auto per un browser vero) e il player carichi
             try:
                 page.wait_for_function(
-                    "() => document.documentElement.outerHTML.indexOf('window.video') !== -1"
-                    " || document.documentElement.outerHTML.indexOf('window.streams') !== -1"
-                    " || document.querySelector('video') !== null",
+                    "() => (typeof window.video !== 'undefined')"
+                    " || (typeof window.masterPlaylist !== 'undefined')"
+                    " || (typeof window.streams !== 'undefined')",
                     timeout=timeout_ms)
             except Exception:
                 pass
+            data = None
+            try:
+                data = page.evaluate(
+                    "() => { try { return {"
+                    "  video: (typeof window.video!=='undefined')?window.video:null,"
+                    "  streams: (typeof window.streams!=='undefined')?window.streams:null,"
+                    "  masterPlaylist: (typeof window.masterPlaylist!=='undefined')?window.masterPlaylist:null,"
+                    "  params: (window.masterPlaylist&&window.masterPlaylist.params)?window.masterPlaylist.params:"
+                    "          ((typeof window.params!=='undefined')?window.params:null)"
+                    "}; } catch(e){ return null; } }")
+            except Exception:
+                data = None
             html = page.content()
             try: browser.close()
             except Exception: pass
+            if data and data.get("video"):
+                return ("<script>window.video = " + json.dumps(data.get("video")) + ";\n"
+                        "var _sc = { params: " + json.dumps(data.get("params") or {}) + " };\n"
+                        "window.streams = " + json.dumps(data.get("streams") or []) + ";\n"
+                        "window.masterPlaylist = " + json.dumps(data.get("masterPlaylist") or {}) + ";</script>")
             return html
     # 1) browser VISIBILE (headful): Cloudflare "managed" spesso lascia passare solo un
     #    browser reale, mentre rileva quello headless. 2) fallback headless.
@@ -2539,7 +2555,7 @@ def resolve_url(payload: ResolveUrlRequest):
     # Un link NATIVO StreamingCommunity ha il path /it/titles/{id-slug}. I nuovi
     # domini spesso contengono un trattino: NON deve piu' far scattare la modalita'
     # "clone" (che perde il download automatico Vixcloud). Distinguiamo dal PATH.
-    _native_sc_path = bool(re.search(r"/(?:[a-z]{2}/)?titles/\d+", path))
+    _native_sc_path = bool(re.search(r"/(?:[a-z]{2}/)?(?:titles|watch)/\d+", path))
     is_clone = is_extra_source or ("watch" in netloc) or (not _native_sc_path)
     
     if is_clone:

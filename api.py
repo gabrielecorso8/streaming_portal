@@ -2632,8 +2632,21 @@ def resolve_stream_info(id, episode_id=None):
             embed_resp = session.get(vix_embed_url, headers=vix_headers, timeout=12,
                                      proxies=get_proxies(), verify=False)
         if embed_resp.status_code != 200:
-            raise HTTPException(status_code=embed_resp.status_code,
-                                detail="Failed to fetch embed player (Vixcloud ha rifiutato: prova con VPN accesa)")
+            _body = (embed_resp.text or "")[:400].lower()
+            _host = urllib.parse.urlparse(vix_embed_url).netloc
+            _server = (embed_resp.headers.get("server") or "").lower()
+            _cf = ("cloudflare" in _body or "just a moment" in _body
+                   or "cf-ray" in " ".join(embed_resp.headers.keys()).lower()
+                   or "cloudflare" in _server or "attention required" in _body)
+            print(f"[vix] embed {embed_resp.status_code} host={_host} server={_server} cloudflare={_cf} url={vix_embed_url}")
+            print(f"[vix] body snippet: {_body[:200]!r}")
+            if _cf:
+                _detail = (f"Il player {_host} e' protetto da Cloudflare (403). "
+                           f"Con un IP VPN da datacenter Cloudflare blocca: prova a SCARICARE con la VPN SPENTA.")
+            else:
+                _detail = (f"Il player {_host} ha risposto {embed_resp.status_code}. "
+                           f"Se hai la VPN accesa provala a spegnere (gli IP VPN vengono spesso bloccati).")
+            raise HTTPException(status_code=embed_resp.status_code, detail=_detail)
             
         html_content = embed_resp.text
         

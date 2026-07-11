@@ -119,6 +119,26 @@ def download_hls():
         print(f"[!] Impossibile scaricare hls.js ora: {e}")
 
 
+def ensure_playwright():
+    """Installa Playwright + Chromium (una tantum) per la modalita' browser headless
+    che supera Cloudflare sul player. Non fatale: se fallisce, il resto funziona."""
+    try:
+        import playwright  # noqa: F401
+    except Exception:
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "playwright>=1.40,<2"])
+        except Exception as e:
+            print(f"[browser] pip playwright non riuscito: {e}")
+            return
+    # Scarica Chromium se manca (idempotente: veloce se gia' presente)
+    try:
+        cf = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name == "nt" else 0
+        subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"],
+                       creationflags=cf, timeout=600)
+    except Exception as e:
+        print(f"[browser] installazione Chromium non riuscita ora: {e}")
+
+
 def start_server():
     """Starts the FastAPI application using uvicorn."""
     # Add bin/ directory to PATH so subprocesses can find ffmpeg
@@ -231,6 +251,10 @@ if __name__ == "__main__":
                 download_hls()
             except Exception as e:
                 print(f"[!] hls.js non scaricato ora: {e}")
+            try:
+                ensure_playwright()
+            except Exception as e:
+                print(f"[!] Browser headless non pronto ora: {e}")
             start_server()
     except Exception:
         import traceback

@@ -323,6 +323,45 @@ def _fetch_maybe_cloudflare(url, headers=None, timeout=15, proxies=None):
             print(f"[cf] cloudscraper GET fallita: {e}")
     return r
 
+
+def _browser_get_html(url, referer=None, timeout_ms=45000):
+    """Ultima spiaggia contro Cloudflare "managed": apre l'URL in Chromium headless
+    (Playwright), che supera la challenge come un vero browser, e ritorna l'HTML con
+    le variabili del player. Richiede playwright + chromium (installati da start.py).
+    Ritorna None se Playwright/Chromium non sono disponibili o falliscono."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except Exception as e:
+        print(f"[browser] Playwright non disponibile: {e}")
+        return None
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True, args=[
+                "--no-sandbox", "--disable-dev-shm-usage",
+                "--disable-blink-features=AutomationControlled"])
+            ctx = browser.new_context(
+                user_agent=get_headers().get("User-Agent"),
+                ignore_https_errors=True,
+                extra_http_headers=({"Referer": referer} if referer else {}))
+            page = ctx.new_page()
+            page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+            # attende che la challenge Cloudflare passi e il player si carichi
+            try:
+                page.wait_for_function(
+                    "() => document.documentElement.outerHTML.indexOf('window.video') !== -1"
+                    " || document.documentElement.outerHTML.indexOf('window.streams') !== -1"
+                    " || document.querySelector('video') !== null",
+                    timeout=timeout_ms)
+            except Exception:
+                pass
+            html = page.content()
+            try: browser.close()
+            except Exception: pass
+            return html
+    except Exception as e:
+        print(f"[browser] errore Playwright: {e}")
+        return None
+
 # Load Settings
 def normalize_domain(value):
     """Accept a suffix, a full host or a pasted URL and return a canonical host.
@@ -2662,24 +2701,29 @@ def resolve_stream_info(id, episode_id=None):
             vix_headers["Referer"] = f"{base_url}/"
             embed_resp = _fetch_maybe_cloudflare(vix_embed_url, headers=vix_headers, timeout=12,
                                                  proxies=get_proxies())
-        if embed_resp.status_code != 200:
-            _body = (embed_resp.text or "")[:400].lower()
+        if embed_resp is not None and embed_resp.status_code == 200:
+            html_content = embed_resp.text
+        else:
+            # requests/cloudscraper bloccati da Cloudflare: apri l'embed in un vero
+            # browser headless (Playwright), che supera la challenge come il tuo browser.
             _host = urllib.parse.urlparse(vix_embed_url).netloc
-            _server = (embed_resp.headers.get("server") or "").lower()
-            _cf = ("cloudflare" in _body or "just a moment" in _body
-                   or "cf-ray" in " ".join(embed_resp.headers.keys()).lower()
-                   or "cloudflare" in _server or "attention required" in _body)
-            print(f"[vix] embed {embed_resp.status_code} host={_host} server={_server} cloudflare={_cf} url={vix_embed_url}")
-            print(f"[vix] body snippet: {_body[:200]!r}")
-            if _cf:
-                _detail = (f"Il player {_host} e' protetto da Cloudflare (403). "
-                           f"Con un IP VPN da datacenter Cloudflare blocca: prova a SCARICARE con la VPN SPENTA.")
-            else:
-                _detail = (f"Il player {_host} ha risposto {embed_resp.status_code}. "
-                           f"Se hai la VPN accesa provala a spegnere (gli IP VPN vengono spesso bloccati).")
-            raise HTTPException(status_code=embed_resp.status_code, detail=_detail)
-            
-        html_content = embed_resp.text
+            print(f"[vix] embed bloccato ({getattr(embed_resp,'status_code','?')}) su {_host}: provo con browser headless…")
+            html_content = _browser_get_html(vix_embed_url, referer=url) or ""
+            if ("window.video" not in html_content) and ("window.streams" not in html_content):
+                _code = getattr(embed_resp, "status_code", 403) or 403
+                _has_pw = False
+                try:
+                    import playwright  # noqa
+                    _has_pw = True
+                except Exception:
+                    _has_pw = False
+                if not _has_pw:
+                    _detail = (f"Il player {_host} e' protetto da Cloudflare. Serve la modalita' browser: "
+                               f"chiudi e RIAVVIA SC Portal per installare il browser headless (una tantum), poi riprova.")
+                else:
+                    _detail = (f"Il player {_host} e' protetto da Cloudflare e il browser headless non e' riuscito a "
+                               f"superare la verifica. Riprova (a volte serve un secondo tentativo) o con la VPN spenta.")
+                raise HTTPException(status_code=_code, detail=_detail)
         
         # 3. Extract window.video and params
         video_obj_str = extract_js_object(html_content, "window.video =")

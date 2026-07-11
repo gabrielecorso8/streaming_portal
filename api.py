@@ -2728,13 +2728,16 @@ def resolve_stream_info(id, episode_id=None):
             "Sec-Fetch-Site": "cross-site",
             "Upgrade-Insecure-Requests": "1",
         })
+        # NB: risoluzione dell'embed SEMPRE DIRETTA (proxies=None). Il player rifiuta
+        # (403) gli IP da datacenter/VPN: dev'essere l'IP residenziale a chiedere la
+        # pagina. I SEGMENTI video verranno invece scaricati dal downloader tramite il
+        # proxy impostato (per aggirare l'eventuale blocco del provider sui nodi CDN).
         embed_resp = _fetch_maybe_cloudflare(vix_embed_url, headers=vix_headers, timeout=12,
-                                             proxies=get_proxies())
+                                             proxies=None)
         if embed_resp is None or embed_resp.status_code != 200:
-            # Secondo tentativo con Referer = home del sito (alcuni mirror lo pretendono cosi').
             vix_headers["Referer"] = f"{base_url}/"
             embed_resp = _fetch_maybe_cloudflare(vix_embed_url, headers=vix_headers, timeout=12,
-                                                 proxies=get_proxies())
+                                                 proxies=None)
         if embed_resp is not None and embed_resp.status_code == 200:
             html_content = embed_resp.text
         else:
@@ -2745,18 +2748,9 @@ def resolve_stream_info(id, episode_id=None):
             html_content = _browser_get_html(vix_embed_url, referer=url) or ""
             if ("window.video" not in html_content) and ("window.streams" not in html_content):
                 _code = getattr(embed_resp, "status_code", 403) or 403
-                _has_pw = False
-                try:
-                    import playwright  # noqa
-                    _has_pw = True
-                except Exception:
-                    _has_pw = False
-                if not _has_pw:
-                    _detail = (f"Il player {_host} e' protetto da Cloudflare. Serve la modalita' browser: "
-                               f"chiudi e RIAVVIA SC Portal per installare il browser headless (una tantum), poi riprova.")
-                else:
-                    _detail = (f"Il player {_host} e' protetto da Cloudflare e il browser headless non e' riuscito a "
-                               f"superare la verifica. Riprova (a volte serve un secondo tentativo) o con la VPN spenta.")
+                _detail = (f"Il player {_host} ha rifiutato l'IP ({_code}): e' l'IP della VPN a essere bloccato. "
+                           f"SPEGNI la VPN di sistema e riprova a scaricare. Se poi il download si blocca a meta' "
+                           f"(segmenti), imposta un proxy nel campo 'proxy' in alto: verra' usato SOLO per i segmenti.")
                 raise HTTPException(status_code=_code, detail=_detail)
         
         # 3. Extract window.video and params

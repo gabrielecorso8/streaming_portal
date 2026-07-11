@@ -2448,7 +2448,11 @@ def resolve_url(payload: ResolveUrlRequest):
     if "streaming" not in netloc and not is_extra_source:
         raise HTTPException(status_code=400, detail="Invalid domain. Must be a StreamingCommunity link, a direct stream (.m3u8/.mp4) or a vidxgo URL.")
         
-    is_clone = is_extra_source or "watch" in netloc or "-" in netloc
+    # Un link NATIVO StreamingCommunity ha il path /it/titles/{id-slug}. I nuovi
+    # domini spesso contengono un trattino: NON deve piu' far scattare la modalita'
+    # "clone" (che perde il download automatico Vixcloud). Distinguiamo dal PATH.
+    _native_sc_path = bool(re.search(r"/(?:[a-z]{2}/)?titles/\d+", path))
+    is_clone = is_extra_source or ("watch" in netloc) or (not _native_sc_path)
     
     if is_clone:
         try:

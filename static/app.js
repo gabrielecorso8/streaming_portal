@@ -832,10 +832,13 @@ async function convertDirectUrl() {
                     showToast("Download non disponibile per questo link clonato (nessun flusso video diretto estratto)");
                 }
             } else {
-                const titleId = data.title_id || parseInt(data.id_and_slug.split("-")[0]);
-                const episodeId = data.episode_id || null;
                 addToLibrary(url, { key: data.id_and_slug, name: "", type: "", is_clone: false });
-                triggerDownload("", titleId, episodeId);
+                if (data.episode_id) {
+                    var titleId = data.title_id || parseInt(data.id_and_slug.split("-")[0]);
+                    triggerDownload("", titleId, data.episode_id);
+                } else {
+                    loadDetails(data.id_and_slug, url);
+                }
             }
         } else {
             if (await checkDomainError(resp)) return;

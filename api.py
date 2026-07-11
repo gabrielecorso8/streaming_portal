@@ -324,11 +324,12 @@ def _fetch_maybe_cloudflare(url, headers=None, timeout=15, proxies=None):
     return r
 
 
-def _browser_get_html(url, referer=None, timeout_ms=45000):
-    """Ultima spiaggia contro Cloudflare "managed": apre l'URL in Chromium headless
-    (Playwright), che supera la challenge come un vero browser, e ritorna l'HTML con
-    le variabili del player. Richiede playwright + chromium (installati da start.py).
-    Ritorna None se Playwright/Chromium non sono disponibili o falliscono."""
+def _browser_get_html(url, referer=None, timeout_ms=180000):
+    """Apre l'embed in un Chromium VISIBILE con profilo PERSISTENTE. Cloudflare
+    mostra la "Verifica di sicurezza": la prima volta la risolvi a mano (un clic),
+    poi il cookie di clearance resta nel profilo e le volte dopo passa da solo.
+    Legge i globals reali del player (window.video/masterPlaylist/streams) via JS.
+    Ritorna un HTML sintetico compatibile con la pipeline, o None."""
     try:
         from playwright.sync_api import sync_playwright
     except Exception as e:
@@ -340,21 +341,35 @@ def _browser_get_html(url, referer=None, timeout_ms=45000):
         "Object.defineProperty(navigator,'languages',{get:()=>['it-IT','it','en']});"
         "Object.defineProperty(navigator,'plugins',{get:()=>[1,2,3,4,5]});"
     )
-    def _run(headless):
+    profile_dir = os.path.join(PROJECT_DIR, "bin", "cf_profile")
+    try:
+        os.makedirs(profile_dir, exist_ok=True)
+    except Exception:
+        pass
+    try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=headless, args=[
-                "--disable-dev-shm-usage",
-                "--disable-blink-features=AutomationControlled",
-                "--no-first-run", "--no-default-browser-check"])
-            ctx = browser.new_context(
+            ctx = p.chromium.launch_persistent_context(
+                profile_dir,
+                headless=False,
+                args=["--disable-blink-features=AutomationControlled",
+                      "--no-first-run", "--no-default-browser-check",
+                      "--disable-dev-shm-usage"],
                 user_agent=get_headers().get("User-Agent"),
-                viewport={"width": 1280, "height": 800},
+                viewport={"width": 1100, "height": 760},
                 locale="it-IT",
                 ignore_https_errors=True,
                 extra_http_headers=({"Referer": referer} if referer else {}))
-            ctx.add_init_script(_stealth)
-            page = ctx.new_page()
-            page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+            try:
+                ctx.add_init_script(_stealth)
+            except Exception:
+                pass
+            page = ctx.pages[0] if ctx.pages else ctx.new_page()
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            except Exception:
+                pass
+            # Attende che il player carichi: se compare la verifica Cloudflare,
+            # l'utente ha fino a ~3 minuti per risolverla nella finestra visibile.
             try:
                 page.wait_for_function(
                     "() => (typeof window.video !== 'undefined')"
@@ -376,7 +391,7 @@ def _browser_get_html(url, referer=None, timeout_ms=45000):
             except Exception:
                 data = None
             html = page.content()
-            try: browser.close()
+            try: ctx.close()
             except Exception: pass
             if data and data.get("video"):
                 return ("<script>window.video = " + json.dumps(data.get("video")) + ";\n"
@@ -384,17 +399,9 @@ def _browser_get_html(url, referer=None, timeout_ms=45000):
                         "window.streams = " + json.dumps(data.get("streams") or []) + ";\n"
                         "window.masterPlaylist = " + json.dumps(data.get("masterPlaylist") or {}) + ";</script>")
             return html
-    # 1) browser VISIBILE (headful): Cloudflare "managed" spesso lascia passare solo un
-    #    browser reale, mentre rileva quello headless. 2) fallback headless.
-    last = None
-    for _hl in (False, True):
-        try:
-            last = _run(_hl)
-            if last and ("window.video" in last or "window.streams" in last):
-                return last
-        except Exception as e:
-            print(f"[browser] Playwright (headless={_hl}) errore: {e}")
-    return last
+    except Exception as e:
+        print(f"[browser] errore Playwright: {e}")
+        return None
 
 # Load Settings
 def normalize_domain(value):
@@ -2748,9 +2755,9 @@ def resolve_stream_info(id, episode_id=None):
             html_content = _browser_get_html(vix_embed_url, referer=url) or ""
             if ("window.video" not in html_content) and ("window.streams" not in html_content):
                 _code = getattr(embed_resp, "status_code", 403) or 403
-                _detail = (f"Il player {_host} ha rifiutato l'IP ({_code}): e' l'IP della VPN a essere bloccato. "
-                           f"SPEGNI la VPN di sistema e riprova a scaricare. Se poi il download si blocca a meta' "
-                           f"(segmenti), imposta un proxy nel campo 'proxy' in alto: verra' usato SOLO per i segmenti.")
+                _detail = (f"Si e' aperta la 'Verifica di sicurezza' Cloudflare del player {_host}: risolvila "
+                           f"NELLA FINESTRA del browser che appare (un clic sulla casella), poi ripremi Scarica. "
+                           f"La prima volta va fatto a mano; dopo resta memorizzata e i download partono da soli.")
                 raise HTTPException(status_code=_code, detail=_detail)
         
         # 3. Extract window.video and params

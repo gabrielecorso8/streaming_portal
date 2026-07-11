@@ -2607,13 +2607,33 @@ def resolve_stream_info(id, episode_id=None):
             raise HTTPException(status_code=404, detail="Iframe not found (video might not be available)")
             
         vix_embed_url = iframe.get("src")
-        
-        # 2. Fetch Wixcloud/Vixcloud embed page
+        if vix_embed_url and vix_embed_url.startswith("//"):
+            vix_embed_url = "https:" + vix_embed_url   # a volte l'src e' protocol-relative
+
+        # 2. Fetch Vixcloud/vixsrc embed page. Il player rifiuta (403) le richieste
+        # "nude": va simulato un vero browser che carica l'iframe -> Referer = la
+        # pagina iframe di StreamingCommunity, Origin del sito e header Sec-Fetch.
         vix_headers = get_headers()
-        vix_headers["Referer"] = f"{base_url}/"
-        embed_resp = session.get(vix_embed_url, headers=vix_headers, timeout=10)
+        vix_headers.update({
+            "Referer": url,
+            "Origin": base_url.rstrip("/"),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "it-IT,it;q=0.9,en;q=0.8",
+            "Sec-Fetch-Dest": "iframe",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "cross-site",
+            "Upgrade-Insecure-Requests": "1",
+        })
+        embed_resp = session.get(vix_embed_url, headers=vix_headers, timeout=12,
+                                 proxies=get_proxies(), verify=False)
         if embed_resp.status_code != 200:
-            raise HTTPException(status_code=embed_resp.status_code, detail="Failed to fetch embed player")
+            # Secondo tentativo con Referer = home del sito (alcuni mirror lo pretendono cosi').
+            vix_headers["Referer"] = f"{base_url}/"
+            embed_resp = session.get(vix_embed_url, headers=vix_headers, timeout=12,
+                                     proxies=get_proxies(), verify=False)
+        if embed_resp.status_code != 200:
+            raise HTTPException(status_code=embed_resp.status_code,
+                                detail="Failed to fetch embed player (Vixcloud ha rifiutato: prova con VPN accesa)")
             
         html_content = embed_resp.text
         

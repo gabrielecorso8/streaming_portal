@@ -204,7 +204,7 @@ def deps_ok():
     """True se le dipendenze chiave sono gia' installate (cosi' a ogni riavvio
     NON rilanciamo pip: l'avvio resta veloce e funziona anche offline)."""
     try:
-        import uvicorn, fastapi, requests, bs4, m3u8, qrcode  # noqa: F401
+        import uvicorn, fastapi, requests, bs4, m3u8, qrcode, cloudscraper  # noqa: F401
         return True
     except Exception:
         return False

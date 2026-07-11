@@ -292,6 +292,37 @@ os.makedirs(COVERS_DIR, exist_ok=True)
 session = requests.Session()
 session.verify = False
 
+# cloudscraper: sessione "browser-like" per superare la protezione Cloudflare del
+# player (Vixcloud/vixsrc), che risponde 403 alle richieste normali di requests.
+# Facoltativa: se non installata, si continua senza (con degrado noto).
+try:
+    import cloudscraper
+    _cf_scraper = cloudscraper.create_scraper(
+        browser={"browser": "chrome", "platform": "windows", "mobile": False})
+    _cf_scraper.verify = False
+except Exception as _e:
+    _cf_scraper = None
+    print(f"[cf] cloudscraper non disponibile: {_e}")
+
+
+def _fetch_maybe_cloudflare(url, headers=None, timeout=15, proxies=None):
+    """GET che, se prende 403/503 (tipico di Cloudflare), riprova con cloudscraper
+    per risolvere la challenge JS. Ritorna la Response migliore ottenuta."""
+    try:
+        r = session.get(url, headers=headers, timeout=timeout, proxies=proxies, verify=False)
+    except Exception:
+        r = None
+    if r is not None and r.status_code == 200:
+        return r
+    if _cf_scraper is not None:
+        try:
+            r2 = _cf_scraper.get(url, headers=headers, timeout=max(timeout, 25), proxies=proxies)
+            if r2 is not None and (r is None or r2.status_code == 200 or r2.status_code < r.status_code):
+                return r2
+        except Exception as e:
+            print(f"[cf] cloudscraper GET fallita: {e}")
+    return r
+
 # Load Settings
 def normalize_domain(value):
     """Accept a suffix, a full host or a pasted URL and return a canonical host.
@@ -2624,13 +2655,13 @@ def resolve_stream_info(id, episode_id=None):
             "Sec-Fetch-Site": "cross-site",
             "Upgrade-Insecure-Requests": "1",
         })
-        embed_resp = session.get(vix_embed_url, headers=vix_headers, timeout=12,
-                                 proxies=get_proxies(), verify=False)
-        if embed_resp.status_code != 200:
+        embed_resp = _fetch_maybe_cloudflare(vix_embed_url, headers=vix_headers, timeout=12,
+                                             proxies=get_proxies())
+        if embed_resp is None or embed_resp.status_code != 200:
             # Secondo tentativo con Referer = home del sito (alcuni mirror lo pretendono cosi').
             vix_headers["Referer"] = f"{base_url}/"
-            embed_resp = session.get(vix_embed_url, headers=vix_headers, timeout=12,
-                                     proxies=get_proxies(), verify=False)
+            embed_resp = _fetch_maybe_cloudflare(vix_embed_url, headers=vix_headers, timeout=12,
+                                                 proxies=get_proxies())
         if embed_resp.status_code != 200:
             _body = (embed_resp.text or "")[:400].lower()
             _host = urllib.parse.urlparse(vix_embed_url).netloc

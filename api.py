@@ -334,18 +334,28 @@ def _browser_get_html(url, referer=None, timeout_ms=45000):
     except Exception as e:
         print(f"[browser] Playwright non disponibile: {e}")
         return None
-    try:
+    _stealth = (
+        "Object.defineProperty(navigator,'webdriver',{get:()=>undefined});"
+        "window.chrome={runtime:{}};"
+        "Object.defineProperty(navigator,'languages',{get:()=>['it-IT','it','en']});"
+        "Object.defineProperty(navigator,'plugins',{get:()=>[1,2,3,4,5]});"
+    )
+    def _run(headless):
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True, args=[
-                "--no-sandbox", "--disable-dev-shm-usage",
-                "--disable-blink-features=AutomationControlled"])
+            browser = p.chromium.launch(headless=headless, args=[
+                "--disable-dev-shm-usage",
+                "--disable-blink-features=AutomationControlled",
+                "--no-first-run", "--no-default-browser-check"])
             ctx = browser.new_context(
                 user_agent=get_headers().get("User-Agent"),
+                viewport={"width": 1280, "height": 800},
+                locale="it-IT",
                 ignore_https_errors=True,
                 extra_http_headers=({"Referer": referer} if referer else {}))
+            ctx.add_init_script(_stealth)
             page = ctx.new_page()
             page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
-            # attende che la challenge Cloudflare passi e il player si carichi
+            # attende che la challenge Cloudflare passi (auto per un browser vero) e il player carichi
             try:
                 page.wait_for_function(
                     "() => document.documentElement.outerHTML.indexOf('window.video') !== -1"
@@ -358,9 +368,17 @@ def _browser_get_html(url, referer=None, timeout_ms=45000):
             try: browser.close()
             except Exception: pass
             return html
-    except Exception as e:
-        print(f"[browser] errore Playwright: {e}")
-        return None
+    # 1) browser VISIBILE (headful): Cloudflare "managed" spesso lascia passare solo un
+    #    browser reale, mentre rileva quello headless. 2) fallback headless.
+    last = None
+    for _hl in (False, True):
+        try:
+            last = _run(_hl)
+            if last and ("window.video" in last or "window.streams" in last):
+                return last
+        except Exception as e:
+            print(f"[browser] Playwright (headless={_hl}) errore: {e}")
+    return last
 
 # Load Settings
 def normalize_domain(value):

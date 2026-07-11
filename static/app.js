@@ -1623,8 +1623,10 @@ async function triggerDownload(label, titleId, episodeId = null) {
     try {
         const streamResp = await fetch(url);
         if (!streamResp.ok) {
+            var _detail = "";
+            try { _detail = ((await streamResp.clone().json()) || {}).detail || ""; } catch (e) {}
             if (await checkDomainError(streamResp)) return;
-            showToast("Impossibile scaricare questo contenuto (video non disponibile)");
+            showToast("Impossibile scaricare: " + (_detail || "video non disponibile") + " (codice " + streamResp.status + ")", 9000);
             return;
         }
         const data = await streamResp.json();

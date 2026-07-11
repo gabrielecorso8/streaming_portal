@@ -2781,6 +2781,9 @@ def resolve_stream_info(id, episode_id=None):
             "Sec-Fetch-Site": "cross-site",
             "Upgrade-Insecure-Requests": "1",
         })
+        # Riusa la clearance Cloudflare gia' ottenuta dal browser: cosi' dalla seconda
+        # volta l'embed passa con una normale richiesta e NON riapre il browser.
+        vix_headers.update(_cf_headers(vix_embed_url))
         # NB: risoluzione dell'embed SEMPRE DIRETTA (proxies=None). Il player rifiuta
         # (403) gli IP da datacenter/VPN: dev'essere l'IP residenziale a chiedere la
         # pagina. I SEGMENTI video verranno invece scaricati dal downloader tramite il

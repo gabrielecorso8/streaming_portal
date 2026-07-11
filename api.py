@@ -305,6 +305,26 @@ except Exception as _e:
     print(f"[cf] cloudscraper non disponibile: {_e}")
 
 
+_CF = {"cookies": {}, "ua": None}
+
+
+def _cf_headers(u):
+    """Header (Cookie cf_clearance + User-Agent reale) catturati dal browser che ha
+    superato Cloudflare: riusati per le richieste successive (playlist, segmenti)
+    verso lo stesso host, cosi' passano senza browser."""
+    try:
+        host = urllib.parse.urlparse(u).netloc
+    except Exception:
+        return {}
+    h = {}
+    ck = _CF["cookies"].get(host)
+    if ck:
+        h["Cookie"] = ck
+    if _CF["ua"]:
+        h["User-Agent"] = _CF["ua"]
+    return h
+
+
 def _fetch_maybe_cloudflare(url, headers=None, timeout=15, proxies=None):
     """GET che, se prende 403/503 (tipico di Cloudflare), riprova con cloudscraper
     per risolvere la challenge JS. Ritorna la Response migliore ottenuta."""
@@ -408,6 +428,15 @@ def _browser_get_html(url, referer=None, timeout_ms=180000):
             except Exception:
                 data = None
             html = page.content()
+            try:
+                _h = urllib.parse.urlparse(url).netloc
+                _cks = ctx.cookies()
+                _CF["cookies"][_h] = "; ".join(
+                    (str(ck.get("name")) + "=" + str(ck.get("value"))) for ck in _cks if ck.get("name"))
+                _CF["ua"] = page.evaluate("() => navigator.userAgent")
+                print(f"[browser] clearance Cloudflare catturata per {_h} (cookie {len(_cks)})")
+            except Exception:
+                pass
             try: ctx.close()
             except Exception: pass
             if data and data.get("video"):
@@ -2834,8 +2863,9 @@ def resolve_stream_info(id, episode_id=None):
 
         download_info = {}
         try:
-            master_resp = requests.get(real_master_url, headers=get_headers(), timeout=10, verify=False, proxies=get_proxies())
-            if master_resp.status_code == 200:
+            _mh = get_headers(); _mh.update(_cf_headers(real_master_url))
+            master_resp = _fetch_maybe_cloudflare(real_master_url, headers=_mh, timeout=12, proxies=None)
+            if master_resp is not None and master_resp.status_code == 200:
                 master = m3u8.loads(master_resp.text)
                 if master.playlists:
                     best = max(master.playlists, key=lambda p: p.stream_info.bandwidth or 0)
@@ -2853,7 +2883,7 @@ def resolve_stream_info(id, episode_id=None):
                         "master_url": real_master_url,
                         "video_url": best.absolute_uri or urllib.parse.urljoin(real_master_url, best.uri),
                         "audio_url": (audio.absolute_uri or urllib.parse.urljoin(real_master_url, audio.uri)) if audio else None,
-                        "headers": get_headers(),
+                        "headers": {**get_headers(), **_cf_headers(real_master_url)},
                     }
         except Exception as e:
             print(f"[-] Could not pre-resolve Vixcloud download playlists: {e}")
@@ -2891,9 +2921,10 @@ def get_master_playlist(url: Optional[str] = None, video_id: Optional[int] = Non
     if not _is_safe_remote_url(url):
         raise HTTPException(status_code=400, detail="URL non consentito")
     try:
-        resp = requests.get(url, headers=get_headers(), timeout=10, verify=False, proxies=get_proxies())
-        if resp.status_code != 200:
-            return Response(status_code=resp.status_code, content="Master playlist request failed")
+        _mh = get_headers(); _mh.update(_cf_headers(url))
+        resp = _fetch_maybe_cloudflare(url, headers=_mh, timeout=12, proxies=None)
+        if resp is None or resp.status_code != 200:
+            return Response(status_code=getattr(resp, "status_code", 502), content="Master playlist request failed")
             
         content = resp.text
         lines = content.splitlines()

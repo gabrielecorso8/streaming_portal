@@ -185,6 +185,12 @@ async function init() {
     if (el.headerCastBtn) el.headerCastBtn.addEventListener("click", openPhoneCast);
     if (el.headerRemoteBtn) el.headerRemoteBtn.addEventListener("click", openRemoteQr);
     if (el.videoPlayer && "disableRemotePlayback" in el.videoPlayer) el.videoPlayer.disableRemotePlayback = false;
+    if (el.videoPlayer) {
+        el.videoPlayer.addEventListener("loadedmetadata", _resumePlayback);
+        el.videoPlayer.addEventListener("timeupdate", _savePlayback);
+        el.videoPlayer.addEventListener("pause", _savePlayback);
+        el.videoPlayer.addEventListener("ended", function () { _clearPlayback(_playKey); });
+    }
     if (el.headerSearchBtn) el.headerSearchBtn.addEventListener("click", () => {
         window.scrollTo({ top: 0, behavior: "smooth" });
         setTimeout(() => { if (el.urlInput) el.urlInput.focus(); }, 300);
@@ -1510,6 +1516,7 @@ function playStream(streamSrc, getSrc, iframeFallback) {
 async function startStream(titleId, label, episodeId = null) {
     showToast("Generazione stream in corso...");
     closePlayer();
+    _playKey = "sc:" + titleId + (episodeId ? ":" + episodeId : "");
 
     // Titoli clone: lo stream e' gia' risolto sull'oggetto title.
     if (currentTitle && currentTitle.is_clone && currentTitle.id === titleId) {
@@ -2002,6 +2009,7 @@ function playDownloaded(id, title, key, opts) {
         activeHls = null;
     }
     currentPlayTitle = title || "";
+    _playKey = "dl:" + id;
     if (el.playingTitle) el.playingTitle.textContent = `Riproduzione: ${title || "download"}`;
     el.playerSection.classList.remove("hidden");
     if (el.qualityBar) el.qualityBar.classList.remove("hidden");
@@ -3890,4 +3898,34 @@ async function toggleModalFavorite() {
 }
 
 // Start application
+// --- Riprendi la riproduzione da dove eri (posizione salvata, persiste tra sessioni) ---
+var _playKey = "";
+var _lastSave = 0;
+function _progressStore() { try { return JSON.parse(localStorage.getItem("scp_pos") || "{}"); } catch (e) { return {}; } }
+function _saveProgressStore(o) { try { localStorage.setItem("scp_pos", JSON.stringify(o)); } catch (e) {} }
+function _savePlayback() {
+    var v = el.videoPlayer; if (!v || !_playKey) return;
+    var t = v.currentTime || 0, d = v.duration || 0;
+    var now = Date.now();
+    if (now - _lastSave < 4000 && v.paused === false) return;   // salva ~ogni 4s
+    _lastSave = now;
+    var store = _progressStore();
+    if (d > 0 && t > 15 && t < d - 20) { store[_playKey] = { t: t, d: d, at: now }; _saveProgressStore(store); }
+    else if (d > 0 && t >= d - 20) { delete store[_playKey]; _saveProgressStore(store); }   // finito: dimentica
+}
+function _clearPlayback(key) { if (!key) return; var s = _progressStore(); if (s[key]) { delete s[key]; _saveProgressStore(s); } }
+function _resumePlayback() {
+    var v = el.videoPlayer; if (!v || !_playKey) return;
+    var rec = _progressStore()[_playKey];
+    if (rec && rec.t > 15 && (!v.duration || rec.t < v.duration - 20)) {
+        try { v.currentTime = rec.t; } catch (e) {}
+        showToast("Ripreso da " + _fmtTime(rec.t));
+    }
+}
+function _fmtTime(s) {
+    s = Math.max(0, Math.floor(s || 0));
+    var m = Math.floor(s / 60), ss = ("0" + (s % 60)).slice(-2), h = Math.floor(m / 60);
+    return h > 0 ? (h + ":" + ("0" + (m % 60)).slice(-2) + ":" + ss) : (m + ":" + ss);
+}
+
 window.addEventListener("DOMContentLoaded", init);

@@ -1918,13 +1918,12 @@ function renderDownloads(downloads) {
                 ${actions}
             `;
 
+        const _mobile = document.body.classList.contains("downloads-only");
         if (dl.status === "completed") {
-            item.addEventListener("click", () => playDownloaded(dl.id, dl.title, dl.key));
+            const _openOrPlay = () => { if (_mobile) openMobilePlayChoice(dl); else playDownloaded(dl.id, dl.title, dl.key); };
+            item.addEventListener("click", _openOrPlay);
             item.addEventListener("keydown", (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    playDownloaded(dl.id, dl.title, dl.key);
-                }
+                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); _openOrPlay(); }
             });
             item.tabIndex = 0;
             item.setAttribute("role", "button");
@@ -1939,6 +1938,20 @@ function renderDownloads(downloads) {
                 if (nextInfo && nextInfo.isEpisode) downloadNextEpisode(nextInfo.series, nextInfo.season, nextInfo.episode);
                 else if (nextInfo) downloadTitles([{ key: nextInfo.key, name: nextInfo.name }]);
             });
+            // Mobile: per una puntata di una serie, offri "Scarica stagione" (prepara
+            // in coda il resto della stagione, avviabile quando vuoi dal telefono).
+            const _ep2 = parseEpisode(dl.title);
+            if (_mobile && _ep2 && _ep2.series) {
+                const acts = item.querySelector(".download-actions");
+                if (acts) {
+                    const sb = document.createElement("button");
+                    sb.className = "secondary-btn small-btn dl-season-btn";
+                    sb.textContent = "⬇ Scarica stagione";
+                    sb.title = "Prepara in coda il resto della stagione";
+                    sb.addEventListener("click", (e) => { e.stopPropagation(); mobileDownloadRestOfSeason(_ep2.series, _ep2.season, _ep2.episode); });
+                    acts.appendChild(sb);
+                }
+            }
             const cardBtn = item.querySelector(".open-card-btn");
             if (cardBtn) cardBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
@@ -2121,6 +2134,52 @@ function _syncCinema() {
     if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
         document.body.classList.remove("cinema-on");
     }
+}
+
+function openMobilePlayChoice(dl) {
+    // Chiede all'utente se guardare il file DENTRO SC Portal (senza uscire) o
+    // salvarlo sul telefono. Foglio in stile "action sheet" dal basso.
+    const ex = document.getElementById("m-sheet-ov");
+    if (ex) ex.remove();
+    const name = escapeHtml((dl && (dl.title || dl.file)) || "Video");
+    const ov = document.createElement("div");
+    ov.id = "m-sheet-ov";
+    ov.className = "m-sheet-ov";
+    ov.innerHTML =
+        '<div class="m-sheet">' +
+        '<div class="m-sheet-title">' + name + '</div>' +
+        '<button class="primary-btn m-sheet-btn" data-x="play">▶ Riproduci qui in SC Portal</button>' +
+        '<button class="secondary-btn m-sheet-btn" data-x="save">⬇ Salva sul telefono</button>' +
+        '<button class="secondary-btn m-sheet-btn m-sheet-cancel" data-x="close">Annulla</button>' +
+        '</div>';
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    ov.querySelector('[data-x="play"]').addEventListener("click", () => { close(); playDownloaded(dl.id, dl.title, dl.key); });
+    ov.querySelector('[data-x="save"]').addEventListener("click", () => { close(); saveDownloadToDevice(dl.id, dl.file || dl.title); });
+    ov.querySelector('[data-x="close"]').addEventListener("click", close);
+}
+
+async function mobileDownloadRestOfSeason(series, season, episode) {
+    showToast("Preparo il resto della stagione in coda…", 4000);
+    let ep = episode, added = 0, guard = 0;
+    while (guard++ < 80) {
+        let d = {};
+        try {
+            const r = await fetch("/api/download/next-episode", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ series, season, episode: ep, hold: true })
+            });
+            d = await r.json().catch(() => ({}));
+            if (!r.ok) break;
+        } catch (e) { break; }
+        added++;
+        if (d.season !== season) break;   // arrivati alla stagione successiva: stop
+        ep = d.episode;
+        await new Promise(r => setTimeout(r, 300));
+    }
+    showToast(added ? `Stagione: ${added} episodi preparati in coda. Avviali da qui quando vuoi.` : "Nessun altro episodio in questa stagione", 6000);
+    refreshDownloads();
 }
 
 function saveDownloadToDevice(id, filename) {

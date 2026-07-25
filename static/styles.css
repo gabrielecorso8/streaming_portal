@@ -1452,7 +1452,6 @@ body.downloads-only .settings-box { display: none !important; }
 /* Sul telefono/tablet nascondi i comandi che aprirebbero internet (scheda,
    scarica seguente, cartella PC): solo riproduzione locale, meno superficie d'attacco. */
 body.downloads-only .open-card-btn,
-body.downloads-only .dl-next-btn,
 body.downloads-only .reveal-file-btn,
 body.downloads-only #remote-btn,
 body.downloads-only #cast-btn,
@@ -1572,3 +1571,17 @@ body.cinema-on #next-banner { display: none !important; }
 }
 .privacy-panel .pp-row input[type=checkbox] { width: 18px; height: 18px; accent-color: #7c5cff; }
 .privacy-panel .pp-hint { color: #8b94a7; font-size: 12px; line-height: 1.4; margin: 0; }
+
+
+/* Action sheet mobile: scelta riproduci/salva */
+.m-sheet-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:flex-end;justify-content:center;}
+.m-sheet{width:100%;max-width:520px;background:#14161c;border:1px solid #2a2e39;border-bottom:none;
+    border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:10px;box-shadow:0 -12px 40px rgba(0,0,0,.55);
+    animation:m-sheet-up .18s ease;}
+@keyframes m-sheet-up{from{transform:translateY(30px);opacity:.6;}to{transform:translateY(0);opacity:1;}}
+.m-sheet-title{font-weight:600;color:#fff;text-align:center;margin-bottom:4px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.m-sheet-btn{width:100%;justify-content:center;padding:13px;font-size:1rem;border-radius:12px;}
+.m-sheet-cancel{opacity:.8;}
+.dl-season-btn{white-space:nowrap;}

@@ -9,6 +9,9 @@ for pkg in ["uvicorn", "fastapi", "starlette", "anyio", "m3u8",
     except Exception:
         pass
 
+# Moduli locali importati a runtime (anche dentro funzioni/try): includili sempre.
+hidden += ["privacy", "api", "downloader", "vidxgo", "animeworld", "start"]
+
 datas = [("static", "static")]
 
 a = Analysis(

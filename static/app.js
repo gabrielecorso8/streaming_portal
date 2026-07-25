@@ -58,6 +58,7 @@ const el = {
     searchClear: document.getElementById("search-clear"),
     openFolderBtn: document.getElementById("open-folder-btn"),
     shutdownBtn: document.getElementById("shutdown-btn"),
+    privacyCleanBtn: document.getElementById("privacy-clean-btn"),
 
     // Details Modal
     detailsModal: document.getElementById("details-modal"),
@@ -159,6 +160,7 @@ async function init() {
     el.convertUrlBtn.addEventListener("click", convertDirectUrl);
     el.openFolderBtn.addEventListener("click", openDownloadsFolder);
     if (el.shutdownBtn) el.shutdownBtn.addEventListener("click", shutdownApp);
+    if (el.privacyCleanBtn) el.privacyCleanBtn.addEventListener("click", privacyClean);
     el.urlInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") handleMainInput();
     });
@@ -2987,6 +2989,22 @@ async function nestFolder(childId, parentId) {
             showToast(d.detail || "Spostamento non valido");
         }
     } catch (e) { showToast("Errore spostamento cartella"); }
+}
+
+async function privacyClean() {
+    if (!confirm("Pulire le tracce locali?\n\nAzzera server.log e cancella cookie/cache del browser (inclusa la clearance Cloudflare). La prossima riproduzione potrebbe riaprire il browser per rifare la verifica. I download e la libreria NON vengono toccati.")) return;
+    try {
+        const r = await fetch(withLanToken("/api/privacy/clean"), { method: "POST" });
+        if (r.ok) {
+            const d = await r.json().catch(() => ({}));
+            const what = (d.removed && d.removed.length) ? d.removed.join(", ") : "nulla da pulire";
+            showToast("Tracce ripulite: " + what, 5000);
+        } else if (r.status === 404) {
+            showToast("Funzione non disponibile: chiudi e RIAVVIA SC Portal.", 6000);
+        } else {
+            showToast("Impossibile pulire le tracce");
+        }
+    } catch (e) { showToast("Errore durante la pulizia"); }
 }
 
 async function shutdownApp() {

@@ -56,6 +56,12 @@ def ensure_streams():
                  encoding="utf-8", errors="replace")
     except Exception:
         f = open(os.devnull, "w")
+    # Oscura segreti prima di scriverli su server.log (vedi privacy.py).
+    try:
+        from privacy import RedactingWriter
+        f = RedactingWriter(f)
+    except Exception:
+        pass
     if sys.stdout is None:
         sys.stdout = f
     if sys.stderr is None:

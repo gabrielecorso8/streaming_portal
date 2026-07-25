@@ -372,7 +372,20 @@ def _browser_get_html(url, referer=None, timeout_ms=180000):
             headless=False,
             args=["--disable-blink-features=AutomationControlled",
                   "--no-first-run", "--no-default-browser-check",
-                  "--disable-dev-shm-usage"],
+                  "--disable-dev-shm-usage",
+                  # Anti-telemetria: il browser NON deve "chiamare casa" (Google,
+                  # crash report, metriche, sync, safe-browsing) rivelando cosa apri.
+                  "--disable-background-networking",
+                  "--disable-sync",
+                  "--disable-domain-reliability",
+                  "--disable-client-side-phishing-detection",
+                  "--disable-component-update",
+                  "--no-pings",
+                  "--metrics-recording-only",
+                  "--disable-breakpad",
+                  "--safebrowsing-disable-auto-update",
+                  "--disable-features=Translate,OptimizationHints,MediaRouter,"
+                  "InterestFeedContentSuggestions,AutofillServerCommunication"],
             viewport={"width": 1100, "height": 760},
             locale="it-IT",
             ignore_https_errors=True,
@@ -925,6 +938,15 @@ def get_proxies():
     proxy = (SETTINGS.get("proxy") or os.environ.get("SC_PROXY") or "").strip()
     if not proxy:
         return None
+    # Anti-DNS-leak: con un proxy SOCKS usa 'socks5h' (la 'h' = risoluzione DNS
+    # LATO PROXY). Con 'socks5' semplice il nome host verrebbe risolto in locale,
+    # facendo trapelare all'ISP QUALE sito stai raggiungendo anche se il traffico
+    # passa dal proxy. socks5h manda anche il DNS dentro il tunnel.
+    low = proxy.lower()
+    if low.startswith("socks5://"):
+        proxy = "socks5h://" + proxy[len("socks5://"):]
+    elif low.startswith("socks4://"):
+        proxy = "socks4a://" + proxy[len("socks4://"):]
     return {"http": proxy, "https": proxy}
 
 def apply_proxies():
@@ -1629,6 +1651,29 @@ def shutdown_server():
         os._exit(0)
     threading.Thread(target=_stop, daemon=True).start()
     return {"ok": True}
+
+
+@app.post("/api/privacy/clean")
+def privacy_clean():
+    """Cancella le tracce locali: azzera server.log, elimina il profilo del
+    browser (cookie/cache, incluso cf_clearance) e svuota le cache in memoria
+    (clearance Cloudflare + DNS). Nota: NON rende retroattivamente anonime le
+    connessioni gia' fatte; serve a non lasciare tracce sul disco."""
+    try:
+        from privacy import clean_traces
+        removed = clean_traces(PROJECT_DIR)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Pulizia fallita: {e}")
+    try:
+        _CF["cookies"] = {}
+        _CF["ua"] = None
+    except Exception:
+        pass
+    try:
+        _DOH_CACHE.clear()
+    except Exception:
+        pass
+    return {"ok": True, "removed": removed}
 
 # --------------------------------------------------------------------------- #
 #  Content folders (playlists of LIBRARY titles, each with a cover image)

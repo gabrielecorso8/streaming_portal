@@ -28,6 +28,13 @@ def _ensure_streams():
         f = open(LOG_FILE, "a", buffering=1, encoding="utf-8", errors="replace")
     except Exception:
         f = open(os.devnull, "w")
+    # Oscura segreti (token, cookie cf_clearance, URL firmati, IP) prima di
+    # scriverli su server.log, cosi' il log persistente resta privo di tracce.
+    try:
+        from privacy import RedactingWriter
+        f = RedactingWriter(f)
+    except Exception:
+        pass
     if sys.stdout is None or _broken(sys.stdout):
         sys.stdout = f
     if sys.stderr is None or _broken(sys.stderr):

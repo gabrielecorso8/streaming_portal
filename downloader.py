@@ -67,6 +67,12 @@ def set_stream_resolver(fn):
     STREAM_RESOLVER = fn
 
 # On-disk registry so the download queue + history survive a server restart.
+try:
+    from privacy import host_only
+except Exception:
+    def host_only(u):
+        return "[url]"
+
 STATE_FILE = os.path.join("tmp", "downloads_state.json")
 _state_lock = threading.Lock()
 
@@ -291,7 +297,7 @@ class DownloadTask:
             "Referer": referer
         }
         
-        print(f"[*] Fetching decryption key from {key_url} with Referer {referer}")
+        print(f"[*] Fetching decryption key from {host_only(key_url)}")
         resp = self.session.get(key_url, headers=headers, timeout=10, proxies=self.proxies)
         if resp.status_code == 200:
             return resp.content
@@ -330,7 +336,7 @@ class DownloadTask:
             key_uri = playlist.keys[0].uri
             if key_uri:
                 absolute_key_url = urllib.parse.urljoin(stream_url, key_uri)
-                print(f"[*] Automatically fetching key from {absolute_key_url}...")
+                print(f"[*] Automatically fetching key from {host_only(absolute_key_url)}...")
                 try:
                     key_headers = headers.copy()
                     if self.key_info and self.key_info.get("referer"):
@@ -512,7 +518,7 @@ class DownloadTask:
             is_direct_mp4 = parsed_video_url.path.lower().endswith(".mp4")
 
             if is_direct_mp4:
-                print(f"[*] Downloading direct MP4 stream: {self.m3u8_video_url}")
+                print(f"[*] Downloading direct MP4 stream: {host_only(self.m3u8_video_url)}")
                 self.download_direct_file(self.m3u8_video_url, final_output_path)
                 download_paths[self.download_id] = self.output_path
                 self.t_done = time.time()

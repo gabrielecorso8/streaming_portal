@@ -202,7 +202,9 @@
       if (elMuteIcon) elMuteIcon.innerHTML = st.muted ? ICON_MUTE : ICON_VOL;
       if (elMute) elMute.classList.toggle("muted", !!st.muted);
       if (elVol && !volSeeking) elVol.value = Math.round((st.muted ? 0 : (typeof st.volume === "number" ? st.volume : 1)) * 100);
-      if ((st.title || "") !== curTitle) { curTitle = st.title || ""; if (dlLoaded) renderDownloads(); }
+      if ((st.title || "") !== curTitle) { curTitle = st.title || ""; if (dlLoaded) renderDownloads(); updateNowPlaying(); }
+      // Velocita' riflessa dallo stato del PC (si azzera al cambio episodio)
+      if (typeof st.rate === "number" && !rateJustSet) { rate = st.rate; if (elRateLbl) elRateLbl.textContent = (Number.isInteger(rate) ? rate : rate) + "×"; }
       applyNav();
     } catch (e) {
       if (++missed >= 2) {
@@ -213,6 +215,78 @@
       }
     }
   }
+  // ---- Now-playing poster ---------------------------------------------------
+  var elNp = document.getElementById("np"), elNpImg = document.getElementById("np-poster");
+  function curCover() {
+    if (!curTitle) return "";
+    var base = normName(baseName(curTitle));
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      if (normName(baseName(f.name)) === base && f.cover) return f.cover;
+    }
+    return coverMap[normName(curTitle)] || coverMap[base] || "";
+  }
+  function updateNowPlaying() {
+    var u = coverSrc(curCover());
+    if (u && elNpImg) { elNpImg.src = u; elNp.classList.add("show"); }
+    else if (elNp) { elNp.classList.remove("show"); }
+  }
+  // Carica una volta i download (per avere le locandine del now-playing)
+  loadDownloads();
+
+  // ---- Velocita' di riproduzione (ciclo) ------------------------------------
+  var RATES = [1, 1.25, 1.5, 2, 0.75];
+  var rate = 1, rateJustSet = false, rateT = null;
+  var elRateBtn = document.getElementById("rate-btn"), elRateLbl = document.getElementById("rate-lbl");
+  if (elRateBtn) elRateBtn.addEventListener("click", function () {
+    var i = RATES.indexOf(rate); rate = RATES[(i + 1) % RATES.length];
+    if (elRateLbl) elRateLbl.textContent = rate + "×";
+    send("rate", rate);
+    rateJustSet = true; if (rateT) clearTimeout(rateT);
+    rateT = setTimeout(function () { rateJustSet = false; }, 2500);
+    toast("Velocita': " + rate + "×");
+  });
+
+  // ---- Sleep timer (ciclo: off/15/30/45/60 min) -----------------------------
+  var SLEEPS = [0, 15, 30, 45, 60];
+  var sleepMin = 0, sleepT = null, sleepDeadline = 0;
+  var elSleepBtn = document.getElementById("sleep-btn"), elSleepLbl = document.getElementById("sleep-lbl");
+  function clearSleep() { if (sleepT) clearTimeout(sleepT); sleepT = null; sleepDeadline = 0; }
+  if (elSleepBtn) elSleepBtn.addEventListener("click", function () {
+    var i = SLEEPS.indexOf(sleepMin); sleepMin = SLEEPS[(i + 1) % SLEEPS.length];
+    clearSleep();
+    if (sleepMin > 0) {
+      sleepDeadline = Date.now() + sleepMin * 60000;
+      sleepT = setTimeout(function () { send("pause"); toast("Sleep: messo in pausa"); sleepMin = 0; if (elSleepLbl) elSleepLbl.textContent = "Sleep"; elSleepBtn.classList.remove("on"); }, sleepMin * 60000);
+      elSleepBtn.classList.add("on");
+      if (elSleepLbl) elSleepLbl.textContent = sleepMin + "m";
+      toast("Si ferma tra " + sleepMin + " min");
+    } else {
+      elSleepBtn.classList.remove("on");
+      if (elSleepLbl) elSleepLbl.textContent = "Sleep";
+      toast("Sleep timer annullato");
+    }
+  });
+
+  // ---- Mantieni lo schermo acceso (Wake Lock) -------------------------------
+  var wakeLock = null;
+  var elWakeBtn = document.getElementById("wake-btn");
+  async function enableWake() {
+    try { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", function () { if (elWakeBtn) elWakeBtn.classList.remove("on"); }); return true; }
+    catch (e) { return false; }
+  }
+  if (elWakeBtn) {
+    if (!("wakeLock" in navigator)) { elWakeBtn.style.display = "none"; }
+    elWakeBtn.addEventListener("click", async function () {
+      if (wakeLock) { try { await wakeLock.release(); } catch (e) {} wakeLock = null; elWakeBtn.classList.remove("on"); toast("Schermo libero di spegnersi"); }
+      else { if (await enableWake()) { elWakeBtn.classList.add("on"); toast("Schermo tenuto acceso"); } else toast("Non supportato su questo browser"); }
+    });
+    // Ri-acquisisci il wake lock quando la pagina torna visibile (iOS lo rilascia)
+    document.addEventListener("visibilitychange", async function () {
+      if (wakeLock === null && elWakeBtn.classList.contains("on") && document.visibilityState === "visible") { await enableWake(); }
+    });
+  }
+
   poll();
   setInterval(poll, 1000);
 })();

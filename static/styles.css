@@ -1585,3 +1585,20 @@ body.cinema-on #next-banner { display: none !important; }
 .m-sheet-btn{width:100%;justify-content:center;padding:13px;font-size:1rem;border-radius:12px;}
 .m-sheet-cancel{opacity:.8;}
 .dl-season-btn{white-space:nowrap;}
+
+/* Mobile: Continua a guardare + ricerca download */
+#dl-search-wrap { margin: 4px 0 12px; }
+#dl-search { width: 100%; box-sizing: border-box; padding: 11px 14px; border-radius: 12px;
+    border: 1px solid var(--border-color); background: rgba(255,255,255,.04); color: var(--text-primary);
+    font-size: 1rem; }
+#continue-watching { margin: 6px 0 16px; }
+#continue-watching .cw-title { font-weight: 700; color: var(--text-primary); margin: 0 0 8px; font-size: 1.02rem; }
+#continue-watching .cw-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+.cw-card { flex: 0 0 auto; width: 128px; scroll-snap-align: start; background: none; border: none; padding: 0;
+    display: flex; flex-direction: column; gap: 6px; text-align: left; cursor: pointer; }
+.cw-card img, .cw-card .cw-ph { width: 128px; height: 186px; object-fit: cover; border-radius: 12px;
+    border: 1px solid var(--border-color); background: rgba(255,255,255,.05); }
+.cw-card:active { transform: scale(.96); }
+.cw-nm { color: var(--text-primary); font-size: .84rem; font-weight: 600; line-height: 1.2;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cw-time { color: var(--accent, #8b5cf6); font-size: .76rem; font-weight: 600; }

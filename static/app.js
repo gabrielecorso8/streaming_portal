@@ -261,6 +261,8 @@ async function init() {
         if (new URLSearchParams(location.search).get("view") === "downloads") {
             document.body.classList.add("downloads-only");
             if (typeof refreshDownloads === "function") refreshDownloads();
+            setupMobileDownloadsUX();
+            setTimeout(renderContinueWatching, 800);
         }
     } catch (e) {}
     if (el.searchClear) el.searchClear.addEventListener("click", clearSearch);
@@ -978,7 +980,8 @@ function startRemoteHost() {
                     moreExists: _remoteNav().moreExists,
                     moreLabel: _remoteNav().moreLabel,
                     muted: !!v.muted,
-                    volume: (typeof v.volume === "number" ? v.volume : 1)
+                    volume: (typeof v.volume === "number" ? v.volume : 1),
+                    rate: (typeof v.playbackRate === "number" ? v.playbackRate : 1)
                 }) });
         } catch (e) {}
         try {
@@ -1005,6 +1008,7 @@ function execRemoteCmd(action, value, arg, label) {
     else if (action === "volUp") { v.muted = false; try { v.volume = Math.min(1, (v.volume || 0) + 0.1); } catch (e) {} }
     else if (action === "volDown") { try { v.volume = Math.max(0, (v.volume || 0) - 0.1); } catch (e) {} }
     else if (action === "vol") { try { var _vv = Math.max(0, Math.min(1, value || 0)); v.volume = _vv; v.muted = (_vv <= 0); } catch (e) {} }
+    else if (action === "rate") { try { v.playbackRate = Math.max(0.25, Math.min(4, value || 1)); } catch (e) {} }
 }
 
 function withLanToken(url) {
@@ -1797,6 +1801,8 @@ function startDownloadsPolling() {
             if (resp.ok) {
                 const list = await resp.json();
                 renderDownloads(list);
+                renderContinueWatching();
+                applyDownloadFilter();
             }
         } catch (e) {
             console.error("Error polling downloads:", e);
@@ -2050,6 +2056,63 @@ function renderDownloads(downloads) {
                 .sort((a, b) => (a.meta.name || "").localeCompare(b.meta.name || ""))
                 .forEach(sub => renderSub(sub, rootNode.body));
         });
+}
+
+// --- Mobile: "Continua a guardare" + ricerca tra i download -----------------
+function _isMobileView() { return document.body.classList.contains("downloads-only"); }
+
+function renderContinueWatching() {
+    if (!_isMobileView() || !el.downloadsList) return;
+    const store = (typeof _progressStore === "function") ? _progressStore() : {};
+    const items = [];
+    (localFiles || []).forEach(f => {
+        const rec = store["dl:" + f.id];
+        if (rec && rec.t > 15) items.push({ f: f, t: rec.t });
+    });
+    let box = document.getElementById("continue-watching");
+    if (!items.length) { if (box) box.remove(); return; }
+    if (!box) {
+        box = document.createElement("div");
+        box.id = "continue-watching";
+        el.downloadsList.parentNode.insertBefore(box, el.downloadsList);
+    }
+    box.innerHTML = '<div class="cw-title">Continua a guardare</div><div class="cw-row"></div>';
+    const row = box.querySelector(".cw-row");
+    items.forEach(({ f, t }) => {
+        const card = document.createElement("button");
+        card.className = "cw-card";
+        const nm = (typeof parseEpisode === "function" && parseEpisode(f.name)) ? episodeLabel(f.name) : (f.name || "");
+        card.innerHTML =
+            (f.cover ? `<img src="${escapeHtml(f.cover)}" alt="" loading="lazy">` : `<div class="cw-ph"></div>`) +
+            `<span class="cw-nm">${escapeHtml(nm)}</span>` +
+            `<span class="cw-time">▶ Riprendi da ${_fmtTime(t)}</span>`;
+        card.addEventListener("click", () => playDownloaded(f.id, f.name, f.key));
+        row.appendChild(card);
+    });
+}
+
+function setupMobileDownloadsUX() {
+    if (!_isMobileView() || !el.downloadsList) return;
+    if (document.getElementById("dl-search-wrap")) return;
+    const wrap = document.createElement("div");
+    wrap.id = "dl-search-wrap";
+    wrap.innerHTML = '<input type="search" id="dl-search" placeholder="Cerca tra i download…" autocomplete="off">';
+    el.downloadsList.parentNode.insertBefore(wrap, el.downloadsList);
+    wrap.querySelector("#dl-search").addEventListener("input", applyDownloadFilter);
+}
+
+function applyDownloadFilter() {
+    const inp = document.getElementById("dl-search");
+    const q = (inp ? inp.value : "").trim().toLowerCase();
+    document.querySelectorAll("#downloads-list .download-item").forEach(it => {
+        const nm = (it.querySelector(".download-name") || {}).textContent || it.title || "";
+        it.style.display = (!q || nm.toLowerCase().includes(q)) ? "" : "none";
+    });
+    // Nasconde i gruppi/cartelle rimasti senza elementi visibili
+    document.querySelectorAll("#downloads-list .download-folder").forEach(g => {
+        const any = [...g.querySelectorAll(".download-item")].some(it => it.style.display !== "none");
+        g.style.display = any ? "" : "none";
+    });
 }
 
 async function cancelDownload(id) {

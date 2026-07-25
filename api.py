@@ -1430,6 +1430,7 @@ class RemoteState(BaseModel):
     moreLabel: Optional[str] = ""
     muted: bool = False
     volume: float = 1.0
+    rate: float = 1.0
 
 
 @app.post("/api/remote/state")

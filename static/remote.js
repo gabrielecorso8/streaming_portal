@@ -160,7 +160,7 @@
   // ---- Trasporto + navigazione ---------------------------------------------
   function goNext() { if (nav.canNext) { send("next"); return; } toast(nav.moreExists ? "Prossimo episodio non ancora scaricato — scaricalo dal computer" : "Nessun titolo successivo"); }
   function goPrev() { if (nav.canPrev) { send("prev"); return; } toast("Nessun titolo precedente"); }
-  Array.prototype.forEach.call(document.querySelectorAll(".controls [data-a], .vol [data-a], .footer [data-a]"), function (b) {
+  Array.prototype.forEach.call(document.querySelectorAll(".skiprow [data-a], .controls [data-a], .vol [data-a], .footer [data-a]"), function (b) {
     b.addEventListener("click", function () {
       var a = b.getAttribute("data-a");
       if (a === "next") return goNext();

@@ -1369,12 +1369,12 @@ async function _fetchEpisodesForSeason(season) {
     return resp.ok ? await resp.json() : [];
 }
 
-async function _enqueueEpisode(season, ep) {
+async function _enqueueEpisode(season, ep, hold) {
     const label = _epLabel(season, ep);
     if (currentTitle.is_clone) {
-        await cloneEpisodeDownload(parseInt(season, 10), ep.number, label);
+        await cloneEpisodeDownload(parseInt(season, 10), ep.number, label, hold);
     } else {
-        await triggerDownload(label, currentTitle.id, ep.id);
+        await triggerDownload(label, currentTitle.id, ep.id, hold);
     }
 }
 
@@ -1384,7 +1384,7 @@ async function downloadSeason(season, episodes) {
     if (!eps || !eps.length) { showToast("Nessun episodio da scaricare"); return; }
     showToast(`Metto in coda ${eps.length} episodi della stagione ${season}...`, 4000);
     for (const ep of eps) {
-        try { await _enqueueEpisode(season, ep); } catch (e) {}
+        try { await _enqueueEpisode(season, ep, false); } catch (e) {}
         await new Promise(r => setTimeout(r, 400));
     }
     showToast(`Stagione ${season}: ${eps.length} episodi aggiunti alla coda download.`, 5000);
@@ -1393,20 +1393,21 @@ async function downloadSeason(season, episodes) {
 async function downloadWholeSeries() {
     const seasons = (currentTitle && currentTitle.seasons) ? currentTitle.seasons : [];
     if (!seasons.length) { showToast("Nessuna stagione trovata"); return; }
-    showToast(`Preparo il download dell'intera serie (${seasons.length} stagioni)...`, 5000);
+    // Una serie intera e' pesante: la PREPARIAMO in coda senza scaricarla subito.
+    showToast(`Preparo l'intera serie in coda (${seasons.length} stagioni)...`, 5000);
     let total = 0;
     for (const s of seasons) {
         const eps = await _fetchEpisodesForSeason(s.number);
         for (const ep of eps) {
-            try { await _enqueueEpisode(s.number, ep); total++; } catch (e) {}
-            await new Promise(r => setTimeout(r, 400));
+            try { await _enqueueEpisode(s.number, ep, true); total++; } catch (e) {}
+            await new Promise(r => setTimeout(r, 250));
         }
     }
-    showToast(`Serie intera: ${total} episodi aggiunti alla coda download.`, 6000);
+    showToast(`Serie preparata in coda: ${total} episodi pronti. Avviali da "I tuoi download".`, 7000);
 }
 
 // Download a specific episode of a clone (vidxgo) series
-async function cloneEpisodeDownload(season, episode, label) {
+async function cloneEpisodeDownload(season, episode, label, hold) {
     if (!currentTitle || !currentTitle.vidxgo) {
         showToast("Dati episodio non disponibili");
         return;
@@ -1425,7 +1426,8 @@ async function cloneEpisodeDownload(season, episode, label) {
                 episode: episode,
                 title: label,
                 lib_key: currentLibKey || currentTitle.id || "",
-                cover: currentTitle.cover || ""
+                cover: currentTitle.cover || "",
+                hold: !!hold
             })
         });
         if (resp.ok) {
@@ -1662,7 +1664,7 @@ function closePlayer() {
 }
 
 // 6. Downloads Triggering
-async function triggerDownload(label, titleId, episodeId = null) {
+async function triggerDownload(label, titleId, episodeId = null, hold = false) {
     warnNoProxyOnce();
     showToast("Preparazione download...");
     
@@ -1681,7 +1683,8 @@ async function triggerDownload(label, titleId, episodeId = null) {
                 stream_headers: currentTitle.stream_headers || null,
                 vidxgo: currentTitle.vidxgo || null,
                 lib_key: currentLibKey || currentTitle.id || "",
-                cover: currentTitle.cover || ""
+                cover: currentTitle.cover || "",
+                hold: !!hold
             };
             
             const dlResp = await fetch("/api/download", {
@@ -1728,7 +1731,8 @@ async function triggerDownload(label, titleId, episodeId = null) {
                 sc_id: titleId,
                 episode_id: episodeId || null,
                 lib_key: currentLibKey || "",
-                cover: (currentTitle && currentTitle.cover) || ""
+                cover: (currentTitle && currentTitle.cover) || "",
+                hold: !!hold
             };
             const dlResp = await fetch("/api/download", {
                 method: "POST",
@@ -1761,7 +1765,8 @@ async function triggerDownload(label, titleId, episodeId = null) {
                 referer: `https://vixcloud.co/embed/${data.video_id}?token=${renderToken}&referer=1&expires=${data.params.expires}`
             },
             lib_key: currentLibKey || "",
-            cover: (currentTitle && currentTitle.cover) || ""
+            cover: (currentTitle && currentTitle.cover) || "",
+            hold: !!hold
         };
         
         const dlResp = await fetch("/api/download", {
@@ -1824,7 +1829,8 @@ function renderDownloads(downloads) {
     }
 
     const allRows = [...downloads].reverse().concat(extra);
-    const isActiveRow = (dl) => ["pending", "queued", "downloading", "merging"].includes(dl.status);
+    const isActiveRow = (dl) => ["pending", "queued", "downloading", "merging", "paused", "held"].includes(dl.status);
+    const isRunning = (dl) => ["pending", "queued", "downloading", "merging"].includes(dl.status);
 
     el.downloadsList.innerHTML = "";
     const buildDownloadItem = (dl, full = false) => {
@@ -1843,8 +1849,10 @@ function renderDownloads(downloads) {
         else if (dl.status === "completed") statusText = "Completato" + (dl.size ? ` · ${formatBytes(dl.size)}` : "") + (dl.elapsed != null ? ` · in ${formatDuration(dl.elapsed)}` : "");
         else if (dl.status === "failed") statusText = `Fallito: ${dl.error || "errore sconosciuto"}`;
         else if (dl.status === "cancelled") statusText = "Annullato";
+        else if (dl.status === "paused") statusText = `In pausa · ${dl.progress || 0}%`;
+        else if (dl.status === "held") statusText = "Pronto in coda (non avviato)";
 
-        const showBar = isActive;
+        const showBar = isRunning(dl) || dl.status === "paused";
 
         const nextInfo = dl.status === "completed" ? nextTitleForDownload(dl) : null;
         let nextBtn = "";
@@ -1867,9 +1875,15 @@ function renderDownloads(downloads) {
                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Cartella
                    </button>
                </div>`
-            : isActive
+            : isRunning(dl)
             ? `<div class="download-actions">
+                   <button class="secondary-btn small-btn pause-dl-btn" title="Metti in pausa (riprende da qui)">⏸ Pausa</button>
                    <button class="secondary-btn small-btn cancel-dl-btn" title="Interrompi il download">✕ Annulla</button>
+               </div>`
+            : (dl.status === "paused" || dl.status === "held" || dl.status === "failed")
+            ? `<div class="download-actions">
+                   <button class="primary-btn small-btn resume-dl-btn">${dl.status === "held" ? "▶ Avvia" : (dl.status === "failed" ? "↻ Riprova" : "▶ Riprendi")}</button>
+                   <button class="secondary-btn small-btn cancel-dl-btn" title="Rimuovi dalla coda">✕ Rimuovi</button>
                </div>`
             : "";
 
@@ -1925,7 +1939,12 @@ function renderDownloads(downloads) {
             const revealBtn = item.querySelector(".reveal-file-btn");
             if (revealBtn) revealBtn.addEventListener("click", (e) => { e.stopPropagation(); revealDownloadFile(dl.id); });
         } else if (isActive) {
-            item.querySelector(".cancel-dl-btn").addEventListener("click", () => cancelDownload(dl.id));
+            const cbtn = item.querySelector(".cancel-dl-btn");
+            if (cbtn) cbtn.addEventListener("click", () => cancelDownload(dl.id));
+            const pbtn = item.querySelector(".pause-dl-btn");
+            if (pbtn) pbtn.addEventListener("click", () => pauseDownload(dl.id));
+            const rbtn = item.querySelector(".resume-dl-btn");
+            if (rbtn) rbtn.addEventListener("click", () => resumeDownload(dl.id));
         }
 
         return item;
@@ -2014,6 +2033,33 @@ async function cancelDownload(id) {
         if (r.ok) showToast("Download annullato");
         else showToast("Impossibile annullare il download");
     } catch (e) { showToast("Errore durante l'annullamento"); }
+    refreshDownloads();
+}
+
+async function pauseDownload(id) {
+    try {
+        const r = await fetch("/api/download/pause", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id })
+        });
+        if (r.ok) showToast("Download in pausa");
+        else if (r.status === 404) showToast("Funzione non disponibile: chiudi e RIAVVIA SC Portal.");
+        else showToast("Impossibile mettere in pausa");
+    } catch (e) { showToast("Errore durante la pausa"); }
+    refreshDownloads();
+}
+
+async function resumeDownload(id) {
+    try {
+        const r = await fetch("/api/download/resume", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id })
+        });
+        if (r.ok) showToast("Download ripreso");
+        else if (r.status === 404) showToast("Funzione non disponibile: chiudi e RIAVVIA SC Portal.");
+        else showToast("Impossibile riprendere");
+    } catch (e) { showToast("Errore durante la ripresa"); }
+    refreshDownloads();
 }
 
 function setQualityControls(show) {

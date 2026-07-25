@@ -75,6 +75,11 @@ class DownloadCancelled(Exception):
     """Raised inside a task when the user cancels the download."""
     pass
 
+class DownloadPaused(Exception):
+    """Raised inside a task when the user pauses the download. Unlike a cancel,
+    the already-downloaded .ts segments are kept so it can resume later."""
+    pass
+
 class Decryptor:
     def __init__(self, key_bytes, iv_hex):
         self.key = key_bytes
@@ -136,6 +141,7 @@ class DownloadTask:
         self.error_msg = None
         self.output_path = None  # absolute path of the finished .mp4
         self.cancel_flag = False  # set by request_cancel() to stop the download
+        self.pause_flag = False   # set by request_pause() to suspend the download
         self.t_start = None       # download start time (for ETA)
         self.t_done = None        # download completion time (for total elapsed)
 
@@ -252,6 +258,11 @@ class DownloadTask:
         """Signal the running download to stop as soon as possible."""
         self.cancel_flag = True
 
+    def request_pause(self):
+        """Signal the running download to suspend as soon as possible, keeping
+        the partial segments on disk so it can resume from where it stopped."""
+        self.pause_flag = True
+
     def update_status(self, status, progress=None, error_msg=None):
         prev_status = self.status
         self.status = status
@@ -346,8 +357,8 @@ class DownloadTask:
         
         def download_segment(idx, seg_uri):
             nonlocal completed_segments
-            # Stop quickly if the user cancelled the download.
-            if self.cancel_flag:
+            # Stop quickly if the user cancelled or paused the download.
+            if self.cancel_flag or self.pause_flag:
                 return
             base_seg_url = urllib.parse.urljoin(stream_url, seg_uri)
 
@@ -413,9 +424,13 @@ class DownloadTask:
                     print(f"[-] Segment task error (will retry): {e}")
                 if self.cancel_flag:
                     raise DownloadCancelled()
+                if self.pause_flag:
+                    raise DownloadPaused()
 
         if self.cancel_flag:
             raise DownloadCancelled()
+        if self.pause_flag:
+            raise DownloadPaused()
 
         # Completeness check: every segment 0..N-1 must exist and be non-empty.
         def _missing_segments():
@@ -430,6 +445,8 @@ class DownloadTask:
         for attempt in range(3):
             if self.cancel_flag:
                 raise DownloadCancelled()
+            if self.pause_flag:
+                raise DownloadPaused()
             if not missing:
                 break
             preview = missing[:10]
@@ -476,6 +493,8 @@ class DownloadTask:
         try:
             if self.cancel_flag:
                 raise DownloadCancelled()
+            if self.pause_flag:
+                raise DownloadPaused()
             self.t_start = time.time()
             self.update_status("downloading", 0.0)
             
@@ -567,6 +586,11 @@ class DownloadTask:
             self.update_status("completed", 100.0)
             print(f"[+] Download completed! Saved to {final_output_path}")
 
+        except DownloadPaused:
+            print(f"[*] Download paused by user: {self.title}")
+            # Keep temp segments so resume continues from where it stopped.
+            self.pause_flag = False
+            self.update_status("paused")
         except DownloadCancelled:
             print(f"[*] Download cancelled by user: {self.title}")
             self.update_status("cancelled")
@@ -705,15 +729,47 @@ class DownloadManager:
             finally:
                 self._queue.task_done()
 
-    def enqueue(self, params):
-        """Create a task from params and put it on the queue. Returns the task."""
-        self.start()
+    def enqueue(self, params, hold=False):
+        """Create a task from params. If hold=True the task is only *prepared*
+        (status 'held') and NOT started — useful to line up several titles and
+        download them later. Otherwise it goes straight onto the queue."""
         download_id = params.pop("download_id", None) or str(uuid.uuid4())
         task = DownloadTask(download_id=download_id, **params)
         self.tasks[download_id] = task
+        if hold:
+            task.update_status("held")
+        else:
+            self.start()
+            task.update_status("queued")
+            self._queue.put(download_id)
+        return task
+
+    def pause(self, download_id):
+        """Suspend a running/queued download, keeping its partial segments."""
+        task = self.tasks.get(download_id)
+        if not task:
+            return False
+        task.request_pause()
+        if task.status in ("queued", "pending"):
+            task.pause_flag = False
+            task.update_status("paused")
+        return True
+
+    def resume(self, download_id):
+        """Resume a paused/held/failed download: re-queue it. Existing .ts
+        segments on disk are reused so it continues where it stopped."""
+        task = self.tasks.get(download_id)
+        if not task:
+            return False
+        if task.status not in ("paused", "held", "failed"):
+            return False
+        self.start()
+        task.cancel_flag = False
+        task.pause_flag = False
+        task.error_msg = None
         task.update_status("queued")
         self._queue.put(download_id)
-        return task
+        return True
 
     def load_persisted(self):
         """Restore the registry from disk. Finished downloads become history;
@@ -751,6 +807,12 @@ class DownloadManager:
                 # so the user could retry); do not auto-run.
                 task.status = "failed"
                 task.error_msg = rec.get("error")
+                task.progress = rec.get("progress", 0.0)
+                active_downloads[did] = task.get_status()
+            elif status in ("paused", "held"):
+                # User deliberately suspended/prepared this one: keep its state
+                # and its partial segments, but do NOT auto-run it.
+                task.status = status
                 task.progress = rec.get("progress", 0.0)
                 active_downloads[did] = task.get_status()
             else:
@@ -794,8 +856,10 @@ _MANAGER = DownloadManager()
 
 
 def start_download_task(download_id, title, m3u8_video, m3u8_audio=None, key_info=None,
-                        extra_headers=None, vidxgo_meta=None, proxies=None, vixcloud_meta=None):
-    """Public API: enqueue a download onto the manager."""
+                        extra_headers=None, vidxgo_meta=None, proxies=None, vixcloud_meta=None,
+                        hold=False):
+    """Public API: enqueue a download onto the manager. hold=True only prepares
+    it (status 'held') so several titles can be lined up without downloading."""
     return _MANAGER.enqueue({
         "download_id": download_id,
         "title": title,
@@ -806,7 +870,17 @@ def start_download_task(download_id, title, m3u8_video, m3u8_audio=None, key_inf
         "vidxgo_meta": vidxgo_meta,
         "vixcloud_meta": vixcloud_meta,
         "proxies": proxies,
-    })
+    }, hold=hold)
+
+
+def pause_download(download_id):
+    """Pause a running/queued download (keeps partial segments). Returns bool."""
+    return _MANAGER.pause(download_id)
+
+
+def resume_download(download_id):
+    """Resume a paused/held/failed download. Returns bool."""
+    return _MANAGER.resume(download_id)
 
 
 def load_persisted_state():

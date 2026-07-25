@@ -77,6 +77,7 @@ if not hasattr(connection, 'real_create_connection'):
 from downloader import (
     start_download_task, active_downloads, download_paths,
     clear_downloads, cancel_download, set_max_concurrent,
+    pause_download, resume_download,
 )
 import vidxgo
 import animeworld
@@ -1106,6 +1107,7 @@ class DownloadRequest(BaseModel):
     episode_id: Optional[int] = None
     lib_key: Optional[str] = ""        # library key (per collegare il file al titolo)
     cover: Optional[str] = ""          # cover remota/proxy da congelare in /covers
+    hold: Optional[bool] = False       # True = prepara in coda senza avviare il download
 
 @app.get("/api/settings")
 def get_settings():
@@ -2410,6 +2412,7 @@ class CloneDownloadRequest(BaseModel):
     mode: str = "tv"
     lib_key: Optional[str] = ""
     cover: Optional[str] = ""
+    hold: Optional[bool] = False
 
 
 class AWEpisode(BaseModel):
@@ -2518,6 +2521,7 @@ def clone_download(payload: CloneDownloadRequest):
             "iframe_url": payload.iframe_url,
         },
         proxies=get_proxies(),
+        hold=bool(payload.hold),
     )
     return {"download_id": download_id}
 
@@ -3074,6 +3078,7 @@ def download_media(payload: DownloadRequest):
         vidxgo_meta=payload.vidxgo,
         vixcloud_meta=vixcloud_meta,
         proxies=get_proxies(),
+        hold=bool(payload.hold),
     )
 
     return {"download_id": download_id}
@@ -3269,6 +3274,26 @@ def cancel_download_endpoint(payload: dict):
     download_id = payload.get("id", "")
     if not cancel_download(download_id):
         raise HTTPException(status_code=404, detail="Download non trovato")
+    return {"ok": True}
+
+
+@app.post("/api/download/pause")
+def pause_download_endpoint(payload: dict):
+    """Suspend a queued/running download, keeping its partial segments so it can
+    be resumed later. The paused state persists between sessions."""
+    download_id = payload.get("id", "")
+    if not pause_download(download_id):
+        raise HTTPException(status_code=404, detail="Download non trovato")
+    return {"ok": True}
+
+
+@app.post("/api/download/resume")
+def resume_download_endpoint(payload: dict):
+    """Resume a paused/prepared/failed download: re-queue it (reusing any
+    already-downloaded segments)."""
+    download_id = payload.get("id", "")
+    if not resume_download(download_id):
+        raise HTTPException(status_code=404, detail="Download non ripristinabile")
     return {"ok": True}
 
 

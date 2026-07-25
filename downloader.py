@@ -76,6 +76,14 @@ except Exception:
 STATE_FILE = os.path.join("tmp", "downloads_state.json")
 _state_lock = threading.Lock()
 
+# Modalita' incognito: se attiva, NON scriviamo la cronologia dei download su
+# disco (nessuna traccia di cosa e' stato scaricato tra una sessione e l'altra).
+INCOGNITO = False
+
+def set_incognito(value):
+    global INCOGNITO
+    INCOGNITO = bool(value)
+
 
 class DownloadCancelled(Exception):
     """Raised inside a task when the user cancels the download."""
@@ -675,6 +683,8 @@ def _persist_state():
     manager = _MANAGER
     if manager is None:
         return
+    if INCOGNITO:
+        return  # incognito: nessuna cronologia download su disco
     try:
         with _state_lock:
             data = {}

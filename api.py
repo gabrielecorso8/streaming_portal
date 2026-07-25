@@ -77,12 +77,17 @@ if not hasattr(connection, 'real_create_connection'):
 from downloader import (
     start_download_task, active_downloads, download_paths,
     clear_downloads, cancel_download, set_max_concurrent,
-    pause_download, resume_download,
+    pause_download, resume_download, set_incognito,
 )
 import vidxgo
 import animeworld
 import subprocess
 import sys
+
+# Modalita' incognito: quando attiva, l'app NON scrive su disco cosa apri/scarichi
+# (niente libreria, niente cronologia download, niente locandine in cache). I file
+# video scaricati restano (li vuoi tu), ma non resta il "registro" di cosa hai visto.
+INCOGNITO = False
 
 app = FastAPI(title="StreamingCommunity Unofficial Portal")
 
@@ -734,6 +739,8 @@ def load_library_state():
 
 
 def save_library_state():
+    if INCOGNITO:
+        return  # incognito: niente cronologia "aperti di recente" su disco
     try:
         tmp = LIBRARY_STATE_FILE + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
@@ -777,6 +784,8 @@ def load_library():
 
 
 def save_library(entries):
+    if INCOGNITO:
+        return  # incognito: la libreria resta solo in memoria, non su disco
     with _library_lock:
         tmp = LIBRARY_FILE + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
@@ -885,6 +894,8 @@ def detect_active_domain():
     return None
 
 SETTINGS = load_settings()
+INCOGNITO = bool(SETTINGS.get("incognito"))
+set_incognito(INCOGNITO)
 # Token d'accesso per l'uso da telefono/tablet in rete locale (mai nel repo:
 # settings.json e' gitignorato). Generato una volta e persistito.
 if not (SETTINGS.get("access_token") or "").strip():
@@ -1243,6 +1254,8 @@ def cache_cover_local(key: str, cover_url: str) -> str:
     """Scarica una locandina remota in /covers e ritorna il path locale.
     Viene chiamata durante le fasi online/download, quindi usa la stessa VPN/
     proxy configurata dell'app. In riproduzione LAN poi basta servire /covers."""
+    if INCOGNITO:
+        return ""  # incognito: niente locandine salvate su disco
     key = (key or "").strip()
     remote = _remote_cover_url(cover_url)
     if not key or not remote or not _is_safe_remote_url(remote):
@@ -1755,6 +1768,7 @@ def privacy_ip_status():
         "home_ip_masked": _mask_ip(home),
         "protected": bool(cur and home and cur != home),
         "detected": bool(cur),
+        "incognito": bool(INCOGNITO),
     }
 
 
@@ -1781,6 +1795,25 @@ def privacy_kill_switch(payload: KillSwitchToggle):
     SETTINGS["kill_switch"] = bool(payload.enabled)
     save_settings(SETTINGS)
     return {"ok": True, "kill_switch": SETTINGS["kill_switch"]}
+
+
+class IncognitoToggle(BaseModel):
+    enabled: bool
+
+
+@app.post("/api/privacy/incognito")
+def privacy_incognito(payload: IncognitoToggle):
+    """Attiva/disattiva la modalita' incognito su disco: niente libreria,
+    cronologia download e locandine scritte su disco finche' e' attiva."""
+    global INCOGNITO
+    SETTINGS["incognito"] = bool(payload.enabled)
+    try:
+        save_settings(SETTINGS)   # persiste la scelta PRIMA di sospendere le scritture
+    except Exception:
+        pass
+    INCOGNITO = bool(payload.enabled)
+    set_incognito(INCOGNITO)
+    return {"ok": True, "incognito": INCOGNITO}
 
 # --------------------------------------------------------------------------- #
 #  Content folders (playlists of LIBRARY titles, each with a cover image)
@@ -3246,6 +3279,7 @@ class DownloadTitle(BaseModel):
     episode_id: Optional[int] = None
     title: str = "Video"
     key: Optional[str] = ""              # library key
+    hold: Optional[bool] = False         # True = prepara in coda senza avviare
 
 
 @app.post("/api/download/title")
@@ -3270,6 +3304,7 @@ def download_title(payload: DownloadTitle):
         vidxgo_meta=None,
         vixcloud_meta=vixcloud_meta,
         proxies=get_proxies(),
+        hold=bool(payload.hold),
     )
     return {"download_id": download_id}
 
@@ -3279,6 +3314,7 @@ class NextEpisode(BaseModel):
     season: int
     episode: int
     direction: Optional[str] = "next"
+    hold: Optional[bool] = False         # True = prepara in coda senza avviare
 
 
 @app.post("/api/download/next-episode")
@@ -3347,8 +3383,9 @@ def download_next_episode(payload: NextEpisode):
         key_info=None, extra_headers=dl.get("headers"), vidxgo_meta=None,
         vixcloud_meta={"sc_id": numeric_id, "episode_id": epobj["id"]},
         proxies=get_proxies(),
+        hold=bool(payload.hold),
     )
-    return {"ok": True, "label": label, "season": next_season, "episode": next_ep}
+    return {"ok": True, "label": label, "season": next_season, "episode": next_ep, "held": bool(payload.hold)}
 
 
 @app.get("/api/stream/url")

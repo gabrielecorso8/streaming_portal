@@ -1858,12 +1858,16 @@ function renderDownloads(downloads) {
 
         const showBar = isRunning(dl) || dl.status === "paused";
 
-        const nextInfo = dl.status === "completed" ? nextTitleForDownload(dl) : null;
+        // "Scarica/Prepara il seguente" disponibile anche mentre un titolo e' in
+        // download/coda: da un titolo NON completato il successivo viene PREPARATO
+        // in coda (held), cosi' non parte finche' non lo avvii tu.
+        const nextInfo = nextTitleForDownload(dl);
+        const nextHold = dl.status !== "completed";
+        const nextLabel = nextHold ? "Prepara il seguente" : "Scarica il seguente";
         let nextBtn = "";
-        // Solo "Scarica il seguente": se la puntata successiva c'e' gia' (playId), niente pulsante.
         if (nextInfo && !nextInfo.playId) {
-            if (nextInfo.isEpisode && nextInfo.series) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Scarica il seguente">Scarica il seguente</button>`;
-            else if (!nextInfo.isEpisode && /^\d+-/.test(nextInfo.key || "")) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="Scarica: ${escapeHtml(nextInfo.name || "")}">Scarica il seguente</button>`;
+            if (nextInfo.isEpisode && nextInfo.series) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="${nextLabel}">${nextLabel}</button>`;
+            else if (!nextInfo.isEpisode && /^\d+-/.test(nextInfo.key || "")) nextBtn = `<button class="secondary-btn small-btn dl-next-btn" title="${escapeHtml(nextInfo.name || "")}">${nextLabel}</button>`;
         }
         const actions = dl.status === "completed"
             ? `<div class="download-actions">
@@ -1882,11 +1886,13 @@ function renderDownloads(downloads) {
             : isRunning(dl)
             ? `<div class="download-actions">
                    <button class="secondary-btn small-btn pause-dl-btn" title="Metti in pausa (riprende da qui)">⏸ Pausa</button>
+                   ${nextBtn}
                    <button class="secondary-btn small-btn cancel-dl-btn" title="Interrompi il download">✕ Annulla</button>
                </div>`
             : (dl.status === "paused" || dl.status === "held" || dl.status === "failed")
             ? `<div class="download-actions">
                    <button class="primary-btn small-btn resume-dl-btn">${dl.status === "held" ? "▶ Avvia" : (dl.status === "failed" ? "↻ Riprova" : "▶ Riprendi")}</button>
+                   ${nextBtn}
                    <button class="secondary-btn small-btn cancel-dl-btn" title="Rimuovi dalla coda">✕ Rimuovi</button>
                </div>`
             : "";
@@ -1949,6 +1955,12 @@ function renderDownloads(downloads) {
             if (pbtn) pbtn.addEventListener("click", () => pauseDownload(dl.id));
             const rbtn = item.querySelector(".resume-dl-btn");
             if (rbtn) rbtn.addEventListener("click", () => resumeDownload(dl.id));
+            const nb2 = item.querySelector(".dl-next-btn");
+            if (nb2) nb2.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (nextInfo && nextInfo.isEpisode) downloadNextEpisode(nextInfo.series, nextInfo.season, nextInfo.episode, nextHold);
+                else if (nextInfo) downloadTitles([{ key: nextInfo.key, name: nextInfo.name }], nextHold);
+            });
         }
 
         return item;
@@ -2601,7 +2613,7 @@ function promptDownloadFrom(startIndex) {
     downloadTitles(remaining.slice(0, n));
 }
 
-async function downloadTitles(items) {
+async function downloadTitles(items, hold = false) {
     warnNoProxyOnce();
     let started = 0;
     for (const it of items) {
@@ -2610,23 +2622,24 @@ async function downloadTitles(items) {
         try {
             const r = await fetch("/api/download/title", {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: parseInt(m[1], 10), title: it.name || "Video", key: it.key })
+                body: JSON.stringify({ id: parseInt(m[1], 10), title: it.name || "Video", key: it.key, hold: !!hold })
             });
             if (r.ok) started++;
         } catch (e) {}
     }
-    showToast(started ? `Avviati ${started} download. Riproducibili quando pronti.` : "Impossibile avviare i download");
+    if (hold) showToast(started ? `Preparati ${started} in coda. Avviali da "I tuoi download".` : "Impossibile preparare i download", 5000);
+    else showToast(started ? `Avviati ${started} download. Riproducibili quando pronti.` : "Impossibile avviare i download");
 }
 
-async function downloadNextEpisode(series, season, episode) {
-    showToast("Cerco il prossimo episodio…");
+async function downloadNextEpisode(series, season, episode, hold = false) {
+    showToast(hold ? "Preparo il prossimo episodio in coda…" : "Cerco il prossimo episodio…");
     try {
         const r = await fetch("/api/download/next-episode", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ series, season, episode })
+            body: JSON.stringify({ series, season, episode, hold: !!hold })
         });
         const d = await r.json().catch(() => ({}));
-        if (r.ok) showToast(`Scarico: ${d.label || "prossimo episodio"}`);
+        if (r.ok) showToast((d.held ? "Preparato in coda: " : "Scarico: ") + (d.label || "prossimo episodio"), 5000);
         else showToast(d.detail || "Prossimo episodio non trovato");
     } catch (e) { showToast("Errore nel download del prossimo episodio"); }
 }
@@ -3004,6 +3017,8 @@ async function openPrivacyPanel() {
         '<div class="pp-body"><div class="pp-status">Controllo stato…</div>' +
         '<label class="pp-row"><span>Kill-switch (blocca se la VPN è spenta)</span>' +
         '<input type="checkbox" id="pp-ks"></label>' +
+        '<label class="pp-row"><span>Incognito su disco (non salvare libreria/cronologia/locandine)</span>' +
+        '<input type="checkbox" id="pp-inc"></label>' +
         '<button class="secondary-btn small-btn" id="pp-sethome">Registra questo IP come “casa” (VPN spenta)</button>' +
         '<p class="pp-hint">Registra l’IP di casa con la VPN SPENTA. Poi, con il kill-switch attivo, le operazioni online vengono bloccate se rilevano quell’IP (VPN caduta).</p></div>';
     document.body.appendChild(p);
@@ -3014,6 +3029,7 @@ async function openPrivacyPanel() {
             if (!r.ok) { p.querySelector(".pp-status").textContent = (r.status === 404) ? "Riavvia SC Portal per attivare questa funzione." : "Stato non disponibile."; return; }
             const d = await r.json();
             const ks = p.querySelector("#pp-ks"); ks.checked = !!d.kill_switch;
+            const inc = p.querySelector("#pp-inc"); if (inc) inc.checked = !!d.incognito;
             let txt;
             if (!d.detected) txt = "IP pubblico non rilevabile ora.";
             else if (!d.have_home) txt = "IP attuale: " + d.current_ip_masked + " · nessun IP di casa registrato.";
@@ -3031,6 +3047,16 @@ async function openPrivacyPanel() {
             });
             showToast(e.target.checked ? "Kill-switch attivato" : "Kill-switch disattivato");
         } catch (err) { showToast("Errore kill-switch"); }
+        refresh();
+    });
+    p.querySelector("#pp-inc").addEventListener("change", async (e) => {
+        try {
+            await fetch(withLanToken("/api/privacy/incognito"), {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ enabled: e.target.checked })
+            });
+            showToast(e.target.checked ? "Incognito attivo: niente tracce su disco" : "Incognito disattivato", 4000);
+        } catch (err) { showToast("Errore incognito"); }
         refresh();
     });
     p.querySelector("#pp-sethome").addEventListener("click", async () => {

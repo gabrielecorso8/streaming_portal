@@ -287,6 +287,74 @@
     });
   }
 
+  // ---- Coda download dal telecomando ---------------------------------------
+  var elQ = document.getElementById("q"), elQToggle = document.getElementById("q-toggle");
+  var elQList = document.getElementById("q-list"), elQCount = document.getElementById("q-count");
+  var qTimer = null;
+  var ICON_PAUSE2 = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1.4"></rect><rect x="14" y="4" width="4" height="16" rx="1.4"></rect></svg>';
+  var ICON_PLAY2 = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg>';
+  function qStatusLabel(s, prog) {
+    if (s === "downloading") return "Scaricamento " + Math.round(prog || 0) + "%";
+    if (s === "queued" || s === "pending") return "In coda";
+    if (s === "merging") return "Unione tracce…";
+    if (s === "paused") return "In pausa · " + Math.round(prog || 0) + "%";
+    if (s === "held") return "Pronto (non avviato)";
+    if (s === "failed") return "Fallito";
+    return s;
+  }
+  async function loadQueue() {
+    try {
+      var list = await (await fetch(api("/api/download/status"), { cache: "no-store" })).json();
+      var rows = (list || []).filter(function (d) { return d.status !== "completed"; });
+      elQCount.textContent = rows.length ? "(" + rows.length + ")" : "";
+      if (!rows.length) { elQList.innerHTML = '<div class="dl-empty">Nessun download in coda</div>'; return; }
+      elQList.innerHTML = rows.map(function (d) {
+        var running = (d.status === "downloading" || d.status === "queued" || d.status === "pending" || d.status === "merging");
+        var act = running
+          ? '<button class="q-act" data-act="pause" data-id="' + esc(d.id) + '" title="Pausa">' + ICON_PAUSE2 + '</button>'
+          : '<button class="q-act go" data-act="resume" data-id="' + esc(d.id) + '" title="Avvia/Riprendi">' + ICON_PLAY2 + '</button>';
+        return '<div class="q-item"><div class="q-meta"><div class="q-nm">' + esc(parseEpisode(d.title) ? episodeLabel(d.title) : (d.title || "")) +
+               '</div><div class="q-st">' + qStatusLabel(d.status, d.progress) + '</div></div>' + act + '</div>';
+      }).join("");
+    } catch (e) { elQList.innerHTML = '<div class="dl-empty">Impossibile leggere la coda</div>'; }
+  }
+  if (elQList) elQList.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-act]"); if (!btn) return;
+    var act = btn.getAttribute("data-act"), id = btn.getAttribute("data-id");
+    fetch(api("/api/download/" + (act === "pause" ? "pause" : "resume")), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: id })
+    }).then(function () { toast(act === "pause" ? "Messo in pausa" : "Avviato"); setTimeout(loadQueue, 400); }).catch(function () {});
+  });
+  if (elQToggle) elQToggle.addEventListener("click", function () {
+    var open = !elQ.classList.contains("open");
+    elQ.classList.toggle("open", open);
+    elQToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    if (qTimer) { clearInterval(qTimer); qTimer = null; }
+    if (open) { loadQueue(); qTimer = setInterval(loadQueue, 2500); }
+  });
+
+  // ---- Gesti swipe sulla card (orizzontale=seek, verticale=volume) ----------
+  var card = document.querySelector(".card");
+  if (card) {
+    var sx = 0, sy = 0, sactive = false;
+    card.addEventListener("touchstart", function (e) {
+      if (e.target.closest("button, input, .seekwrap")) { sactive = false; return; }
+      sactive = true; sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    }, { passive: true });
+    card.addEventListener("touchend", function (e) {
+      if (!sactive || !e.changedTouches.length) return;
+      sactive = false;
+      var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+      if (Math.abs(dx) < 45 && Math.abs(dy) < 45) return;
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        var secs = Math.max(10, Math.min(120, Math.round(Math.abs(dx) / 4)));
+        send("seekBy", dx > 0 ? secs : -secs); toast((dx > 0 ? "⏩ +" : "⏪ −") + secs + "s");
+      } else {
+        if (dy < 0) { send("volUp"); toast("Volume su"); } else { send("volDown"); toast("Volume giù"); }
+      }
+    }, { passive: true });
+  }
+
   poll();
   setInterval(poll, 1000);
 })();

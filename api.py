@@ -77,7 +77,7 @@ if not hasattr(connection, 'real_create_connection'):
 from downloader import (
     start_download_task, active_downloads, download_paths,
     clear_downloads, cancel_download, set_max_concurrent,
-    pause_download, resume_download, set_incognito,
+    pause_download, resume_download, set_incognito, forget_download,
 )
 import vidxgo
 import animeworld
@@ -3490,6 +3490,36 @@ def resume_download_endpoint(payload: dict):
     download_id = payload.get("id", "")
     if not resume_download(download_id):
         raise HTTPException(status_code=404, detail="Download non ripristinabile")
+    return {"ok": True}
+
+
+@app.post("/api/download/delete")
+def delete_download_endpoint(payload: dict):
+    """Elimina DEFINITIVAMENTE un download completato: cancella il file da
+    /downloads e lo toglie dal registro. Azione avviata dall'utente (con
+    conferma lato client) per liberare spazio."""
+    download_id = payload.get("id", "")
+    path = download_paths.get(download_id)
+    if not path:
+        st = active_downloads.get(download_id) or {}
+        if st.get("file"):
+            path = os.path.join(DOWNLOADS_DIR, st["file"])
+    if not path or not os.path.exists(path):
+        # non c'e' file: comunque dimentica l'eventuale voce in coda
+        forget_download(download_id)
+        raise HTTPException(status_code=404, detail="File non trovato")
+    base = os.path.abspath(DOWNLOADS_DIR)
+    if os.path.commonpath([os.path.abspath(path), base]) != base:
+        raise HTTPException(status_code=400, detail="Percorso non valido")
+    try:
+        os.remove(path)
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Impossibile eliminare: {e}")
+    forget_download(download_id)
+    try:
+        DOWNLOAD_KEYS.pop(download_id, None)
+    except Exception:
+        pass
     return {"ok": True}
 
 

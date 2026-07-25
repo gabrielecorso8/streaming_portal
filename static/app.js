@@ -272,6 +272,7 @@ async function init() {
 
     // Start polling downloads
     startDownloadsPolling();
+    setupPlayerGestures();
 
     // Load the saved/recent titles library and the remembered domains
     fetchLibrary();
@@ -1810,6 +1811,26 @@ async function triggerDownload(label, titleId, episodeId = null, hold = false) {
 }
 
 // 7. Polling Downloads Status
+function setupPlayerGestures() {
+    const v = el.videoPlayer;
+    if (!v || !("ontouchstart" in window)) return;
+    let lastT = 0;
+    v.addEventListener("touchend", (e) => {
+        if (!e.changedTouches || !e.changedTouches.length) return;
+        const now = Date.now();
+        const rect = v.getBoundingClientRect();
+        const x = e.changedTouches[0].clientX - rect.left;
+        const frac = x / (rect.width || 1);
+        if (now - lastT < 320) {   // doppio tap
+            if (frac < 0.35) { try { v.currentTime = Math.max(0, (v.currentTime || 0) - 10); } catch (e2) {} showToast("⏪ −10s"); }
+            else if (frac > 0.65) { try { v.currentTime = (v.currentTime || 0) + 10; } catch (e2) {} showToast("⏩ +10s"); }
+            else { v.paused ? v.play().catch(() => {}) : v.pause(); }
+            lastT = 0;
+            e.preventDefault();
+        } else { lastT = now; }
+    }, { passive: false });
+}
+
 function startDownloadsPolling() {
     setInterval(async () => {
         try {
@@ -1862,6 +1883,8 @@ function renderDownloads(downloads) {
     el.downloadsList.innerHTML = "";
     const buildDownloadItem = (dl, full = false) => {
         const item = document.createElement("div");
+        item.dataset.dlid = dl.id;
+        if (dl.status === "completed" && typeof _isWatched === "function" && _isWatched(dl.id)) item.classList.add("dl-watched");
         const isActive = isActiveRow(dl);
         // Dentro le cartelle (full) mostriamo la riga completa (locandina + nome +
         // azioni rapide); solo in cima resta la griglia a sole locandine.
@@ -2084,7 +2107,7 @@ function renderContinueWatching() {
     const items = [];
     (localFiles || []).forEach(f => {
         const rec = store["dl:" + f.id];
-        if (rec && rec.t > 15) items.push({ f: f, t: rec.t });
+        if (rec && rec.t > 15 && !_isWatched(f.id)) items.push({ f: f, t: rec.t });
     });
     let box = document.getElementById("continue-watching");
     if (!items.length) { if (box) box.remove(); return; }
@@ -2113,17 +2136,23 @@ function setupMobileDownloadsUX() {
     if (document.getElementById("dl-search-wrap")) return;
     const wrap = document.createElement("div");
     wrap.id = "dl-search-wrap";
-    wrap.innerHTML = '<input type="search" id="dl-search" placeholder="Cerca tra i download…" autocomplete="off">';
+    wrap.innerHTML = '<input type="search" id="dl-search" placeholder="Cerca tra i download…" autocomplete="off">' +
+        '<label id="hide-watched-lbl"><input type="checkbox" id="hide-watched"> Nascondi visti</label>';
     el.downloadsList.parentNode.insertBefore(wrap, el.downloadsList);
     wrap.querySelector("#dl-search").addEventListener("input", applyDownloadFilter);
+    wrap.querySelector("#hide-watched").addEventListener("change", applyDownloadFilter);
 }
 
 function applyDownloadFilter() {
     const inp = document.getElementById("dl-search");
     const q = (inp ? inp.value : "").trim().toLowerCase();
+    const hideW = !!(document.getElementById("hide-watched") || {}).checked;
     document.querySelectorAll("#downloads-list .download-item").forEach(it => {
         const nm = (it.querySelector(".download-name") || {}).textContent || it.title || "";
-        it.style.display = (!q || nm.toLowerCase().includes(q)) ? "" : "none";
+        const id = it.dataset.dlid || "";
+        const isW = hideW && id && typeof _isWatched === "function" && _isWatched(id);
+        const okText = !q || nm.toLowerCase().includes(q);
+        it.style.display = (okText && !isW) ? "" : "none";
     });
     // Nasconde i gruppi/cartelle rimasti senza elementi visibili
     document.querySelectorAll("#downloads-list .download-folder").forEach(g => {
@@ -2225,11 +2254,14 @@ function openMobilePlayChoice(dl) {
     const ov = document.createElement("div");
     ov.id = "m-sheet-ov";
     ov.className = "m-sheet-ov";
+    const watched = _isWatched(dl.id);
     ov.innerHTML =
         '<div class="m-sheet">' +
         '<div class="m-sheet-title">' + name + '</div>' +
         '<button class="primary-btn m-sheet-btn" data-x="play">▶ Riproduci qui in SC Portal</button>' +
         '<button class="secondary-btn m-sheet-btn" data-x="save">⬇ Salva sul telefono</button>' +
+        '<button class="secondary-btn m-sheet-btn" data-x="watch">' + (watched ? "◻ Segna come non visto" : "✓ Segna come visto") + '</button>' +
+        '<button class="secondary-btn m-sheet-btn m-sheet-danger" data-x="del">🗑 Elimina dal telefono</button>' +
         '<button class="secondary-btn m-sheet-btn m-sheet-cancel" data-x="close">Annulla</button>' +
         '</div>';
     document.body.appendChild(ov);
@@ -2237,7 +2269,33 @@ function openMobilePlayChoice(dl) {
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
     ov.querySelector('[data-x="play"]').addEventListener("click", () => { close(); playDownloaded(dl.id, dl.title, dl.key); });
     ov.querySelector('[data-x="save"]').addEventListener("click", () => { close(); saveDownloadToDevice(dl.id, dl.file || dl.title); });
+    ov.querySelector('[data-x="watch"]').addEventListener("click", () => { close(); _toggleWatched(dl.id); showToast(_isWatched(dl.id) ? "Segnato come visto" : "Segnato come non visto"); renderContinueWatching(); applyDownloadFilter(); });
+    ov.querySelector('[data-x="del"]').addEventListener("click", () => { close(); deleteDownload(dl.id, dl.title); });
     ov.querySelector('[data-x="close"]').addEventListener("click", close);
+}
+
+// --- "Visto" (solo lato client, per non lasciare tracce sul server) ---------
+function _watchedStore() { try { return JSON.parse(localStorage.getItem("scp_watched") || "{}"); } catch (e) { return {}; } }
+function _isWatched(id) { return !!_watchedStore()["dl:" + id]; }
+function _toggleWatched(id) {
+    const s = _watchedStore();
+    if (s["dl:" + id]) delete s["dl:" + id]; else s["dl:" + id] = 1;
+    try { localStorage.setItem("scp_watched", JSON.stringify(s)); } catch (e) {}
+}
+
+async function deleteDownload(id, title) {
+    if (!confirm(`Eliminare «${title || "questo download"}» dal telefono?\n\nIl file verrà cancellato definitivamente per liberare spazio.`)) return;
+    try {
+        const r = await fetch(withLanToken("/api/download/delete"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id })
+        });
+        if (r.ok) showToast("Download eliminato");
+        else if (r.status === 404) showToast("File non trovato (forse già eliminato)");
+        else showToast("Impossibile eliminare");
+    } catch (e) { showToast("Errore durante l'eliminazione"); }
+    await refreshLocalDownloads();
+    refreshDownloads();
 }
 
 async function mobileDownloadRestOfSeason(series, season, episode) {

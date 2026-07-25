@@ -899,6 +899,20 @@ def resume_download(download_id):
     return _MANAGER.resume(download_id)
 
 
+def forget_download(download_id):
+    """Dimentica un download: lo rimuove dal registro/coda (NON tocca il file su
+    disco: la cancellazione del file la fa l'API). Ritorna True se esisteva."""
+    existed = download_id in _MANAGER.tasks
+    _MANAGER.tasks.pop(download_id, None)
+    active_downloads.pop(download_id, None)
+    download_paths.pop(download_id, None)
+    try:
+        _persist_state()
+    except Exception:
+        pass
+    return existed
+
+
 def load_persisted_state():
     """Entry point for the API to restore the queue/history on startup."""
     _MANAGER.load_persisted()

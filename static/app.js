@@ -1288,6 +1288,19 @@ async function loadSeasonEpisodes() {
 function renderEpisodes(episodes) {
     el.episodesList.innerHTML = "";
     const isClone = !!(currentTitle && currentTitle.is_clone);
+
+    // Barra download di massa: stagione intera / serie intera
+    const season = el.seasonSelect ? el.seasonSelect.value : "";
+    const bulkBar = document.createElement("div");
+    bulkBar.className = "bulk-dl-bar";
+    const nSeasons = (currentTitle && currentTitle.seasons) ? currentTitle.seasons.length : 0;
+    bulkBar.innerHTML =
+        '<button class="secondary-btn bulk-season-btn" type="button">⬇ Scarica stagione ' + season + '</button>' +
+        (nSeasons > 1 ? '<button class="secondary-btn bulk-series-btn" type="button">⬇ Scarica intera serie (' + nSeasons + ' stagioni)</button>' : '');
+    el.episodesList.appendChild(bulkBar);
+    bulkBar.querySelector(".bulk-season-btn").addEventListener("click", () => downloadSeason(season, episodes));
+    const seriesBtn = bulkBar.querySelector(".bulk-series-btn");
+    if (seriesBtn) seriesBtn.addEventListener("click", () => downloadWholeSeries());
     episodes.forEach(ep => {
         const item = document.createElement("div");
         item.className = "episode-item";
@@ -1327,6 +1340,69 @@ function renderEpisodes(episodes) {
 
         el.episodesList.appendChild(item);
     });
+}
+
+// --- Download di massa: stagione / serie intera ---------------------------
+function _epLabel(season, ep) {
+    return `${currentTitle.name} S${String(season).padStart(2, '0')}E${String(ep.number).padStart(2, '0')}`;
+}
+
+async function _fetchEpisodesForSeason(season) {
+    if (currentTitle.is_clone && currentTitle.vidxgo) {
+        const v = currentTitle.vidxgo;
+        const url = `/api/clone/episodes?tmdb_tv_id=${v.tmdb_tv_id}&season=${season}` +
+                    `&iframe_url=${encodeURIComponent(v.iframe_url)}`;
+        const resp = await fetch(url);
+        if (resp.ok) {
+            let eps = await resp.json();
+            if (!eps || eps.length === 0) {
+                const si = (currentTitle.seasons || []).find(s => String(s.number) === String(season));
+                const count = si ? si.count : 0;
+                eps = [];
+                for (let i = 1; i <= count; i++) eps.push({ number: i, name: `Episodio ${i}` });
+            }
+            return eps;
+        }
+        return [];
+    }
+    const resp = await fetch(`/api/details/${currentTitle.id}-${currentTitle.slug}/season/${season}?version=${currentTitle.version}`);
+    return resp.ok ? await resp.json() : [];
+}
+
+async function _enqueueEpisode(season, ep) {
+    const label = _epLabel(season, ep);
+    if (currentTitle.is_clone) {
+        await cloneEpisodeDownload(parseInt(season, 10), ep.number, label);
+    } else {
+        await triggerDownload(label, currentTitle.id, ep.id);
+    }
+}
+
+async function downloadSeason(season, episodes) {
+    let eps = episodes;
+    if (!eps || !eps.length) eps = await _fetchEpisodesForSeason(season);
+    if (!eps || !eps.length) { showToast("Nessun episodio da scaricare"); return; }
+    showToast(`Metto in coda ${eps.length} episodi della stagione ${season}...`, 4000);
+    for (const ep of eps) {
+        try { await _enqueueEpisode(season, ep); } catch (e) {}
+        await new Promise(r => setTimeout(r, 400));
+    }
+    showToast(`Stagione ${season}: ${eps.length} episodi aggiunti alla coda download.`, 5000);
+}
+
+async function downloadWholeSeries() {
+    const seasons = (currentTitle && currentTitle.seasons) ? currentTitle.seasons : [];
+    if (!seasons.length) { showToast("Nessuna stagione trovata"); return; }
+    showToast(`Preparo il download dell'intera serie (${seasons.length} stagioni)...`, 5000);
+    let total = 0;
+    for (const s of seasons) {
+        const eps = await _fetchEpisodesForSeason(s.number);
+        for (const ep of eps) {
+            try { await _enqueueEpisode(s.number, ep); total++; } catch (e) {}
+            await new Promise(r => setTimeout(r, 400));
+        }
+    }
+    showToast(`Serie intera: ${total} episodi aggiunti alla coda download.`, 6000);
 }
 
 // Download a specific episode of a clone (vidxgo) series

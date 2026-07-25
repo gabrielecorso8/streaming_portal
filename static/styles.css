@@ -1525,3 +1525,15 @@ body.cinema-on #next-banner { display: none !important; }
 .video-container:-webkit-full-screen #video-player {
     width: 100% !important; height: 100% !important; max-height: none !important;
     border-radius: 0 !important; object-fit: contain; }
+
+/* Barra download di massa (stagione / serie intera) */
+.bulk-dl-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.bulk-dl-bar .secondary-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+}

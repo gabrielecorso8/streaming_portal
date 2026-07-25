@@ -19,6 +19,7 @@ let downloadByKey = {};    // key -> download_id (completati)
 let localByName = {};      // nome-normalizzato -> id file locale (/downloads)
 let localFiles = [];       // [{id,name,file}] file in /downloads
 let localDownloads = [];   // voci 'completate' dai file locali (per la lista download)
+let _downloadsSnapshot = []; // ultima lista /api/download/status (per l'anti-duplicati)
 let _bannerDismissed = false; // l'utente ha chiuso il banner 'prossimo'
 let _bannerReshown = false;   // gia' riproposto a 3/4
 let librarySearch = "";    // current library search query
@@ -1379,23 +1380,26 @@ async function _fetchEpisodesForSeason(season) {
 
 async function _enqueueEpisode(season, ep, hold) {
     const label = _epLabel(season, ep);
+    if (_dupExists(label)) return false;   // gia' presente: salta in silenzio
     if (currentTitle.is_clone) {
         await cloneEpisodeDownload(parseInt(season, 10), ep.number, label, hold);
     } else {
         await triggerDownload(label, currentTitle.id, ep.id, hold);
     }
+    return true;
 }
 
 async function downloadSeason(season, episodes) {
     let eps = episodes;
     if (!eps || !eps.length) eps = await _fetchEpisodesForSeason(season);
     if (!eps || !eps.length) { showToast("Nessun episodio da scaricare"); return; }
-    showToast(`Metto in coda ${eps.length} episodi della stagione ${season}...`, 4000);
+    showToast(`Metto in coda la stagione ${season}...`, 4000);
+    let added = 0, skipped = 0;
     for (const ep of eps) {
-        try { await _enqueueEpisode(season, ep, false); } catch (e) {}
+        try { (await _enqueueEpisode(season, ep, false)) ? added++ : skipped++; } catch (e) {}
         await new Promise(r => setTimeout(r, 400));
     }
-    showToast(`Stagione ${season}: ${eps.length} episodi aggiunti alla coda download.`, 5000);
+    showToast(`Stagione ${season}: ${added} aggiunti${skipped ? `, ${skipped} già presenti` : ""}.`, 5000);
 }
 
 async function downloadWholeSeries() {
@@ -1403,15 +1407,15 @@ async function downloadWholeSeries() {
     if (!seasons.length) { showToast("Nessuna stagione trovata"); return; }
     // Una serie intera e' pesante: la PREPARIAMO in coda senza scaricarla subito.
     showToast(`Preparo l'intera serie in coda (${seasons.length} stagioni)...`, 5000);
-    let total = 0;
+    let total = 0, skipped = 0;
     for (const s of seasons) {
         const eps = await _fetchEpisodesForSeason(s.number);
         for (const ep of eps) {
-            try { await _enqueueEpisode(s.number, ep, true); total++; } catch (e) {}
+            try { (await _enqueueEpisode(s.number, ep, true)) ? total++ : skipped++; } catch (e) {}
             await new Promise(r => setTimeout(r, 250));
         }
     }
-    showToast(`Serie preparata in coda: ${total} episodi pronti. Avviali da "I tuoi download".`, 7000);
+    showToast(`Serie: ${total} episodi preparati in coda${skipped ? `, ${skipped} già presenti` : ""}. Avviali da "I tuoi download".`, 7000);
 }
 
 // Download a specific episode of a clone (vidxgo) series
@@ -1420,6 +1424,7 @@ async function cloneEpisodeDownload(season, episode, label, hold) {
         showToast("Dati episodio non disponibili");
         return;
     }
+    if (_dupExists(label)) { showToast(`«${label}» è già scaricato o in coda: non lo riscarico.`, 4500); return; }
     showToast(`Preparazione download: ${label}...`);
     try {
         const v = currentTitle.vidxgo;
@@ -1672,7 +1677,18 @@ function closePlayer() {
 }
 
 // 6. Downloads Triggering
+// Anti-duplicati: un titolo e' "gia' presente" se e' un file locale scaricato
+// oppure se e' gia' in lista download (in corso/coda/pausa/pronto/completato).
+function _dupExists(title) {
+    const n = normName(title || "");
+    if (!n) return false;
+    if (localByName && localByName[n]) return true;
+    const busy = ["pending", "queued", "downloading", "merging", "paused", "held", "completed"];
+    return (_downloadsSnapshot || []).some(d => normName(d.title || "") === n && busy.includes(d.status));
+}
+
 async function triggerDownload(label, titleId, episodeId = null, hold = false) {
+    if (_dupExists(label)) { showToast(`«${label}» è già scaricato o in coda: non lo riscarico.`, 4500); return; }
     warnNoProxyOnce();
     showToast("Preparazione download...");
     
@@ -1828,6 +1844,7 @@ function formatBytes(bytes) {
 }
 
 function renderDownloads(downloads) {
+    if (Array.isArray(downloads)) _downloadsSnapshot = downloads;
     downloadedKeys = new Set();
     downloadByKey = {};
     downloads.forEach(d => { if (d.status === "completed" && d.key) { downloadedKeys.add(d.key); downloadByKey[d.key] = d.id; } });
@@ -2737,6 +2754,10 @@ function promptDownloadFrom(startIndex) {
 
 async function downloadTitles(items, hold = false) {
     warnNoProxyOnce();
+    const _before = (items || []).length;
+    items = (items || []).filter(it => !_dupExists(it.name));
+    const _dups = _before - items.length;
+    if (!items.length) { showToast(_dups ? "Già presenti: niente da scaricare." : "Niente da scaricare."); return; }
     let started = 0;
     for (const it of items) {
         const m = /^(\d+)-/.exec(it.key || "");

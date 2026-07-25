@@ -361,6 +361,21 @@ def _browser_get_html(url, referer=None, timeout_ms=180000):
         "window.chrome={runtime:{}};"
         "Object.defineProperty(navigator,'languages',{get:()=>['it-IT','it','en']});"
         "Object.defineProperty(navigator,'plugins',{get:()=>[1,2,3,4,5]});"
+        # Valori COMUNI e fissi: un PC Windows qualunque. Niente di unico da tracciare.
+        "Object.defineProperty(navigator,'platform',{get:()=>'Win32'});"
+        "Object.defineProperty(navigator,'hardwareConcurrency',{get:()=>8});"
+        "Object.defineProperty(navigator,'deviceMemory',{get:()=>8});"
+        "Object.defineProperty(navigator,'maxTouchPoints',{get:()=>0});"
+        # WebGL: spoof di vendor/renderer verso una GPU Intel diffusa (anti-fingerprint).
+        "try{const gp=WebGLRenderingContext.prototype.getParameter;"
+        "WebGLRenderingContext.prototype.getParameter=function(p){"
+        "if(p===37445)return 'Intel Inc.';"
+        "if(p===37446)return 'Intel Iris OpenGL Engine';"
+        "return gp.call(this,p);};}catch(e){}"
+        # Nasconde il fatto che i permessi siano 'automatizzati'.
+        "try{const q=navigator.permissions.query.bind(navigator.permissions);"
+        "navigator.permissions.query=(p)=>p&&p.name==='notifications'?"
+        "Promise.resolve({state:Notification.permission}):q(p);}catch(e){}"
     )
     profile_dir = os.path.join(PROJECT_DIR, "bin", "cf_profile")
     try:
@@ -388,6 +403,8 @@ def _browser_get_html(url, referer=None, timeout_ms=180000):
                   "InterestFeedContentSuggestions,AutofillServerCommunication"],
             viewport={"width": 1100, "height": 760},
             locale="it-IT",
+            timezone_id="Europe/Rome",
+            color_scheme="light",
             ignore_https_errors=True,
             extra_http_headers=({"Referer": referer} if referer else {}))
         # Prova col CHROME/EDGE REALE del sistema (Cloudflare "managed" lascia passare
@@ -948,6 +965,54 @@ def get_proxies():
     elif low.startswith("socks4://"):
         proxy = "socks4a://" + proxy[len("socks4://"):]
     return {"http": proxy, "https": proxy}
+
+# --------------------------------------------------------------------------- #
+#  Kill-switch anti-fuga IP: se attivo, blocca le operazioni online quando la
+#  VPN sembra spenta (l'IP pubblico coincide con quello di casa registrato).
+# --------------------------------------------------------------------------- #
+_IP_CACHE = {"ip": None, "ts": 0.0}
+
+def _current_public_ip():
+    """IP pubblico corrente attraverso l'egress dell'app (stesso percorso dei
+    download: proxy se configurato, altrimenti diretto => riflette lo stato VPN).
+    Cache 30s per non fare una richiesta a ogni chiamata."""
+    now = time.time()
+    if _IP_CACHE["ip"] and (now - _IP_CACHE["ts"] < 30):
+        return _IP_CACHE["ip"]
+    for u in ("https://api.ipify.org", "https://icanhazip.com", "https://ifconfig.me/ip"):
+        try:
+            r = requests.get(u, timeout=5, proxies=get_proxies(), verify=False)
+            ip = (r.text or "").strip()
+            if r.status_code == 200 and ip and len(ip) < 64 and ("." in ip or ":" in ip):
+                _IP_CACHE["ip"] = ip
+                _IP_CACHE["ts"] = now
+                return ip
+        except Exception:
+            continue
+    return None
+
+def _mask_ip(ip):
+    if not ip:
+        return ""
+    if ":" in ip:
+        return ip.split(":")[0] + ":…"
+    parts = ip.split(".")
+    return (parts[0] + "." + parts[1] + ".x.x") if len(parts) == 4 else ip
+
+def _require_protected_egress():
+    """Se il kill-switch e' attivo e l'IP pubblico corrente = IP di casa (VPN
+    spenta), BLOCCA l'operazione online invece di esporre l'IP reale."""
+    if not SETTINGS.get("kill_switch"):
+        return
+    home = (SETTINGS.get("home_ip") or "").strip()
+    if not home:
+        return  # nessun riferimento registrato: non possiamo decidere
+    cur = _current_public_ip()
+    if cur and cur == home:
+        raise HTTPException(
+            status_code=423,
+            detail="Kill-switch attivo: la VPN sembra spenta (rilevato il tuo IP "
+                   "di casa). Attiva la VPN oppure disattiva il kill-switch.")
 
 def apply_proxies():
     """Push the current proxy config into the vidxgo resolver module."""
@@ -1675,6 +1740,48 @@ def privacy_clean():
         pass
     return {"ok": True, "removed": removed}
 
+
+@app.get("/api/privacy/ip-status")
+def privacy_ip_status():
+    """Stato del kill-switch e dell'IP corrente (mascherato). 'protected' e' True
+    quando l'IP pubblico e' DIVERSO da quello di casa (cioe' la VPN e' attiva)."""
+    cur = _current_public_ip()
+    home = (SETTINGS.get("home_ip") or "").strip()
+    ks = bool(SETTINGS.get("kill_switch"))
+    return {
+        "kill_switch": ks,
+        "have_home": bool(home),
+        "current_ip_masked": _mask_ip(cur),
+        "home_ip_masked": _mask_ip(home),
+        "protected": bool(cur and home and cur != home),
+        "detected": bool(cur),
+    }
+
+
+@app.post("/api/privacy/set-home-ip")
+def privacy_set_home_ip():
+    """Registra l'IP di casa. Va cliccato con la VPN SPENTA: e' il riferimento
+    che il kill-switch usa per capire se la VPN e' attiva."""
+    _IP_CACHE["ip"] = None  # forza un rilevamento fresco
+    ip = _current_public_ip()
+    if not ip:
+        raise HTTPException(status_code=502, detail="Impossibile rilevare l'IP pubblico ora.")
+    SETTINGS["home_ip"] = ip
+    save_settings(SETTINGS)
+    return {"ok": True, "home_ip_masked": _mask_ip(ip)}
+
+
+class KillSwitchToggle(BaseModel):
+    enabled: bool
+
+
+@app.post("/api/privacy/kill-switch")
+def privacy_kill_switch(payload: KillSwitchToggle):
+    """Attiva/disattiva il kill-switch. Persistito in settings.json."""
+    SETTINGS["kill_switch"] = bool(payload.enabled)
+    save_settings(SETTINGS)
+    return {"ok": True, "kill_switch": SETTINGS["kill_switch"]}
+
 # --------------------------------------------------------------------------- #
 #  Content folders (playlists of LIBRARY titles, each with a cover image)
 # --------------------------------------------------------------------------- #
@@ -2151,6 +2258,7 @@ def search_source_domain(domain, q, limit=12):
 @app.get("/api/search")
 def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None,
            type: Optional[str] = None, sources: Optional[str] = None):
+    _require_protected_egress()
     base_url = get_base_url()
     query = urllib.parse.quote(q)
     # Fonti attive: "sc" = StreamingCommunity, "aw" = AnimeWorld/fonti extra.
@@ -2257,6 +2365,7 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None,
 
 @app.get("/api/search/list")
 def search_list(q: str, sources: Optional[str] = "sc"):
+    _require_protected_egress()
     """Ricerca a LISTA: piu' titoli separati da ';' (per importare al volo intere
     saghe/collezioni). Ritorna il miglior risultato per ciascun titolo.
     Di default cerca SOLO su StreamingCommunity ("sc"): l'import a lista serve per
@@ -2497,6 +2606,7 @@ def animeworld_stream(url: Optional[str] = "", id: Optional[str] = "", host: Opt
 @app.post("/api/animeworld/download")
 def animeworld_download(payload: AWEpisode):
     """Risolve un episodio AnimeWorld e ne avvia il download (mp4 diretto)."""
+    _require_protected_egress()
     info, mp4 = _aw_resolve_mp4(payload.url or "", payload.id or "", payload.host or "www.animeworld.ac")
     download_id = str(uuid.uuid4())
     if payload.lib_key:
@@ -2532,6 +2642,7 @@ def clone_episodes(tmdb_tv_id: int, season: int, iframe_url: str):
 @app.post("/api/clone/download")
 def clone_download(payload: CloneDownloadRequest):
     """Resolve a specific vidxgo episode and start its download."""
+    _require_protected_egress()
     try:
         info = vidxgo.resolve_episode(
             payload.id, payload.mode, payload.season, payload.episode, payload.iframe_url
@@ -3095,6 +3206,7 @@ def get_stream_key(url: str, referer: str):
 
 @app.post("/api/download")
 def download_media(payload: DownloadRequest):
+    _require_protected_egress()
     for _u in (payload.m3u8_video, payload.m3u8_audio):
         if _u and not _is_safe_remote_url(_u):
             raise HTTPException(status_code=400, detail="URL di download non consentito")
@@ -3241,6 +3353,7 @@ def download_next_episode(payload: NextEpisode):
 
 @app.get("/api/stream/url")
 def get_stream_details(id: int, episode_id: Optional[int] = None):
+    _require_protected_egress()
     return resolve_stream_info(id, episode_id)
 
 

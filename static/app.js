@@ -59,6 +59,7 @@ const el = {
     openFolderBtn: document.getElementById("open-folder-btn"),
     shutdownBtn: document.getElementById("shutdown-btn"),
     privacyCleanBtn: document.getElementById("privacy-clean-btn"),
+    privacyShieldBtn: document.getElementById("privacy-shield-btn"),
 
     // Details Modal
     detailsModal: document.getElementById("details-modal"),
@@ -161,6 +162,7 @@ async function init() {
     el.openFolderBtn.addEventListener("click", openDownloadsFolder);
     if (el.shutdownBtn) el.shutdownBtn.addEventListener("click", shutdownApp);
     if (el.privacyCleanBtn) el.privacyCleanBtn.addEventListener("click", privacyClean);
+    if (el.privacyShieldBtn) el.privacyShieldBtn.addEventListener("click", openPrivacyPanel);
     el.urlInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") handleMainInput();
     });
@@ -2989,6 +2991,58 @@ async function nestFolder(childId, parentId) {
             showToast(d.detail || "Spostamento non valido");
         }
     } catch (e) { showToast("Errore spostamento cartella"); }
+}
+
+async function openPrivacyPanel() {
+    let p = document.getElementById("privacy-panel");
+    if (p) { p.remove(); return; }  // toggle chiuso
+    p = document.createElement("div");
+    p.id = "privacy-panel";
+    p.className = "privacy-panel";
+    p.innerHTML =
+        '<div class="pp-head">Privacy &amp; kill-switch <button class="pp-close" title="Chiudi">✕</button></div>' +
+        '<div class="pp-body"><div class="pp-status">Controllo stato…</div>' +
+        '<label class="pp-row"><span>Kill-switch (blocca se la VPN è spenta)</span>' +
+        '<input type="checkbox" id="pp-ks"></label>' +
+        '<button class="secondary-btn small-btn" id="pp-sethome">Registra questo IP come “casa” (VPN spenta)</button>' +
+        '<p class="pp-hint">Registra l’IP di casa con la VPN SPENTA. Poi, con il kill-switch attivo, le operazioni online vengono bloccate se rilevano quell’IP (VPN caduta).</p></div>';
+    document.body.appendChild(p);
+    p.querySelector(".pp-close").addEventListener("click", () => p.remove());
+    const refresh = async () => {
+        try {
+            const r = await fetch(withLanToken("/api/privacy/ip-status"));
+            if (!r.ok) { p.querySelector(".pp-status").textContent = (r.status === 404) ? "Riavvia SC Portal per attivare questa funzione." : "Stato non disponibile."; return; }
+            const d = await r.json();
+            const ks = p.querySelector("#pp-ks"); ks.checked = !!d.kill_switch;
+            let txt;
+            if (!d.detected) txt = "IP pubblico non rilevabile ora.";
+            else if (!d.have_home) txt = "IP attuale: " + d.current_ip_masked + " · nessun IP di casa registrato.";
+            else if (d.protected) txt = "✅ Protetto — IP attuale " + d.current_ip_masked + " ≠ casa " + d.home_ip_masked + " (VPN attiva).";
+            else txt = "⚠️ IP di casa rilevato (" + d.current_ip_masked + "): la VPN sembra SPENTA.";
+            p.querySelector(".pp-status").textContent = txt;
+            p.querySelector(".pp-status").className = "pp-status" + (d.have_home ? (d.protected ? " ok" : " warn") : "");
+        } catch (e) { p.querySelector(".pp-status").textContent = "Errore di stato."; }
+    };
+    p.querySelector("#pp-ks").addEventListener("change", async (e) => {
+        try {
+            await fetch(withLanToken("/api/privacy/kill-switch"), {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ enabled: e.target.checked })
+            });
+            showToast(e.target.checked ? "Kill-switch attivato" : "Kill-switch disattivato");
+        } catch (err) { showToast("Errore kill-switch"); }
+        refresh();
+    });
+    p.querySelector("#pp-sethome").addEventListener("click", async () => {
+        if (!confirm("Registrare l’IP attuale come IP di casa?\n\nFallo con la VPN SPENTA, altrimenti registrerai l’IP della VPN e il kill-switch non funzionerà.")) return;
+        try {
+            const r = await fetch(withLanToken("/api/privacy/set-home-ip"), { method: "POST" });
+            if (r.ok) { const d = await r.json(); showToast("IP di casa registrato: " + (d.home_ip_masked || "")); }
+            else showToast("Impossibile registrare l’IP ora");
+        } catch (e) { showToast("Errore registrazione IP"); }
+        refresh();
+    });
+    refresh();
 }
 
 async function privacyClean() {

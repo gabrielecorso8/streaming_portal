@@ -1617,3 +1617,17 @@ body.cinema-on #next-banner { display: none !important; }
     background: rgba(139,92,246,.16); border: 1px solid var(--accent, #8b5cf6); color: var(--text-primary);
     font-size: .86rem; font-weight: 600; cursor: pointer; }
 .device-open-btn:active { transform: scale(.96); }
+
+/* Overlay progresso salvataggio sul telefono */
+.save-ov { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 10001;
+    display: flex; align-items: center; justify-content: center; padding: 20px; }
+.save-box { width: 100%; max-width: 420px; background: #14161c; border: 1px solid #2a2e39;
+    border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 12px;
+    box-shadow: 0 18px 50px rgba(0,0,0,.55); }
+.save-title { font-weight: 700; color: #fff; }
+.save-name { color: #cbd5e1; font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.save-bar { height: 10px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; }
+.save-bar-fill { height: 100%; width: 0%; border-radius: 6px;
+    background: linear-gradient(90deg, var(--accent2,#a78bfa), var(--accent,#8b5cf6)); transition: width .2s ease; }
+.save-pct { color: var(--accent,#8b5cf6); font-size: .82rem; font-weight: 600; text-align: center; }
+.save-cancel { width: 100%; justify-content: center; }

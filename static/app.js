@@ -2141,7 +2141,7 @@ function setupMobileDownloadsUX() {
     wrap.innerHTML = '<input type="search" id="dl-search" placeholder="Cerca tra i download…" autocomplete="off">' +
         '<div id="dl-tools-row">' +
         '<label id="hide-watched-lbl"><input type="checkbox" id="hide-watched"> Nascondi visti</label>' +
-        '<label class="device-open-btn"><input type="file" accept="video/*" id="device-file" hidden>📂 Apri un video dal telefono</label>' +
+        '<label class="device-open-btn"><input type="file" accept="video/*" id="device-file" hidden>📂 Riproduci i titoli scaricati</label>' +
         '</div>';
     el.downloadsList.parentNode.insertBefore(wrap, el.downloadsList);
     wrap.querySelector("#dl-search").addEventListener("input", applyDownloadFilter);
@@ -2330,16 +2330,72 @@ async function mobileDownloadRestOfSeason(series, season, episode) {
     refreshDownloads();
 }
 
-function saveDownloadToDevice(id, filename) {
-    // Salva il file sul dispositivo (telefono/tablet) per guardarlo offline, anche
-    // fuori casa. Usa ?dl=1 -> il server risponde con "attachment" e il browser scarica.
-    var url = withLanToken("/api/download/play/" + encodeURIComponent(id) + "?dl=1");
-    var name = (filename || "video").replace(/[\\/:*?"<>|]+/g, "_");
+function _makeSaveOverlay(name) {
+    const ov = document.createElement("div");
+    ov.className = "save-ov";
+    ov.innerHTML =
+        '<div class="save-box">' +
+        '<div class="save-title">Salvataggio sul telefono</div>' +
+        '<div class="save-name">' + escapeHtml(name) + '</div>' +
+        '<div class="save-bar"><div class="save-bar-fill"></div></div>' +
+        '<div class="save-pct">Preparazione…</div>' +
+        '<button class="secondary-btn save-cancel">Annulla</button>' +
+        '</div>';
+    document.body.appendChild(ov);
+    const fill = ov.querySelector(".save-bar-fill"), pct = ov.querySelector(".save-pct");
+    return {
+        cancelBtn: ov.querySelector(".save-cancel"),
+        update(rec, tot) {
+            if (tot > 0) { const p = Math.min(100, rec / tot * 100); fill.style.width = p + "%"; pct.textContent = Math.round(p) + "% · " + formatBytes(rec) + " / " + formatBytes(tot); }
+            else { fill.style.width = "100%"; pct.textContent = formatBytes(rec) + " scaricati…"; }
+        },
+        setFinishing() { pct.textContent = "Salvataggio in corso…"; },
+        close() { ov.remove(); }
+    };
+}
+
+async function saveDownloadToDevice(id, filename) {
+    // Scarica il file DENTRO SC Portal (con barra di progresso, senza uscire),
+    // poi lo consegna al telefono da salvare. Cosi' vedi l'avanzamento e resti
+    // nell'app invece di finire nella finestra di download del browser.
+    let name = (filename || "video").replace(/[\\/:*?"<>|]+/g, "_");
     if (!/\.(mp4|mkv|webm|m4v)$/i.test(name)) name += ".mp4";
-    var a = document.createElement("a");
-    a.href = url; a.download = name; a.rel = "noopener";
-    document.body.appendChild(a); a.click(); a.remove();
-    showToast("Salvataggio avviato: trovi il video nei Download / app File del telefono, poi lo guardi offline anche fuori casa.", 7000);
+    const url = withLanToken("/api/download/play/" + encodeURIComponent(id));
+    if (!window.fetch || !window.ReadableStream) {
+        // Fallback per browser senza streaming: download nativo classico.
+        const a = document.createElement("a"); a.href = withLanToken("/api/download/play/" + encodeURIComponent(id) + "?dl=1");
+        a.download = name; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove();
+        showToast("Salvataggio avviato dal browser.", 6000); return;
+    }
+    const ov = _makeSaveOverlay(name);
+    const ctrl = new AbortController();
+    ov.cancelBtn.onclick = () => ctrl.abort();
+    try {
+        const resp = await fetch(url, { signal: ctrl.signal });
+        if (!resp.ok || !resp.body) throw new Error("HTTP " + resp.status);
+        const total = parseInt(resp.headers.get("content-length") || "0", 10);
+        const reader = resp.body.getReader();
+        const chunks = []; let received = 0;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value); received += value.length;
+            ov.update(received, total);
+        }
+        ov.setFinishing();
+        const blob = new Blob(chunks, { type: "video/mp4" });
+        const burl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = burl; a.download = name; a.rel = "noopener";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => { try { URL.revokeObjectURL(burl); } catch (e) {} }, 60000);
+        ov.close();
+        showToast("Pronto: scegli dove salvarlo, poi torni qui in SC Portal.", 6000);
+    } catch (e) {
+        ov.close();
+        if (e && e.name === "AbortError") showToast("Salvataggio annullato");
+        else showToast("Errore nel salvataggio: " + ((e && e.message) || e), 6000);
+    }
 }
 
 function playDeviceFile(file) {

@@ -20,6 +20,7 @@ let localByName = {};      // nome-normalizzato -> id file locale (/downloads)
 let localFiles = [];       // [{id,name,file}] file in /downloads
 let localDownloads = [];   // voci 'completate' dai file locali (per la lista download)
 let _downloadsSnapshot = []; // ultima lista /api/download/status (per l'anti-duplicati)
+let _deviceBlobUrl = null;   // URL blob del file locale del telefono in riproduzione
 let _bannerDismissed = false; // l'utente ha chiuso il banner 'prossimo'
 let _bannerReshown = false;   // gia' riproposto a 3/4
 let librarySearch = "";    // current library search query
@@ -1664,6 +1665,7 @@ function closePlayer() {
     if (activeHls) { try { activeHls.destroy(); } catch (e) {} activeHls = null; }
     el.videoPlayer.pause();
     el.videoPlayer.src = "";
+    if (_deviceBlobUrl) { try { URL.revokeObjectURL(_deviceBlobUrl); } catch (e) {} _deviceBlobUrl = null; }
     el.videoPlayer.classList.remove("hidden");
     if (el.iframePlayer) { el.iframePlayer.src = ""; el.iframePlayer.classList.add("hidden"); }
     if (el.audioSelect) el.audioSelect.classList.add("hidden");
@@ -2137,10 +2139,18 @@ function setupMobileDownloadsUX() {
     const wrap = document.createElement("div");
     wrap.id = "dl-search-wrap";
     wrap.innerHTML = '<input type="search" id="dl-search" placeholder="Cerca tra i download…" autocomplete="off">' +
-        '<label id="hide-watched-lbl"><input type="checkbox" id="hide-watched"> Nascondi visti</label>';
+        '<div id="dl-tools-row">' +
+        '<label id="hide-watched-lbl"><input type="checkbox" id="hide-watched"> Nascondi visti</label>' +
+        '<label class="device-open-btn"><input type="file" accept="video/*" id="device-file" hidden>📂 Apri un video dal telefono</label>' +
+        '</div>';
     el.downloadsList.parentNode.insertBefore(wrap, el.downloadsList);
     wrap.querySelector("#dl-search").addEventListener("input", applyDownloadFilter);
     wrap.querySelector("#hide-watched").addEventListener("change", applyDownloadFilter);
+    wrap.querySelector("#device-file").addEventListener("change", (e) => {
+        const fl = e.target.files && e.target.files[0];
+        if (fl) playDeviceFile(fl);
+        e.target.value = "";   // permette di riaprire lo stesso file
+    });
 }
 
 function applyDownloadFilter() {
@@ -2330,6 +2340,29 @@ function saveDownloadToDevice(id, filename) {
     a.href = url; a.download = name; a.rel = "noopener";
     document.body.appendChild(a); a.click(); a.remove();
     showToast("Salvataggio avviato: trovi il video nei Download / app File del telefono, poi lo guardi offline anche fuori casa.", 7000);
+}
+
+function playDeviceFile(file) {
+    // Riproduce nel player INTERNO un video scelto dalla memoria del telefono
+    // (via blob locale). Funziona anche completamente offline, senza server.
+    if (!file) return;
+    closePlayer();   // revoca l'eventuale blob precedente
+    _deviceBlobUrl = URL.createObjectURL(file);
+    const nm = (file.name || "Video").replace(/\.(mp4|mkv|webm|m4v|mov)$/i, "");
+    currentPlayTitle = nm;
+    _playKey = "dev:" + nm;
+    if (el.playingTitle) el.playingTitle.textContent = `Riproduzione: ${nm}`;
+    el.playerSection.classList.remove("hidden");
+    if (el.qualityBar) el.qualityBar.classList.remove("hidden");
+    setQualityControls(false);
+    if (el.iframePlayer) el.iframePlayer.classList.add("hidden");
+    el.videoPlayer.classList.remove("hidden");
+    el.videoPlayer.src = _deviceBlobUrl;
+    currentMediaForCast = null;   // un blob locale non e' trasmettibile alla TV
+    el.videoPlayer.play().catch(() => {});
+    playbackCtx = null;
+    updatePlaybackNav();
+    if (el.playerSection) el.playerSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function playDownloaded(id, title, key, opts) {

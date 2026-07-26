@@ -1870,10 +1870,6 @@ function formatBytes(bytes) {
 
 function renderDownloads(downloads) {
     if (Array.isArray(downloads)) _downloadsSnapshot = downloads;
-    const _dsig = JSON.stringify((_downloadsSnapshot || []).map(d => [d.id, d.status, d.progress]))
-        + "|" + ((localFiles || []).length) + "|" + ((localDownloads || []).length);
-    if (_dsig === _dlSig && el.downloadsList && el.downloadsList.children.length) return; // niente e' cambiato
-    _dlSig = _dsig;
     downloadedKeys = new Set();
     downloadByKey = {};
     downloads.forEach(d => { if (d.status === "completed" && d.key) { downloadedKeys.add(d.key); downloadByKey[d.key] = d.id; } });
@@ -1885,6 +1881,14 @@ function renderDownloads(downloads) {
     }
 
     const allRows = [...downloads].reverse().concat(extra);
+    // Anti-flicker: firma calcolata sul CONTENUTO REALE (id/stato/progresso/cover).
+    // Ricostruiamo il DOM solo se e' cambiato qualcosa; da fermo le locandine non
+    // vengono ricreate ogni 2s (niente "pulsare"). Poiche' la firma riflette
+    // esattamente cio' che si vede, non puo' "perdere" le locandine.
+    const _contentSig = JSON.stringify(allRows.map(d => [d.id, d.status, d.progress, d.cover || "", d.title || ""]));
+    if (_contentSig === _dlSig && el.downloadsList.children.length) return;
+    _dlSig = _contentSig;
+
     const isActiveRow = (dl) => ["pending", "queued", "downloading", "merging", "paused", "held"].includes(dl.status);
     const isRunning = (dl) => ["pending", "queued", "downloading", "merging"].includes(dl.status);
 
@@ -2137,14 +2141,16 @@ function _cwRemoveMenu(item) {
     const ov = document.createElement("div"); ov.className = "m-sheet-ov";
     let html = '<div class="m-sheet"><div class="m-sheet-title">' + escapeHtml(item.name) + '</div>' +
         '<button class="secondary-btn m-sheet-btn" data-x="list">Rimuovi da «Continua a guardare»</button>';
-    if (!item.device) html += '<button class="secondary-btn m-sheet-btn m-sheet-danger" data-x="dev">🗑 Elimina dal dispositivo</button>';
+    if (!item.device) html += '<button class="secondary-btn m-sheet-btn m-sheet-danger" data-x="dev">🗑 Elimina il file scaricato</button>';
     html += '<button class="secondary-btn m-sheet-btn m-sheet-cancel" data-x="close">Annulla</button></div>';
     ov.innerHTML = html; document.body.appendChild(ov);
     const close = () => ov.remove();
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
     ov.querySelector('[data-x="list"]').addEventListener("click", () => { close(); _removeProgress(item.key); renderContinueWatching(true); showToast("Rimosso da Continua a guardare"); });
     const dev = ov.querySelector('[data-x="dev"]');
-    if (dev) dev.addEventListener("click", () => { close(); _removeProgress(item.key); deleteDownload(item.id, item.name); renderContinueWatching(true); });
+    // Elimina il file: NON rimuovere prima da CW (se annulli la conferma il file
+    // resterebbe). deleteDownload gestisce conferma + rimozione posizione + refresh.
+    if (dev) dev.addEventListener("click", () => { close(); deleteDownload(item.id, item.name); });
     ov.querySelector('[data-x="close"]').addEventListener("click", close);
 }
 

@@ -1657,3 +1657,7 @@ body.downloads-only #continue-section.has-items { display: block; }
 /* Titoli offline: raggruppamento per serie/stagione */
 .off-series-name { font-weight: 700; color: var(--text-primary); margin: 12px 0 4px; }
 .off-season { color: var(--text-secondary); font-size: .82rem; margin: 8px 0 6px; font-weight: 600; }
+
+/* Barra indeterminata (salvataggio senza percentuale, memory-safe) */
+.save-bar-fill.indet { width: 40% !important; animation: save-indet 1.1s ease-in-out infinite; }
+@keyframes save-indet { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }

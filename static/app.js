@@ -2499,106 +2499,87 @@ async function mobileDownloadRestOfSeason(series, season, episode) {
     refreshDownloads();
 }
 
-function _makeSaveOverlay(name) {
+function _makeBusyOverlay(name) {
     const ov = document.createElement("div");
     ov.className = "save-ov";
     ov.innerHTML =
         '<div class="save-box">' +
-        '<div class="save-title">Salvataggio sul telefono</div>' +
+        '<div class="save-title">Scaricamento nell\'app…</div>' +
         '<div class="save-name">' + escapeHtml(name) + '</div>' +
-        '<div class="save-bar"><div class="save-bar-fill"></div></div>' +
-        '<div class="save-pct">Preparazione…</div>' +
+        '<div class="save-bar"><div class="save-bar-fill indet"></div></div>' +
+        '<div class="save-pct">Attendi, non chiudere l\'app…</div>' +
         '<button class="secondary-btn save-cancel">Annulla</button>' +
         '</div>';
     document.body.appendChild(ov);
-    const fill = ov.querySelector(".save-bar-fill"), pct = ov.querySelector(".save-pct");
-    return {
-        cancelBtn: ov.querySelector(".save-cancel"),
-        update(rec, tot) {
-            if (tot > 0) { const p = Math.min(100, rec / tot * 100); fill.style.width = p + "%"; pct.textContent = Math.round(p) + "% · " + formatBytes(rec) + " / " + formatBytes(tot); }
-            else { fill.style.width = "100%"; pct.textContent = formatBytes(rec) + " scaricati…"; }
-        },
-        setFinishing() { pct.textContent = "Salvataggio in corso…"; },
-        close() { ov.remove(); }
-    };
+    return { cancelBtn: ov.querySelector(".save-cancel"), close() { ov.remove(); } };
 }
 
-function _offerSaveChoice(name, cover, blob) {
-    // Alla FINE del download chiede come tenerlo: dentro l'app (Titoli offline,
-    // sempre ritrovabile) oppure come file scaricato nel telefono.
+async function _fetchBlobThen(id, name, cb) {
+    // Scarica SENZA bufferizzare a mano in memoria: resp.blob() su WebKit viene
+    // appoggiato su DISCO, quindi non fa esaurire la RAM della scheda (era la
+    // causa del crash "la pagina si ricarica" al 100%).
+    const url = withLanToken("/api/download/play/" + encodeURIComponent(id));
+    const ov = _makeBusyOverlay(name);
+    const ctrl = new AbortController();
+    ov.cancelBtn.onclick = () => ctrl.abort();
+    try {
+        const resp = await fetch(url, { signal: ctrl.signal });
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        const blob = await resp.blob();
+        ov.close();
+        await cb(blob);
+    } catch (e) {
+        ov.close();
+        if (e && e.name === "AbortError") showToast("Annullato");
+        else showToast("Errore nel salvataggio: " + ((e && e.message) || e), 6000);
+    }
+}
+
+function _nativeFileDownload(id, name) {
+    // Download NATIVO in streaming: il browser scrive su disco senza tenere il
+    // file in memoria -> affidabile a QUALSIASI dimensione. Su iPhone finisce nel
+    // gestore Download di Safari (icona in alto) e quindi nell'app File.
+    const a = document.createElement("a");
+    a.href = withLanToken("/api/download/play/" + encodeURIComponent(id) + "?dl=1");
+    a.download = name; a.rel = "noopener";
+    document.body.appendChild(a); a.click(); a.remove();
+    showToast("Download avviato. iPhone: tocca l'icona ⬇ in alto in Safari → lo trovi nell'app File. Non serve la barra qui.", 8000);
+}
+
+function saveDownloadToDevice(id, filename, cover) {
+    let name = (filename || "video").replace(/[\\/:*?"<>|]+/g, "_");
+    if (!/\.(mp4|mkv|webm|m4v)$/i.test(name)) name += ".mp4";
     const ex = document.querySelector(".m-sheet-ov"); if (ex) ex.remove();
     const ov = document.createElement("div"); ov.className = "m-sheet-ov";
-    let file = null;
-    try { file = new File([blob], name, { type: blob.type || "video/mp4" }); } catch (e) {}
-    const canShare = !!(file && navigator.canShare && navigator.canShare({ files: [file] }));
     ov.innerHTML =
         '<div class="m-sheet">' +
-        '<div class="m-sheet-title">Download completato</div>' +
+        '<div class="m-sheet-title">Come vuoi tenerlo?</div>' +
         '<div class="save-name" style="text-align:center">' + escapeHtml(name) + '</div>' +
-        '<button class="primary-btn m-sheet-btn" data-x="mob">📱 Salva in «Titoli offline» (nell\'app)</button>' +
-        (canShare ? '<button class="secondary-btn m-sheet-btn" data-x="share">📤 Salva su File o in Foto…</button>' : '') +
-        '<button class="secondary-btn m-sheet-btn" data-x="file">⬇ Scarica come file</button>' +
+        '<button class="primary-btn m-sheet-btn" data-x="file">⬇ Scarica come file (consigliato)</button>' +
+        '<button class="secondary-btn m-sheet-btn" data-x="share">📤 Salva su File o in Foto…</button>' +
+        '<button class="secondary-btn m-sheet-btn" data-x="mob">📱 Salva in «Titoli offline» (nell\'app)</button>' +
         '<button class="secondary-btn m-sheet-btn m-sheet-cancel" data-x="close">Annulla</button>' +
         '</div>';
     document.body.appendChild(ov);
     const close = () => ov.remove();
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
-    ov.querySelector('[data-x="mob"]').addEventListener("click", async () => { close(); await addMobileTitle(name, cover, blob); });
-    const shareBtn = ov.querySelector('[data-x="share"]');
-    if (shareBtn) shareBtn.addEventListener("click", async () => {
+    ov.querySelector('[data-x="file"]').addEventListener("click", () => { close(); _nativeFileDownload(id, name); });
+    ov.querySelector('[data-x="mob"]').addEventListener("click", () => { close(); _fetchBlobThen(id, name, (blob) => addMobileTitle(name, cover || "", blob)); });
+    ov.querySelector('[data-x="share"]').addEventListener("click", () => {
         close();
-        try { await navigator.share({ files: [file], title: name }); showToast("Scegli «Salva su File» o «Salva video» per tenerlo offline.", 6000); }
-        catch (e) { if (!e || e.name !== "AbortError") showToast("Condivisione non riuscita."); }
-    });
-    ov.querySelector('[data-x="file"]').addEventListener("click", () => {
-        close();
-        const burl = URL.createObjectURL(blob);
-        const a = document.createElement("a"); a.href = burl; a.download = name; a.rel = "noopener";
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => { try { URL.revokeObjectURL(burl); } catch (e) {} }, 60000);
-        showToast("Scaricato come file: cercalo nell'app File / Download del telefono.", 6000);
+        _fetchBlobThen(id, name, async (blob) => {
+            let file = null;
+            try { file = new File([blob], name, { type: blob.type || "video/mp4" }); } catch (e) {}
+            if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+                try { await navigator.share({ files: [file], title: name }); showToast("Scegli «Salva su File» o «Salva video».", 6000); }
+                catch (e) { if (!e || e.name !== "AbortError") showToast("Condivisione annullata."); }
+            } else {
+                showToast("Condivisione file non supportata qui: usa «Scarica come file».", 6000);
+            }
+        });
     });
     ov.querySelector('[data-x="close"]').addEventListener("click", close);
 }
-
-async function saveDownloadToDevice(id, filename, cover) {
-    // Scarica il file DENTRO SC Portal (con barra di progresso, senza uscire),
-    // poi lo consegna al telefono da salvare. Cosi' vedi l'avanzamento e resti
-    // nell'app invece di finire nella finestra di download del browser.
-    let name = (filename || "video").replace(/[\\/:*?"<>|]+/g, "_");
-    if (!/\.(mp4|mkv|webm|m4v)$/i.test(name)) name += ".mp4";
-    const url = withLanToken("/api/download/play/" + encodeURIComponent(id));
-    if (!window.fetch || !window.ReadableStream) {
-        // Fallback per browser senza streaming: download nativo classico.
-        const a = document.createElement("a"); a.href = withLanToken("/api/download/play/" + encodeURIComponent(id) + "?dl=1");
-        a.download = name; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove();
-        showToast("Salvataggio avviato dal browser.", 6000); return;
-    }
-    const ov = _makeSaveOverlay(name);
-    const ctrl = new AbortController();
-    ov.cancelBtn.onclick = () => ctrl.abort();
-    try {
-        const resp = await fetch(url, { signal: ctrl.signal });
-        if (!resp.ok || !resp.body) throw new Error("HTTP " + resp.status);
-        const total = parseInt(resp.headers.get("content-length") || "0", 10);
-        const reader = resp.body.getReader();
-        const chunks = []; let received = 0;
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            chunks.push(value); received += value.length;
-            ov.update(received, total);
-        }
-        ov.close();
-        const blob = new Blob(chunks, { type: "video/mp4" });
-        _offerSaveChoice(name, cover || "", blob);
-    } catch (e) {
-        ov.close();
-        if (e && e.name === "AbortError") showToast("Salvataggio annullato");
-        else showToast("Errore nel salvataggio: " + ((e && e.message) || e), 6000);
-    }
-}
-
 function _playBlob(blob, name, key) {
     // Riproduce nel player INTERNO un video da un blob locale (file del telefono
     // o "Titolo su Mobile" da IndexedDB). Funziona anche offline, con ripresa.

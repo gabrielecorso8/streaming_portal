@@ -1644,3 +1644,8 @@ body.cinema-on #next-banner { display: none !important; }
 /* Sezione Titoli su Mobile (riusa gli stili di Continua a guardare) */
 #mobile-titles { margin: 6px 0 16px; }
 #mobile-titles .cw-time { color: var(--text-secondary); }
+
+/* Titoli offline: sezione separata, visibile solo nella vista mobile */
+#offline-section { display: none; }
+body.downloads-only #offline-section { display: block; margin-top: 1rem; }
+#offline-list .cw-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }

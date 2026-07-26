@@ -2111,7 +2111,7 @@ function renderDownloads(downloads) {
         });
 }
 
-// --- "Titoli su Mobile": video salvati DENTRO l'app (IndexedDB), riproducibili
+// --- "Titoli offline": video salvati DENTRO l'app (IndexedDB), riproducibili
 // anche nelle sessioni successive. I metadati stanno in localStorage (lista
 // veloce), il blob del video in IndexedDB (caricato solo quando serve). --------
 function _mobStore() { try { return JSON.parse(localStorage.getItem("scp_mobile") || "[]"); } catch (e) { return []; } }
@@ -2146,7 +2146,7 @@ async function addMobileTitle(name, cover, blob) {
     list.unshift({ id: id, name: (name || "Video").replace(/\.(mp4|mkv|webm|m4v|mov)$/i, ""), cover: cover || "", size: (blob && blob.size) || 0, date: Date.now() });
     _mobSave(list);
     _cwSig = "";
-    showToast("Salvato in «Titoli su Mobile» — lo ritrovi anche la prossima volta.", 6000);
+    showToast("Salvato in «Titoli offline» — lo ritrovi anche la prossima volta.", 6000);
     renderMobileTitles(true);
     renderContinueWatching(true);
     return id;
@@ -2160,12 +2160,12 @@ async function playMobileTitle(id, name) {
 }
 
 async function deleteMobileTitle(id, name) {
-    if (!confirm(`Eliminare «${name || "questo titolo"}» da Titoli su Mobile?\n\nVerrà cancellato dalla memoria dell'app per liberare spazio.`)) return;
+    if (!confirm(`Eliminare «${name || "questo titolo"}» da Titoli offline?\n\nVerrà cancellato dalla memoria dell'app per liberare spazio.`)) return;
     try { await _idbDel(id); } catch (e) {}
     _mobSave(_mobStore().filter(m => m.id !== id));
     _removeProgress("mob:" + id);
     _cwSig = "";
-    showToast("Eliminato da Titoli su Mobile");
+    showToast("Eliminato da Titoli offline");
     renderMobileTitles(true);
     renderContinueWatching(true);
 }
@@ -2185,7 +2185,7 @@ function _cwItems() {
         const rec = store["dl:" + f.id];
         if (rec && rec.t > 15 && !_isWatched(f.id)) items.push({ key: "dl:" + f.id, id: f.id, name: f.name, cover: f.cover || "", dlkey: f.key || "", t: rec.t, kind: "pc" });
     });
-    // Titoli su Mobile (salvati nell'app, chiave mob:) — con locandina e ripresa.
+    // Titoli offline (salvati nell'app, chiave mob:) — con locandina e ripresa.
     _mobStore().forEach(m => {
         const rec = store["mob:" + m.id];
         if (rec && rec.t > 15) items.push({ key: "mob:" + m.id, id: m.id, name: m.name, cover: m.cover || "", t: rec.t, kind: "mob" });
@@ -2199,7 +2199,7 @@ function _cwRemoveMenu(item) {
     let html = '<div class="m-sheet"><div class="m-sheet-title">' + escapeHtml(item.name) + '</div>' +
         '<button class="secondary-btn m-sheet-btn" data-x="list">Rimuovi da «Continua a guardare»</button>';
     if (item.kind === "pc") html += '<button class="secondary-btn m-sheet-btn m-sheet-danger" data-x="delpc">🗑 Elimina il file scaricato</button>';
-    if (item.kind === "mob") html += '<button class="secondary-btn m-sheet-btn m-sheet-danger" data-x="delmob">🗑 Elimina da Titoli su Mobile</button>';
+    if (item.kind === "mob") html += '<button class="secondary-btn m-sheet-btn m-sheet-danger" data-x="delmob">🗑 Elimina da Titoli offline</button>';
     html += '<button class="secondary-btn m-sheet-btn m-sheet-cancel" data-x="close">Annulla</button></div>';
     ov.innerHTML = html; document.body.appendChild(ov);
     const close = () => ov.remove();
@@ -2247,7 +2247,7 @@ function setupMobileDownloadsUX() {
     if (document.getElementById("dl-search-wrap")) return;
     const parent = el.downloadsList.parentNode;
     // Ordine in cima alla vista: ricerca+strumenti, Continua a guardare,
-    // Titoli su Mobile, poi la lista "Titoli su PC".
+    // Titoli offline, poi la lista "Titoli su PC".
     const wrap = document.createElement("div");
     wrap.id = "dl-search-wrap";
     wrap.innerHTML = '<input type="search" id="dl-search" placeholder="Cerca tra i titoli…" autocomplete="off">' +
@@ -2256,31 +2256,28 @@ function setupMobileDownloadsUX() {
         '<label class="device-open-btn"><input type="file" accept="video/*" id="device-file" hidden>💾 Salva titoli scaricati</label>' +
         '</div>';
     const cw = document.createElement("div"); cw.id = "continue-watching";
-    const mob = document.createElement("div"); mob.id = "mobile-titles";
     parent.insertBefore(wrap, el.downloadsList);
     parent.insertBefore(cw, el.downloadsList);
-    parent.insertBefore(mob, el.downloadsList);
     wrap.querySelector("#dl-search").addEventListener("input", applyDownloadFilter);
     wrap.querySelector("#hide-watched").addEventListener("change", applyDownloadFilter);
     wrap.querySelector("#device-file").addEventListener("change", async (e) => {
         const fl = e.target.files && e.target.files[0];
         e.target.value = "";
-        if (fl) { showToast("Salvo in Titoli su Mobile…", 3000); await addMobileTitle(fl.name, "", fl); }
+        if (fl) { showToast("Salvo in Titoli offline…", 3000); await addMobileTitle(fl.name, "", fl); }
     });
     renderMobileTitles(true);
 }
 
 let _mobSig = "";
 function renderMobileTitles(force) {
-    if (!_isMobileView()) return;
-    let box = document.getElementById("mobile-titles");
+    const box = document.getElementById("offline-list");
     if (!box) return;
     const list = _mobStore();
     const sig = list.map(m => m.id).join("|");
-    if (!list.length) { box.innerHTML = ""; _mobSig = ""; return; }
-    if (!force && sig === _mobSig && box.children.length) return;
+    if (!list.length) { if (_mobSig !== "" || !box.children.length) box.innerHTML = '<div class="no-downloads">Nessun titolo offline. Salva un download o usa «Salva titoli scaricati».</div>'; _mobSig = ""; return; }
+    if (!force && sig === _mobSig && box.querySelector(".cw-row")) return;
     _mobSig = sig;
-    box.innerHTML = '<div class="cw-title">Titoli su Mobile</div><div class="cw-row"></div>';
+    box.innerHTML = '<div class="cw-row"></div>';
     const row = box.querySelector(".cw-row");
     list.forEach(m => {
         const card = document.createElement("div");
@@ -2503,22 +2500,32 @@ function _makeSaveOverlay(name) {
 }
 
 function _offerSaveChoice(name, cover, blob) {
-    // Alla FINE del download chiede come tenerlo: dentro l'app (Titoli su Mobile,
+    // Alla FINE del download chiede come tenerlo: dentro l'app (Titoli offline,
     // sempre ritrovabile) oppure come file scaricato nel telefono.
     const ex = document.querySelector(".m-sheet-ov"); if (ex) ex.remove();
     const ov = document.createElement("div"); ov.className = "m-sheet-ov";
+    let file = null;
+    try { file = new File([blob], name, { type: blob.type || "video/mp4" }); } catch (e) {}
+    const canShare = !!(file && navigator.canShare && navigator.canShare({ files: [file] }));
     ov.innerHTML =
         '<div class="m-sheet">' +
         '<div class="m-sheet-title">Download completato</div>' +
         '<div class="save-name" style="text-align:center">' + escapeHtml(name) + '</div>' +
-        '<button class="primary-btn m-sheet-btn" data-x="mob">📱 Salva in «Titoli su Mobile»</button>' +
-        '<button class="secondary-btn m-sheet-btn" data-x="file">⬇ Scarica come file sul telefono</button>' +
+        '<button class="primary-btn m-sheet-btn" data-x="mob">📱 Salva in «Titoli offline» (nell\'app)</button>' +
+        (canShare ? '<button class="secondary-btn m-sheet-btn" data-x="share">📤 Salva su File o in Foto…</button>' : '') +
+        '<button class="secondary-btn m-sheet-btn" data-x="file">⬇ Scarica come file</button>' +
         '<button class="secondary-btn m-sheet-btn m-sheet-cancel" data-x="close">Annulla</button>' +
         '</div>';
     document.body.appendChild(ov);
     const close = () => ov.remove();
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
     ov.querySelector('[data-x="mob"]').addEventListener("click", async () => { close(); await addMobileTitle(name, cover, blob); });
+    const shareBtn = ov.querySelector('[data-x="share"]');
+    if (shareBtn) shareBtn.addEventListener("click", async () => {
+        close();
+        try { await navigator.share({ files: [file], title: name }); showToast("Scegli «Salva su File» o «Salva video» per tenerlo offline.", 6000); }
+        catch (e) { if (!e || e.name !== "AbortError") showToast("Condivisione non riuscita."); }
+    });
     ov.querySelector('[data-x="file"]').addEventListener("click", () => {
         close();
         const burl = URL.createObjectURL(blob);

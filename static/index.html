@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SC Portal">
     <link rel="manifest" id="mf-link" href="/api/pwa/manifest?kind=mobile">
-    <link rel="stylesheet" href="styles.css?v=82">
+    <link rel="stylesheet" href="styles.css?v=83">
 </head>
 <body>
     <header class="app-header">
@@ -229,6 +229,15 @@
             </div>
         </section>
 
+        <section class="downloads-section card glass" id="offline-section">
+            <div class="downloads-header">
+                <h2>Titoli offline</h2>
+            </div>
+            <div id="offline-list" class="downloads-list">
+                <div class="no-downloads">Nessun titolo offline. Salva un download o usa «Salva titoli scaricati».</div>
+            </div>
+        </section>
+
         <!-- Saved domains (remembered across sessions, tested at startup) -->
         <section class="downloads-section card glass collapsible" id="domains-section">
             <div class="downloads-header tool-toggle">
@@ -302,6 +311,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=88"></script>
+    <script src="app.js?v=89"></script>
 </body>
 </html>

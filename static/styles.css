@@ -1640,3 +1640,7 @@ body.cinema-on #next-banner { display: none !important; }
     border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(3px); }
 .cw-card .cw-x:active { transform: scale(.9); }
 .cw-card .cw-ph { display: flex; align-items: center; justify-content: center; font-size: 30px; }
+
+/* Sezione Titoli su Mobile (riusa gli stili di Continua a guardare) */
+#mobile-titles { margin: 6px 0 16px; }
+#mobile-titles .cw-time { color: var(--text-secondary); }

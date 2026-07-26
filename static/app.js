@@ -1843,6 +1843,7 @@ function startDownloadsPolling() {
                 const list = await resp.json();
                 renderDownloads(list);
                 renderContinueWatching();
+                renderMobileTitles();
                 applyDownloadFilter();
             }
         } catch (e) {
@@ -2110,6 +2111,65 @@ function renderDownloads(downloads) {
         });
 }
 
+// --- "Titoli su Mobile": video salvati DENTRO l'app (IndexedDB), riproducibili
+// anche nelle sessioni successive. I metadati stanno in localStorage (lista
+// veloce), il blob del video in IndexedDB (caricato solo quando serve). --------
+function _mobStore() { try { return JSON.parse(localStorage.getItem("scp_mobile") || "[]"); } catch (e) { return []; } }
+function _mobSave(list) { try { localStorage.setItem("scp_mobile", JSON.stringify(list)); } catch (e) {} }
+
+function _idb() {
+    return new Promise((res, rej) => {
+        const r = indexedDB.open("scp_media", 1);
+        r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains("blobs")) r.result.createObjectStore("blobs"); };
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+    });
+}
+async function _idbPut(id, blob) {
+    const db = await _idb();
+    return new Promise((res, rej) => { const tx = db.transaction("blobs", "readwrite"); tx.objectStore("blobs").put(blob, id); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
+}
+async function _idbGet(id) {
+    const db = await _idb();
+    return new Promise((res, rej) => { const tx = db.transaction("blobs", "readonly"); const rq = tx.objectStore("blobs").get(id); rq.onsuccess = () => res(rq.result || null); rq.onerror = () => rej(rq.error); });
+}
+async function _idbDel(id) {
+    const db = await _idb();
+    return new Promise((res, rej) => { const tx = db.transaction("blobs", "readwrite"); tx.objectStore("blobs").delete(id); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
+}
+
+async function addMobileTitle(name, cover, blob) {
+    const id = "mob:" + Date.now() + ":" + Math.random().toString(36).slice(2, 7);
+    try { await _idbPut(id, blob); }
+    catch (e) { showToast("Spazio insufficiente sul telefono per salvarlo (memoria dell'app piena).", 7000); return null; }
+    const list = _mobStore();
+    list.unshift({ id: id, name: (name || "Video").replace(/\.(mp4|mkv|webm|m4v|mov)$/i, ""), cover: cover || "", size: (blob && blob.size) || 0, date: Date.now() });
+    _mobSave(list);
+    _cwSig = "";
+    showToast("Salvato in «Titoli su Mobile» — lo ritrovi anche la prossima volta.", 6000);
+    renderMobileTitles(true);
+    renderContinueWatching(true);
+    return id;
+}
+
+async function playMobileTitle(id, name) {
+    let blob = null;
+    try { blob = await _idbGet(id); } catch (e) {}
+    if (!blob) { showToast("File non più disponibile in memoria."); return; }
+    _playBlob(blob, name || "Video", "mob:" + id);
+}
+
+async function deleteMobileTitle(id, name) {
+    if (!confirm(`Eliminare «${name || "questo titolo"}» da Titoli su Mobile?\n\nVerrà cancellato dalla memoria dell'app per liberare spazio.`)) return;
+    try { await _idbDel(id); } catch (e) {}
+    _mobSave(_mobStore().filter(m => m.id !== id));
+    _removeProgress("mob:" + id);
+    _cwSig = "";
+    showToast("Eliminato da Titoli su Mobile");
+    renderMobileTitles(true);
+    renderContinueWatching(true);
+}
+
 // --- Mobile: "Continua a guardare" + ricerca tra i download -----------------
 function _isMobileView() { return document.body.classList.contains("downloads-only"); }
 
@@ -2120,18 +2180,15 @@ function _removeProgress(key) {
 function _cwItems() {
     const store = (typeof _progressStore === "function") ? _progressStore() : {};
     const items = [];
-    // Titoli scaricati dal PC e serviti dal server (chiave dl:)
+    // Titoli su PC (serviti dal server, chiave dl:)
     (localFiles || []).forEach(f => {
         const rec = store["dl:" + f.id];
-        if (rec && rec.t > 15 && !_isWatched(f.id)) items.push({ key: "dl:" + f.id, id: f.id, name: f.name, cover: f.cover || "", dlkey: f.key || "", t: rec.t, device: false });
+        if (rec && rec.t > 15 && !_isWatched(f.id)) items.push({ key: "dl:" + f.id, id: f.id, name: f.name, cover: f.cover || "", dlkey: f.key || "", t: rec.t, kind: "pc" });
     });
-    // Titoli riprodotti dalla memoria del telefono (chiave dev:) — restano qui
-    // cosi' li puoi riprendere riselezionando il file.
-    Object.keys(store).forEach(k => {
-        if (k.indexOf("dev:") === 0) {
-            const rec = store[k];
-            if (rec && rec.t > 15) items.push({ key: k, id: null, name: k.slice(4), cover: "", dlkey: "", t: rec.t, device: true });
-        }
+    // Titoli su Mobile (salvati nell'app, chiave mob:) — con locandina e ripresa.
+    _mobStore().forEach(m => {
+        const rec = store["mob:" + m.id];
+        if (rec && rec.t > 15) items.push({ key: "mob:" + m.id, id: m.id, name: m.name, cover: m.cover || "", t: rec.t, kind: "mob" });
     });
     return items;
 }
@@ -2141,16 +2198,17 @@ function _cwRemoveMenu(item) {
     const ov = document.createElement("div"); ov.className = "m-sheet-ov";
     let html = '<div class="m-sheet"><div class="m-sheet-title">' + escapeHtml(item.name) + '</div>' +
         '<button class="secondary-btn m-sheet-btn" data-x="list">Rimuovi da «Continua a guardare»</button>';
-    if (!item.device) html += '<button class="secondary-btn m-sheet-btn m-sheet-danger" data-x="dev">🗑 Elimina il file scaricato</button>';
+    if (item.kind === "pc") html += '<button class="secondary-btn m-sheet-btn m-sheet-danger" data-x="delpc">🗑 Elimina il file scaricato</button>';
+    if (item.kind === "mob") html += '<button class="secondary-btn m-sheet-btn m-sheet-danger" data-x="delmob">🗑 Elimina da Titoli su Mobile</button>';
     html += '<button class="secondary-btn m-sheet-btn m-sheet-cancel" data-x="close">Annulla</button></div>';
     ov.innerHTML = html; document.body.appendChild(ov);
     const close = () => ov.remove();
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
     ov.querySelector('[data-x="list"]').addEventListener("click", () => { close(); _removeProgress(item.key); renderContinueWatching(true); showToast("Rimosso da Continua a guardare"); });
-    const dev = ov.querySelector('[data-x="dev"]');
-    // Elimina il file: NON rimuovere prima da CW (se annulli la conferma il file
-    // resterebbe). deleteDownload gestisce conferma + rimozione posizione + refresh.
-    if (dev) dev.addEventListener("click", () => { close(); deleteDownload(item.id, item.name); });
+    const dpc = ov.querySelector('[data-x="delpc"]');
+    if (dpc) dpc.addEventListener("click", () => { close(); deleteDownload(item.id, item.name); });
+    const dmob = ov.querySelector('[data-x="delmob"]');
+    if (dmob) dmob.addEventListener("click", () => { close(); deleteMobileTitle(item.id, item.name); });
     ov.querySelector('[data-x="close"]').addEventListener("click", close);
 }
 
@@ -2159,15 +2217,11 @@ function renderContinueWatching(force) {
     const items = _cwItems();
     const sig = items.map(i => i.key + ":" + Math.round(i.t)).join("|");
     let box = document.getElementById("continue-watching");
-    if (!items.length) { if (box) box.remove(); _cwSig = ""; return; }
+    if (!box) return;
+    if (!items.length) { box.innerHTML = ""; _cwSig = ""; return; }
     // Anti-flicker: ricostruisci SOLO se qualcosa e' cambiato davvero.
-    if (!force && sig === _cwSig && box) return;
+    if (!force && sig === _cwSig && box.children.length) return;
     _cwSig = sig;
-    if (!box) {
-        box = document.createElement("div");
-        box.id = "continue-watching";
-        el.downloadsList.parentNode.insertBefore(box, el.downloadsList);
-    }
     box.innerHTML = '<div class="cw-title">Continua a guardare</div><div class="cw-row"></div>';
     const row = box.querySelector(".cw-row");
     items.forEach(item => {
@@ -2176,12 +2230,12 @@ function renderContinueWatching(force) {
         const nm = (typeof parseEpisode === "function" && parseEpisode(item.name)) ? episodeLabel(item.name) : (item.name || "");
         card.innerHTML =
             '<span class="cw-x" title="Rimuovi">✕</span>' +
-            (item.cover ? `<img src="${escapeHtml(item.cover)}" alt="" loading="lazy">` : `<div class="cw-ph">${item.device ? "📁" : ""}</div>`) +
+            (item.cover ? `<img src="${escapeHtml(item.cover)}" alt="" loading="lazy">` : `<div class="cw-ph">${item.kind === "mob" ? "📱" : ""}</div>`) +
             `<span class="cw-nm">${escapeHtml(nm)}</span>` +
             `<span class="cw-time">▶ Riprendi da ${_fmtTime(item.t)}</span>`;
         card.querySelector(".cw-x").addEventListener("click", (e) => { e.stopPropagation(); _cwRemoveMenu(item); });
         card.addEventListener("click", () => {
-            if (item.device) { showToast("Riseleziona il file per riprendere da dove eri", 4000); const inp = document.getElementById("device-file"); if (inp) inp.click(); }
+            if (item.kind === "mob") playMobileTitle(item.id, item.name);
             else playDownloaded(item.id, item.name, item.dlkey);
         });
         row.appendChild(card);
@@ -2191,20 +2245,55 @@ function renderContinueWatching(force) {
 function setupMobileDownloadsUX() {
     if (!_isMobileView() || !el.downloadsList) return;
     if (document.getElementById("dl-search-wrap")) return;
+    const parent = el.downloadsList.parentNode;
+    // Ordine in cima alla vista: ricerca+strumenti, Continua a guardare,
+    // Titoli su Mobile, poi la lista "Titoli su PC".
     const wrap = document.createElement("div");
     wrap.id = "dl-search-wrap";
-    wrap.innerHTML = '<input type="search" id="dl-search" placeholder="Cerca tra i download…" autocomplete="off">' +
+    wrap.innerHTML = '<input type="search" id="dl-search" placeholder="Cerca tra i titoli…" autocomplete="off">' +
         '<div id="dl-tools-row">' +
         '<label id="hide-watched-lbl"><input type="checkbox" id="hide-watched"> Nascondi visti</label>' +
-        '<label class="device-open-btn"><input type="file" accept="video/*" id="device-file" hidden>📂 Riproduci i titoli scaricati</label>' +
+        '<label class="device-open-btn"><input type="file" accept="video/*" id="device-file" hidden>💾 Salva titoli scaricati</label>' +
         '</div>';
-    el.downloadsList.parentNode.insertBefore(wrap, el.downloadsList);
+    const cw = document.createElement("div"); cw.id = "continue-watching";
+    const mob = document.createElement("div"); mob.id = "mobile-titles";
+    parent.insertBefore(wrap, el.downloadsList);
+    parent.insertBefore(cw, el.downloadsList);
+    parent.insertBefore(mob, el.downloadsList);
     wrap.querySelector("#dl-search").addEventListener("input", applyDownloadFilter);
     wrap.querySelector("#hide-watched").addEventListener("change", applyDownloadFilter);
-    wrap.querySelector("#device-file").addEventListener("change", (e) => {
+    wrap.querySelector("#device-file").addEventListener("change", async (e) => {
         const fl = e.target.files && e.target.files[0];
-        if (fl) playDeviceFile(fl);
-        e.target.value = "";   // permette di riaprire lo stesso file
+        e.target.value = "";
+        if (fl) { showToast("Salvo in Titoli su Mobile…", 3000); await addMobileTitle(fl.name, "", fl); }
+    });
+    renderMobileTitles(true);
+}
+
+let _mobSig = "";
+function renderMobileTitles(force) {
+    if (!_isMobileView()) return;
+    let box = document.getElementById("mobile-titles");
+    if (!box) return;
+    const list = _mobStore();
+    const sig = list.map(m => m.id).join("|");
+    if (!list.length) { box.innerHTML = ""; _mobSig = ""; return; }
+    if (!force && sig === _mobSig && box.children.length) return;
+    _mobSig = sig;
+    box.innerHTML = '<div class="cw-title">Titoli su Mobile</div><div class="cw-row"></div>';
+    const row = box.querySelector(".cw-row");
+    list.forEach(m => {
+        const card = document.createElement("div");
+        card.className = "cw-card";
+        const nm = (typeof parseEpisode === "function" && parseEpisode(m.name)) ? episodeLabel(m.name) : (m.name || "");
+        card.innerHTML =
+            '<span class="cw-x" title="Elimina">✕</span>' +
+            (m.cover ? `<img src="${escapeHtml(m.cover)}" alt="" loading="lazy">` : `<div class="cw-ph">📱</div>`) +
+            `<span class="cw-nm">${escapeHtml(nm)}</span>` +
+            `<span class="cw-time">${m.size ? formatBytes(m.size) : "sul telefono"}</span>`;
+        card.querySelector(".cw-x").addEventListener("click", (e) => { e.stopPropagation(); deleteMobileTitle(m.id, m.name); });
+        card.addEventListener("click", () => playMobileTitle(m.id, m.name));
+        row.appendChild(card);
     });
 }
 
@@ -2333,7 +2422,7 @@ function openMobilePlayChoice(dl) {
     const close = () => ov.remove();
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
     ov.querySelector('[data-x="play"]').addEventListener("click", () => { close(); playDownloaded(dl.id, dl.title, dl.key); });
-    ov.querySelector('[data-x="save"]').addEventListener("click", () => { close(); saveDownloadToDevice(dl.id, dl.file || dl.title); });
+    ov.querySelector('[data-x="save"]').addEventListener("click", () => { close(); saveDownloadToDevice(dl.id, dl.file || dl.title, dl.cover || ""); });
     ov.querySelector('[data-x="watch"]').addEventListener("click", () => { close(); _toggleWatched(dl.id); showToast(_isWatched(dl.id) ? "Segnato come visto" : "Segnato come non visto"); renderContinueWatching(); applyDownloadFilter(); });
     ov.querySelector('[data-x="del"]').addEventListener("click", () => { close(); deleteDownload(dl.id, dl.title); });
     ov.querySelector('[data-x="close"]').addEventListener("click", close);
@@ -2413,7 +2502,35 @@ function _makeSaveOverlay(name) {
     };
 }
 
-async function saveDownloadToDevice(id, filename) {
+function _offerSaveChoice(name, cover, blob) {
+    // Alla FINE del download chiede come tenerlo: dentro l'app (Titoli su Mobile,
+    // sempre ritrovabile) oppure come file scaricato nel telefono.
+    const ex = document.querySelector(".m-sheet-ov"); if (ex) ex.remove();
+    const ov = document.createElement("div"); ov.className = "m-sheet-ov";
+    ov.innerHTML =
+        '<div class="m-sheet">' +
+        '<div class="m-sheet-title">Download completato</div>' +
+        '<div class="save-name" style="text-align:center">' + escapeHtml(name) + '</div>' +
+        '<button class="primary-btn m-sheet-btn" data-x="mob">📱 Salva in «Titoli su Mobile»</button>' +
+        '<button class="secondary-btn m-sheet-btn" data-x="file">⬇ Scarica come file sul telefono</button>' +
+        '<button class="secondary-btn m-sheet-btn m-sheet-cancel" data-x="close">Annulla</button>' +
+        '</div>';
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    ov.querySelector('[data-x="mob"]').addEventListener("click", async () => { close(); await addMobileTitle(name, cover, blob); });
+    ov.querySelector('[data-x="file"]').addEventListener("click", () => {
+        close();
+        const burl = URL.createObjectURL(blob);
+        const a = document.createElement("a"); a.href = burl; a.download = name; a.rel = "noopener";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => { try { URL.revokeObjectURL(burl); } catch (e) {} }, 60000);
+        showToast("Scaricato come file: cercalo nell'app File / Download del telefono.", 6000);
+    });
+    ov.querySelector('[data-x="close"]').addEventListener("click", close);
+}
+
+async function saveDownloadToDevice(id, filename, cover) {
     // Scarica il file DENTRO SC Portal (con barra di progresso, senza uscire),
     // poi lo consegna al telefono da salvare. Cosi' vedi l'avanzamento e resti
     // nell'app invece di finire nella finestra di download del browser.
@@ -2441,15 +2558,9 @@ async function saveDownloadToDevice(id, filename) {
             chunks.push(value); received += value.length;
             ov.update(received, total);
         }
-        ov.setFinishing();
-        const blob = new Blob(chunks, { type: "video/mp4" });
-        const burl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = burl; a.download = name; a.rel = "noopener";
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => { try { URL.revokeObjectURL(burl); } catch (e) {} }, 60000);
         ov.close();
-        showToast("Pronto: scegli dove salvarlo, poi torni qui in SC Portal.", 6000);
+        const blob = new Blob(chunks, { type: "video/mp4" });
+        _offerSaveChoice(name, cover || "", blob);
     } catch (e) {
         ov.close();
         if (e && e.name === "AbortError") showToast("Salvataggio annullato");
@@ -2457,15 +2568,15 @@ async function saveDownloadToDevice(id, filename) {
     }
 }
 
-function playDeviceFile(file) {
-    // Riproduce nel player INTERNO un video scelto dalla memoria del telefono
-    // (via blob locale). Funziona anche completamente offline, senza server.
-    if (!file) return;
+function _playBlob(blob, name, key) {
+    // Riproduce nel player INTERNO un video da un blob locale (file del telefono
+    // o "Titolo su Mobile" da IndexedDB). Funziona anche offline, con ripresa.
+    if (!blob) return;
     closePlayer();   // revoca l'eventuale blob precedente
-    _deviceBlobUrl = URL.createObjectURL(file);
-    const nm = (file.name || "Video").replace(/\.(mp4|mkv|webm|m4v|mov)$/i, "");
+    _deviceBlobUrl = URL.createObjectURL(blob);
+    const nm = (name || "Video").replace(/\.(mp4|mkv|webm|m4v|mov)$/i, "");
     currentPlayTitle = nm;
-    _playKey = "dev:" + nm;
+    _playKey = key || ("dev:" + nm);
     if (el.playingTitle) el.playingTitle.textContent = `Riproduzione: ${nm}`;
     el.playerSection.classList.remove("hidden");
     if (el.qualityBar) el.qualityBar.classList.remove("hidden");

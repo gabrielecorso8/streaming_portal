@@ -2216,13 +2216,15 @@ function renderContinueWatching(force) {
     if (!_isMobileView() || !el.downloadsList) return;
     const items = _cwItems();
     const sig = items.map(i => i.key + ":" + Math.round(i.t)).join("|");
-    let box = document.getElementById("continue-watching");
-    if (!box) return;
-    if (!items.length) { box.innerHTML = ""; _cwSig = ""; return; }
+    const sec = document.getElementById("continue-section");
+    const box = document.getElementById("continue-list");
+    if (!box || !sec) return;
+    if (!items.length) { box.innerHTML = ""; sec.classList.remove("has-items"); _cwSig = ""; return; }
+    sec.classList.add("has-items");
     // Anti-flicker: ricostruisci SOLO se qualcosa e' cambiato davvero.
     if (!force && sig === _cwSig && box.children.length) return;
     _cwSig = sig;
-    box.innerHTML = '<div class="cw-title">Continua a guardare</div><div class="cw-row"></div>';
+    box.innerHTML = '<div class="cw-row"></div>';
     const row = box.querySelector(".cw-row");
     items.forEach(item => {
         const card = document.createElement("div");
@@ -2255,9 +2257,7 @@ function setupMobileDownloadsUX() {
         '<label id="hide-watched-lbl"><input type="checkbox" id="hide-watched"> Nascondi visti</label>' +
         '<label class="device-open-btn"><input type="file" accept="video/*" id="device-file" hidden>💾 Salva titoli scaricati</label>' +
         '</div>';
-    const cw = document.createElement("div"); cw.id = "continue-watching";
     parent.insertBefore(wrap, el.downloadsList);
-    parent.insertBefore(cw, el.downloadsList);
     wrap.querySelector("#dl-search").addEventListener("input", applyDownloadFilter);
     wrap.querySelector("#hide-watched").addEventListener("change", applyDownloadFilter);
     wrap.querySelector("#device-file").addEventListener("change", async (e) => {
@@ -2269,28 +2269,52 @@ function setupMobileDownloadsUX() {
 }
 
 let _mobSig = "";
+function _offCard(m, label) {
+    return '<div class="cw-card" data-mid="' + escapeHtml(m.id) + '" data-mname="' + escapeHtml(m.name) + '">' +
+        '<span class="cw-x" title="Elimina">✕</span>' +
+        (m.cover ? `<img src="${escapeHtml(m.cover)}" alt="" loading="lazy">` : `<div class="cw-ph">📱</div>`) +
+        `<span class="cw-nm">${escapeHtml(label)}</span>` +
+        `<span class="cw-time">${m.size ? formatBytes(m.size) : "sul telefono"}</span></div>`;
+}
 function renderMobileTitles(force) {
     const box = document.getElementById("offline-list");
     if (!box) return;
     const list = _mobStore();
     const sig = list.map(m => m.id).join("|");
     if (!list.length) { if (_mobSig !== "" || !box.children.length) box.innerHTML = '<div class="no-downloads">Nessun titolo offline. Salva un download o usa «Salva titoli scaricati».</div>'; _mobSig = ""; return; }
-    if (!force && sig === _mobSig && box.querySelector(".cw-row")) return;
+    if (!force && sig === _mobSig && box.querySelector(".off-grp")) return;
     _mobSig = sig;
-    box.innerHTML = '<div class="cw-row"></div>';
-    const row = box.querySelector(".cw-row");
+    // Raggruppa: film a se', episodi divisi per SERIE e poi per STAGIONE, cosi'
+    // senza locandina non si fa confusione (niente "Episodio 1" isolato).
+    const movies = [], series = {};
     list.forEach(m => {
-        const card = document.createElement("div");
-        card.className = "cw-card";
-        const nm = (typeof parseEpisode === "function" && parseEpisode(m.name)) ? episodeLabel(m.name) : (m.name || "");
-        card.innerHTML =
-            '<span class="cw-x" title="Elimina">✕</span>' +
-            (m.cover ? `<img src="${escapeHtml(m.cover)}" alt="" loading="lazy">` : `<div class="cw-ph">📱</div>`) +
-            `<span class="cw-nm">${escapeHtml(nm)}</span>` +
-            `<span class="cw-time">${m.size ? formatBytes(m.size) : "sul telefono"}</span>`;
-        card.querySelector(".cw-x").addEventListener("click", (e) => { e.stopPropagation(); deleteMobileTitle(m.id, m.name); });
-        card.addEventListener("click", () => playMobileTitle(m.id, m.name));
-        row.appendChild(card);
+        const ep = parseEpisode(m.name);
+        if (ep && ep.series) {
+            const sk = normName(ep.series) || "?";
+            const s = series[sk] || (series[sk] = { name: ep.series, seasons: {} });
+            (s.seasons[ep.season] || (s.seasons[ep.season] = [])).push({ m: m, ep: ep.episode });
+        } else movies.push(m);
+    });
+    let html = "";
+    if (movies.length) {
+        html += '<div class="off-grp"><div class="cw-row">' +
+            movies.map(m => _offCard(m, m.name)).join("") + '</div></div>';
+    }
+    Object.keys(series).sort((a, b) => series[a].name.localeCompare(series[b].name, "it")).forEach(sk => {
+        const s = series[sk];
+        html += '<div class="off-grp off-series"><div class="off-series-name">' + escapeHtml(s.name) + '</div>';
+        Object.keys(s.seasons).map(Number).sort((a, b) => a - b).forEach(sn => {
+            const eps = s.seasons[sn].slice().sort((a, b) => a.ep - b.ep);
+            html += '<div class="off-season">Stagione ' + sn + '</div><div class="cw-row">' +
+                eps.map(e => _offCard(e.m, "Ep " + e.ep)).join("") + '</div>';
+        });
+        html += '</div>';
+    });
+    box.innerHTML = html;
+    box.querySelectorAll(".cw-card").forEach(card => {
+        const id = card.getAttribute("data-mid"), nm = card.getAttribute("data-mname");
+        card.querySelector(".cw-x").addEventListener("click", (e) => { e.stopPropagation(); deleteMobileTitle(id, nm); });
+        card.addEventListener("click", () => playMobileTitle(id, nm));
     });
 }
 

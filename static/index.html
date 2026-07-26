@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SC Portal">
     <link rel="manifest" id="mf-link" href="/api/pwa/manifest?kind=mobile">
-    <link rel="stylesheet" href="styles.css?v=83">
+    <link rel="stylesheet" href="styles.css?v=84">
 </head>
 <body>
     <header class="app-header">
@@ -213,6 +213,13 @@
         </section>
 
         <!-- Downloads Management Section -->
+        <section class="downloads-section card glass" id="continue-section">
+            <div class="downloads-header">
+                <h2>Continua a guardare</h2>
+            </div>
+            <div id="continue-list" class="downloads-list"></div>
+        </section>
+
         <section class="downloads-section card glass" id="downloads-section">
             <div class="downloads-header">
                 <h2>Titoli su PC</h2>
@@ -311,6 +318,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=89"></script>
+    <script src="app.js?v=90"></script>
 </body>
 </html>

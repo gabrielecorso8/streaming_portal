@@ -1649,3 +1649,11 @@ body.cinema-on #next-banner { display: none !important; }
 #offline-section { display: none; }
 body.downloads-only #offline-section { display: block; margin-top: 1rem; }
 #offline-list .cw-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+
+/* Continua a guardare come sezione separata (sopra Titoli su PC) */
+#continue-section { display: none; }
+body.downloads-only #continue-section.has-items { display: block; }
+#continue-list .cw-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+/* Titoli offline: raggruppamento per serie/stagione */
+.off-series-name { font-weight: 700; color: var(--text-primary); margin: 12px 0 4px; }
+.off-season { color: var(--text-secondary); font-size: .82rem; margin: 8px 0 6px; font-weight: 600; }

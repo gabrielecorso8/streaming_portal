@@ -21,6 +21,8 @@ let localFiles = [];       // [{id,name,file}] file in /downloads
 let localDownloads = [];   // voci 'completate' dai file locali (per la lista download)
 let _downloadsSnapshot = []; // ultima lista /api/download/status (per l'anti-duplicati)
 let _deviceBlobUrl = null;   // URL blob del file locale del telefono in riproduzione
+let _dlSig = "";             // firma dell'ultima lista download (evita rebuild inutili = niente flicker)
+let _cwSig = "";             // firma di "Continua a guardare"
 let _bannerDismissed = false; // l'utente ha chiuso il banner 'prossimo'
 let _bannerReshown = false;   // gia' riproposto a 3/4
 let librarySearch = "";    // current library search query
@@ -1868,6 +1870,10 @@ function formatBytes(bytes) {
 
 function renderDownloads(downloads) {
     if (Array.isArray(downloads)) _downloadsSnapshot = downloads;
+    const _dsig = JSON.stringify((_downloadsSnapshot || []).map(d => [d.id, d.status, d.progress]))
+        + "|" + ((localFiles || []).length) + "|" + ((localDownloads || []).length);
+    if (_dsig === _dlSig && el.downloadsList && el.downloadsList.children.length) return; // niente e' cambiato
+    _dlSig = _dsig;
     downloadedKeys = new Set();
     downloadByKey = {};
     downloads.forEach(d => { if (d.status === "completed" && d.key) { downloadedKeys.add(d.key); downloadByKey[d.key] = d.id; } });
@@ -2103,16 +2109,54 @@ function renderDownloads(downloads) {
 // --- Mobile: "Continua a guardare" + ricerca tra i download -----------------
 function _isMobileView() { return document.body.classList.contains("downloads-only"); }
 
-function renderContinueWatching() {
-    if (!_isMobileView() || !el.downloadsList) return;
+function _removeProgress(key) {
+    const s = _progressStore(); if (s[key]) { delete s[key]; _saveProgressStore(s); }
+}
+
+function _cwItems() {
     const store = (typeof _progressStore === "function") ? _progressStore() : {};
     const items = [];
+    // Titoli scaricati dal PC e serviti dal server (chiave dl:)
     (localFiles || []).forEach(f => {
         const rec = store["dl:" + f.id];
-        if (rec && rec.t > 15 && !_isWatched(f.id)) items.push({ f: f, t: rec.t });
+        if (rec && rec.t > 15 && !_isWatched(f.id)) items.push({ key: "dl:" + f.id, id: f.id, name: f.name, cover: f.cover || "", dlkey: f.key || "", t: rec.t, device: false });
     });
+    // Titoli riprodotti dalla memoria del telefono (chiave dev:) — restano qui
+    // cosi' li puoi riprendere riselezionando il file.
+    Object.keys(store).forEach(k => {
+        if (k.indexOf("dev:") === 0) {
+            const rec = store[k];
+            if (rec && rec.t > 15) items.push({ key: k, id: null, name: k.slice(4), cover: "", dlkey: "", t: rec.t, device: true });
+        }
+    });
+    return items;
+}
+
+function _cwRemoveMenu(item) {
+    const ex = document.querySelector(".m-sheet-ov"); if (ex) ex.remove();
+    const ov = document.createElement("div"); ov.className = "m-sheet-ov";
+    let html = '<div class="m-sheet"><div class="m-sheet-title">' + escapeHtml(item.name) + '</div>' +
+        '<button class="secondary-btn m-sheet-btn" data-x="list">Rimuovi da «Continua a guardare»</button>';
+    if (!item.device) html += '<button class="secondary-btn m-sheet-btn m-sheet-danger" data-x="dev">🗑 Elimina dal dispositivo</button>';
+    html += '<button class="secondary-btn m-sheet-btn m-sheet-cancel" data-x="close">Annulla</button></div>';
+    ov.innerHTML = html; document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    ov.querySelector('[data-x="list"]').addEventListener("click", () => { close(); _removeProgress(item.key); renderContinueWatching(true); showToast("Rimosso da Continua a guardare"); });
+    const dev = ov.querySelector('[data-x="dev"]');
+    if (dev) dev.addEventListener("click", () => { close(); _removeProgress(item.key); deleteDownload(item.id, item.name); renderContinueWatching(true); });
+    ov.querySelector('[data-x="close"]').addEventListener("click", close);
+}
+
+function renderContinueWatching(force) {
+    if (!_isMobileView() || !el.downloadsList) return;
+    const items = _cwItems();
+    const sig = items.map(i => i.key + ":" + Math.round(i.t)).join("|");
     let box = document.getElementById("continue-watching");
-    if (!items.length) { if (box) box.remove(); return; }
+    if (!items.length) { if (box) box.remove(); _cwSig = ""; return; }
+    // Anti-flicker: ricostruisci SOLO se qualcosa e' cambiato davvero.
+    if (!force && sig === _cwSig && box) return;
+    _cwSig = sig;
     if (!box) {
         box = document.createElement("div");
         box.id = "continue-watching";
@@ -2120,15 +2164,20 @@ function renderContinueWatching() {
     }
     box.innerHTML = '<div class="cw-title">Continua a guardare</div><div class="cw-row"></div>';
     const row = box.querySelector(".cw-row");
-    items.forEach(({ f, t }) => {
-        const card = document.createElement("button");
+    items.forEach(item => {
+        const card = document.createElement("div");
         card.className = "cw-card";
-        const nm = (typeof parseEpisode === "function" && parseEpisode(f.name)) ? episodeLabel(f.name) : (f.name || "");
+        const nm = (typeof parseEpisode === "function" && parseEpisode(item.name)) ? episodeLabel(item.name) : (item.name || "");
         card.innerHTML =
-            (f.cover ? `<img src="${escapeHtml(f.cover)}" alt="" loading="lazy">` : `<div class="cw-ph"></div>`) +
+            '<span class="cw-x" title="Rimuovi">✕</span>' +
+            (item.cover ? `<img src="${escapeHtml(item.cover)}" alt="" loading="lazy">` : `<div class="cw-ph">${item.device ? "📁" : ""}</div>`) +
             `<span class="cw-nm">${escapeHtml(nm)}</span>` +
-            `<span class="cw-time">▶ Riprendi da ${_fmtTime(t)}</span>`;
-        card.addEventListener("click", () => playDownloaded(f.id, f.name, f.key));
+            `<span class="cw-time">▶ Riprendi da ${_fmtTime(item.t)}</span>`;
+        card.querySelector(".cw-x").addEventListener("click", (e) => { e.stopPropagation(); _cwRemoveMenu(item); });
+        card.addEventListener("click", () => {
+            if (item.device) { showToast("Riseleziona il file per riprendere da dove eri", 4000); const inp = document.getElementById("device-file"); if (inp) inp.click(); }
+            else playDownloaded(item.id, item.name, item.dlkey);
+        });
         row.appendChild(card);
     });
 }
@@ -2291,6 +2340,7 @@ function _toggleWatched(id) {
     const s = _watchedStore();
     if (s["dl:" + id]) delete s["dl:" + id]; else s["dl:" + id] = 1;
     try { localStorage.setItem("scp_watched", JSON.stringify(s)); } catch (e) {}
+    _dlSig = ""; _cwSig = "";   // forza un rebuild per aggiornare badge/CW
 }
 
 async function deleteDownload(id, title) {
@@ -2304,8 +2354,11 @@ async function deleteDownload(id, title) {
         else if (r.status === 404) showToast("File non trovato (forse già eliminato)");
         else showToast("Impossibile eliminare");
     } catch (e) { showToast("Errore durante l'eliminazione"); }
+    _removeProgress("dl:" + id);
+    _dlSig = ""; _cwSig = "";
     await refreshLocalDownloads();
     refreshDownloads();
+    renderContinueWatching(true);
 }
 
 async function mobileDownloadRestOfSeason(series, season, episode) {

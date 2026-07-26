@@ -1631,3 +1631,12 @@ body.cinema-on #next-banner { display: none !important; }
     background: linear-gradient(90deg, var(--accent2,#a78bfa), var(--accent,#8b5cf6)); transition: width .2s ease; }
 .save-pct { color: var(--accent,#8b5cf6); font-size: .82rem; font-weight: 600; text-align: center; }
 .save-cancel { width: 100%; justify-content: center; }
+
+/* Continua a guardare: card cliccabile + pulsante rimozione */
+.cw-card { position: relative; cursor: pointer; }
+.cw-card .cw-x { position: absolute; top: 6px; right: 6px; z-index: 2;
+    width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,.6);
+    color: #fff; font-size: 13px; line-height: 26px; text-align: center;
+    border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(3px); }
+.cw-card .cw-x:active { transform: scale(.9); }
+.cw-card .cw-ph { display: flex; align-items: center; justify-content: center; font-size: 30px; }

@@ -92,6 +92,7 @@ const el = {
     qualitySelect: document.getElementById("quality-select"),
     refreshDownloadsBtn: document.getElementById("refresh-downloads-btn"),
     castBtn: document.getElementById("cast-btn"),
+    ccBtn: document.getElementById("cc-btn"),
     videoContainer: document.querySelector(".video-container"),
     fsBtn: document.getElementById("player-fs-btn"),
     phonecastBtn: document.getElementById("phonecast-btn"),
@@ -188,6 +189,7 @@ async function init() {
     });
     if (el.refreshDownloadsBtn) el.refreshDownloadsBtn.addEventListener("click", refreshDownloads);
     if (el.castBtn) el.castBtn.addEventListener("click", castToTV);
+    if (el.ccBtn) el.ccBtn.addEventListener("click", toggleCC);
     if (el.fsBtn) el.fsBtn.addEventListener("click", requestPlayerFullscreen);
     if (el.phonecastBtn) el.phonecastBtn.addEventListener("click", openPhoneCast);
     if (el.headerCastBtn) el.headerCastBtn.addEventListener("click", openPhoneCast);
@@ -1580,7 +1582,7 @@ function playStream(streamSrc, getSrc, iframeFallback) {
             activeHls.on(Hls.Events.MANIFEST_PARSED, () => {
                 try { if (t > 0) el.videoPlayer.currentTime = t; } catch (e) {}
                 el.videoPlayer.play().catch(() => {});
-                populateQuality(); populateAudio();
+                populateQuality(); populateAudio(); _updateCCVisibility();
             });
             activeHls.on(Hls.Events.AUDIO_TRACKS_UPDATED, populateAudio);
             activeHls.on(Hls.Events.ERROR, (e, d) => handleHlsError(d, onRefetch));
@@ -1594,7 +1596,7 @@ function playStream(streamSrc, getSrc, iframeFallback) {
         activeHls.on(Hls.Events.MANIFEST_PARSED, () => {
             streamReloadAttempts = 0;
             el.videoPlayer.play().catch(() => {});
-            populateQuality(); populateAudio();
+            populateQuality(); populateAudio(); _updateCCVisibility();
         });
         activeHls.on(Hls.Events.AUDIO_TRACKS_UPDATED, populateAudio);
         activeHls.on(Hls.Events.ERROR, (e, d) => handleHlsError(d, onRefetch));
@@ -1678,6 +1680,7 @@ function closePlayer() {
     _bannerDismissed = false; _bannerReshown = false;
     if (el.prevTitleBtn) el.prevTitleBtn.classList.add("hidden");
     if (el.nextTitleBtn) el.nextTitleBtn.classList.add("hidden");
+    if (el.ccBtn) { el.ccBtn.classList.add("hidden"); el.ccBtn.classList.remove("cc-on"); }
     el.playerSection.classList.add("hidden");
 }
 
@@ -2620,8 +2623,46 @@ async function _loadDownloadSubs(id) {
             if (i === 0) tr.default = true;
             v.appendChild(tr);
         });
-        if (subs && subs.length) showToast("Sottotitoli disponibili: attivali con l'icona CC nei controlli del video.", 5000);
+        _updateCCVisibility();
+        if (subs && subs.length) showToast("Sottotitoli italiani disponibili: premi CC per attivarli.", 5000);
     } catch (e) {}
+}
+
+function _setCCActive(on) { if (el.ccBtn) el.ccBtn.classList.toggle("cc-on", !!on); }
+
+function _updateCCVisibility() {
+    if (!el.ccBtn) return;
+    let has = false;
+    try { if (el.videoPlayer.textTracks && el.videoPlayer.textTracks.length) has = true; } catch (e) {}
+    if (activeHls && activeHls.subtitleTracks && activeHls.subtitleTracks.length) has = true;
+    el.ccBtn.classList.toggle("hidden", !has);
+    if (!has) _setCCActive(false);
+}
+
+function toggleCC() {
+    const v = el.videoPlayer;
+    const tts = v.textTracks;
+    if (tts && tts.length) {
+        let idx = -1;
+        for (let i = 0; i < tts.length; i++) { if (/^it|ital/i.test(tts[i].language || tts[i].label || "")) { idx = i; break; } }
+        if (idx < 0) idx = 0;
+        const on = tts[idx].mode !== "showing";
+        for (let i = 0; i < tts.length; i++) tts[i].mode = (i === idx && on) ? "showing" : "disabled";
+        _setCCActive(on);
+        showToast(on ? "Sottotitoli italiani attivati" : "Sottotitoli disattivati");
+        return;
+    }
+    if (activeHls && activeHls.subtitleTracks && activeHls.subtitleTracks.length) {
+        if (activeHls.subtitleTrack >= 0) { activeHls.subtitleTrack = -1; _setCCActive(false); showToast("Sottotitoli disattivati"); }
+        else {
+            let idx = activeHls.subtitleTracks.findIndex(x => /^it|ital/i.test(x.lang || x.name || ""));
+            if (idx < 0) idx = 0;
+            try { activeHls.subtitleDisplay = true; } catch (e) {}
+            activeHls.subtitleTrack = idx; _setCCActive(true); showToast("Sottotitoli italiani attivati");
+        }
+        return;
+    }
+    showToast("Nessun sottotitolo disponibile per questo titolo.");
 }
 
 function playDownloaded(id, title, key, opts) {

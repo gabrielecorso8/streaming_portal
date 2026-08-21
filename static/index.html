@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SC Portal">
     <link rel="manifest" id="mf-link" href="/api/pwa/manifest?kind=mobile">
-    <link rel="stylesheet" href="styles.css?v=85">
+    <link rel="stylesheet" href="styles.css?v=86">
 </head>
 <body>
     <header class="app-header">
@@ -169,6 +169,7 @@
                     <label for="audio-select" id="audio-label" class="hidden">Audio:</label>
                     <select id="audio-select" class="custom-select hidden"></select>
                     <button id="cast-btn" class="secondary-btn small-btn" title="Trasmetti alla TV (audio sulla TV, non sul PC)">📺 Trasmetti alla TV</button>
+                    <button id="cc-btn" class="secondary-btn small-btn hidden" title="Sottotitoli italiani (CC)">CC</button>
                 </div>
                 <div id="next-banner" class="next-banner hidden"></div>
             </div>
@@ -315,6 +316,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=93"></script>
+    <script src="app.js?v=94"></script>
 </body>
 </html>

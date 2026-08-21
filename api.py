@@ -3082,9 +3082,14 @@ def resolve_stream_info(id, episode_id=None):
                     subs = []
                     for m in master.media:
                         if getattr(m, "type", "") == "SUBTITLES" and getattr(m, "uri", None):
+                            _ln = ((m.language or "") + " " + (m.name or "")).lower()
+                            # SOLO italiano: molti film hanno decine di lingue, a noi
+                            # serve l'italiano (per le parti in altra lingua nei film IT).
+                            if not re.search(r"\b(it|ita|italian|italiano)\b", _ln):
+                                continue
                             subs.append({
-                                "lang": (m.language or m.name or "sub"),
-                                "name": (m.name or m.language or "Sottotitoli"),
+                                "lang": "it",
+                                "name": "Italiano",
                                 "url": (m.absolute_uri or urllib.parse.urljoin(real_master_url, m.uri)),
                                 "default": (getattr(m, "default", "") == "YES"),
                                 "forced": (getattr(m, "forced", "") == "YES"),

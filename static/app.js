@@ -1761,7 +1761,8 @@ async function triggerDownload(label, titleId, episodeId = null, hold = false) {
                 episode_id: episodeId || null,
                 lib_key: currentLibKey || "",
                 cover: (currentTitle && currentTitle.cover) || "",
-                hold: !!hold
+                hold: !!hold,
+                subtitles: (data.download && data.download.subtitles) || null
             };
             const dlResp = await fetch("/api/download", {
                 method: "POST",
@@ -2603,6 +2604,26 @@ function _playBlob(blob, name, key) {
     if (el.playerSection) el.playerSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+async function _loadDownloadSubs(id) {
+    const v = el.videoPlayer; if (!v) return;
+    [...v.querySelectorAll("track")].forEach(t => t.remove());
+    try {
+        const r = await fetch(withLanToken("/api/download/subs/" + encodeURIComponent(id)));
+        if (!r.ok) return;
+        const subs = await r.json();
+        (subs || []).forEach((s, i) => {
+            const tr = document.createElement("track");
+            tr.kind = "subtitles";
+            tr.label = s.name || s.lang || "Sottotitoli";
+            tr.srclang = (s.lang || "sub").slice(0, 12);
+            tr.src = withLanToken(s.url);
+            if (i === 0) tr.default = true;
+            v.appendChild(tr);
+        });
+        if (subs && subs.length) showToast("Sottotitoli disponibili: attivali con l'icona CC nei controlli del video.", 5000);
+    } catch (e) {}
+}
+
 function playDownloaded(id, title, key, opts) {
     opts = opts || {};
     // "inPlace": cambia episodio SENZA smontare il player, cosi' la TV
@@ -2623,6 +2644,7 @@ function playDownloaded(id, title, key, opts) {
     if (el.iframePlayer) el.iframePlayer.classList.add("hidden");
     el.videoPlayer.classList.remove("hidden");
     el.videoPlayer.src = withLanToken(`/api/download/play/${encodeURIComponent(id)}`);
+    _loadDownloadSubs(id);
     currentMediaForCast = { src: `/api/download/play/${encodeURIComponent(id)}`, hls: false, title: title || "SC Portal" };
     // NB: nessun load() qui. Impostare .src avvia gia' il caricamento del nuovo
     // episodio; evitando load() la sessione TV (Remote Playback/Chromecast o

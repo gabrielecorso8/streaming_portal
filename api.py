@@ -1206,6 +1206,7 @@ class DownloadRequest(BaseModel):
     lib_key: Optional[str] = ""        # library key (per collegare il file al titolo)
     cover: Optional[str] = ""          # cover remota/proxy da congelare in /covers
     hold: Optional[bool] = False       # True = prepara in coda senza avviare il download
+    subtitles: Optional[list] = None   # [{lang,name,url}] da scaricare come .vtt
 
 @app.get("/api/settings")
 def get_settings():
@@ -3076,11 +3077,24 @@ def resolve_stream_info(id, episode_id=None):
                     audio = next((m for m in master.media if m.type == "AUDIO" and m.default == "YES" and m.uri), None)
                     if not audio:
                         audio = next((m for m in master.media if m.type == "AUDIO" and m.uri), None)
+                    # Sottotitoli (EXT-X-MEDIA:TYPE=SUBTITLES): li estraiamo per
+                    # poterli scaricare insieme al video (film con parti in altra lingua).
+                    subs = []
+                    for m in master.media:
+                        if getattr(m, "type", "") == "SUBTITLES" and getattr(m, "uri", None):
+                            subs.append({
+                                "lang": (m.language or m.name or "sub"),
+                                "name": (m.name or m.language or "Sottotitoli"),
+                                "url": (m.absolute_uri or urllib.parse.urljoin(real_master_url, m.uri)),
+                                "default": (getattr(m, "default", "") == "YES"),
+                                "forced": (getattr(m, "forced", "") == "YES"),
+                            })
                     download_info = {
                         "master_url": real_master_url,
                         "video_url": best.absolute_uri or urllib.parse.urljoin(real_master_url, best.uri),
                         "audio_url": (audio.absolute_uri or urllib.parse.urljoin(real_master_url, audio.uri)) if audio else None,
                         "headers": {**get_headers(), **_cf_headers(real_master_url)},
+                        "subtitles": subs,
                     }
         except Exception as e:
             print(f"[-] Could not pre-resolve Vixcloud download playlists: {e}")
@@ -3270,6 +3284,7 @@ def download_media(payload: DownloadRequest):
         vixcloud_meta=vixcloud_meta,
         proxies=get_proxies(),
         hold=bool(payload.hold),
+        subtitles=payload.subtitles,
     )
 
     return {"download_id": download_id}
@@ -3306,6 +3321,7 @@ def download_title(payload: DownloadTitle):
         vixcloud_meta=vixcloud_meta,
         proxies=get_proxies(),
         hold=bool(payload.hold),
+        subtitles=dl.get("subtitles"),
     )
     return {"download_id": download_id}
 
@@ -3385,6 +3401,7 @@ def download_next_episode(payload: NextEpisode):
         vixcloud_meta={"sc_id": numeric_id, "episode_id": epobj["id"]},
         proxies=get_proxies(),
         hold=bool(payload.hold),
+        subtitles=dl.get("subtitles"),
     )
     return {"ok": True, "label": label, "season": next_season, "episode": next_ep, "held": bool(payload.hold)}
 
@@ -3734,6 +3751,40 @@ def play_download(download_id: str, dl: int = 0):
     if dl:
         return FileResponse(path, media_type=mt, filename=os.path.basename(path))
     return FileResponse(path, media_type=mt, content_disposition_type="inline")
+
+
+@app.get("/api/download/subs/{download_id}")
+def list_download_subs(download_id: str):
+    """Elenca i sottotitoli (.vtt) salvati accanto al video, per popolare le
+    tracce <track> nel player."""
+    path = _resolve_download_path(download_id)
+    base = os.path.splitext(os.path.basename(path))[0]
+    folder = os.path.dirname(path)
+    out = []
+    try:
+        for fn in os.listdir(folder):
+            if fn.startswith(base + ".") and fn.lower().endswith(".vtt"):
+                lang = fn[len(base) + 1:-4] or "sub"
+                out.append({"lang": lang, "name": lang.upper(),
+                            "url": f"/api/download/sub/{download_id}/{urllib.parse.quote(lang)}"})
+    except OSError:
+        pass
+    return out
+
+
+@app.get("/api/download/sub/{download_id}/{lang}")
+def get_download_sub(download_id: str, lang: str):
+    """Serve un file di sottotitoli .vtt di un download."""
+    path = _resolve_download_path(download_id)
+    base = os.path.splitext(path)[0]
+    safe_lang = re.sub(r"[^a-zA-Z0-9_-]", "", lang) or "sub"
+    sub_path = f"{base}.{safe_lang}.vtt"
+    real = os.path.realpath(sub_path)
+    if os.path.commonpath([real, os.path.realpath(DOWNLOADS_DIR)]) != os.path.realpath(DOWNLOADS_DIR):
+        raise HTTPException(status_code=400, detail="Percorso non valido")
+    if not os.path.exists(real):
+        raise HTTPException(status_code=404, detail="Sottotitolo non trovato")
+    return FileResponse(real, media_type="text/vtt")
 
 
 @app.get("/api/downloads/local")

@@ -112,9 +112,10 @@ class Decryptor:
 class DownloadTask:
     def __init__(self, download_id, title, m3u8_video_url, m3u8_audio_url=None, key_info=None,
                  output_dir="downloads", extra_headers=None, vidxgo_meta=None, proxies=None,
-                 vixcloud_meta=None):
+                 vixcloud_meta=None, subtitles=None):
         self.download_id = download_id
         self.title = title
+        self.subtitles = subtitles or []   # [{lang,name,url,...}] da scaricare come .vtt
         self.m3u8_video_url = m3u8_video_url
         self.m3u8_audio_url = m3u8_audio_url
         self.key_info = key_info  # dict with keys: 'key_url', 'referer', 'iv'
@@ -171,6 +172,7 @@ class DownloadTask:
             "vidxgo_meta": vidxgo_meta,
             "vixcloud_meta": vixcloud_meta,
             "proxies": proxies,
+            "subtitles": subtitles,
         }
 
         active_downloads[download_id] = self.get_status()
@@ -596,6 +598,10 @@ class DownloadTask:
             # Clean up temp files
             shutil.rmtree(self.temp_dir, ignore_errors=True)
             download_paths[self.download_id] = self.output_path
+            try:
+                self._save_subtitles()
+            except Exception as _e:
+                print(f"[-] Sottotitoli non salvati: {_e}")
             self.t_done = time.time()
             self.update_status("completed", 100.0)
             print(f"[+] Download completed! Saved to {final_output_path}")
@@ -617,6 +623,71 @@ class DownloadTask:
             # downloaded .ts segments let the download be resumed later (the
             # segment-skip logic in download_stream reuses them) instead of
             # restarting from zero. Temp files are only removed on success.
+
+    def _sub_headers(self):
+        h = dict(self.extra_headers or {})
+        h.setdefault("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        return h
+
+    def _fetch_vtt(self, url):
+        """Scarica un sottotitolo: .vtt diretto oppure playlist HLS di segmenti
+        WebVTT (in tal caso li concatena)."""
+        r = self.session.get(url, headers=self._sub_headers(), timeout=15, proxies=self.proxies, verify=False)
+        if r.status_code != 200:
+            return None
+        text = r.text
+        head = text[:64]
+        if "#EXTM3U" in head:
+            try:
+                pl = m3u8.loads(text)
+            except Exception:
+                return None
+            parts, header_done = [], False
+            for seg in pl.segments:
+                seg_url = seg.absolute_uri or urllib.parse.urljoin(url, seg.uri)
+                try:
+                    sr = self.session.get(seg_url, headers=self._sub_headers(), timeout=15, proxies=self.proxies, verify=False)
+                except Exception:
+                    continue
+                if sr.status_code != 200:
+                    continue
+                st = sr.text
+                if header_done:
+                    st = re.sub(r"^\ufeff?WEBVTT[^\n]*\n", "", st)
+                else:
+                    header_done = True
+                st = st.strip()
+                if st:
+                    parts.append(st)
+            return ("\n\n".join(parts)) if parts else None
+        if "WEBVTT" in head:
+            return text
+        return None
+
+    def _save_subtitles(self):
+        """Scarica i sottotitoli accanto al file video, come {nome}.{lang}.vtt."""
+        subs = self.subtitles or []
+        if not subs or not self.output_path:
+            return
+        base = os.path.splitext(self.output_path)[0]
+        seen = set()
+        for s in subs:
+            url = s.get("url")
+            if not url:
+                continue
+            lang = re.sub(r"[^a-zA-Z0-9_-]", "", (s.get("lang") or "sub")) or "sub"
+            orig = lang; n = 2
+            while lang in seen:
+                lang = f"{orig}{n}"; n += 1
+            seen.add(lang)
+            try:
+                vtt = self._fetch_vtt(url)
+                if vtt:
+                    with open(f"{base}.{lang}.vtt", "w", encoding="utf-8") as fh:
+                        fh.write(vtt)
+                    print(f"[+] Sottotitolo salvato: {lang}")
+            except Exception as e:
+                print(f"[-] Sottotitolo {lang} fallito: {e}")
 
     def concat_segments(self, segments_dir, output_mp4):
         """Merges all TS segments in segments_dir into a single MP4 file.
@@ -873,7 +944,7 @@ _MANAGER = DownloadManager()
 
 def start_download_task(download_id, title, m3u8_video, m3u8_audio=None, key_info=None,
                         extra_headers=None, vidxgo_meta=None, proxies=None, vixcloud_meta=None,
-                        hold=False):
+                        hold=False, subtitles=None):
     """Public API: enqueue a download onto the manager. hold=True only prepares
     it (status 'held') so several titles can be lined up without downloading."""
     return _MANAGER.enqueue({
@@ -886,6 +957,7 @@ def start_download_task(download_id, title, m3u8_video, m3u8_audio=None, key_inf
         "vidxgo_meta": vidxgo_meta,
         "vixcloud_meta": vixcloud_meta,
         "proxies": proxies,
+        "subtitles": subtitles,
     }, hold=hold)
 
 

@@ -3770,7 +3770,9 @@ def list_download_subs(download_id: str):
         for fn in os.listdir(folder):
             if fn.startswith(base + ".") and fn.lower().endswith(".vtt"):
                 lang = fn[len(base) + 1:-4] or "sub"
-                out.append({"lang": lang, "name": lang.upper(),
+                if not re.search(r"\b(it|ita|italian|italiano)\b", lang.lower()):
+                    continue  # nel player mostriamo solo l'italiano
+                out.append({"lang": lang, "name": "Italiano",
                             "url": f"/api/download/sub/{download_id}/{urllib.parse.quote(lang)}"})
     except OSError:
         pass

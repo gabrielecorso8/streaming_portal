@@ -675,6 +675,11 @@ class DownloadTask:
             url = s.get("url")
             if not url:
                 continue
+            # SOLO italiano su disco (difesa in profondita': anche se a monte
+            # arrivasse altro, qui scriviamo solo i .vtt italiani).
+            _ln = ((s.get("lang") or "") + " " + (s.get("name") or "")).lower()
+            if not re.search(r"\b(it|ita|italian|italiano)\b", _ln):
+                continue
             lang = re.sub(r"[^a-zA-Z0-9_-]", "", (s.get("lang") or "sub")) or "sub"
             orig = lang; n = 2
             while lang in seen:

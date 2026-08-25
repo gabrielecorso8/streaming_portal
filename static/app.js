@@ -1853,6 +1853,7 @@ function startDownloadsPolling() {
             if (resp.ok) {
                 const list = await resp.json();
                 renderDownloads(list);
+                carouselizeDownloads();
                 renderContinueWatching();
                 renderMobileTitles();
                 applyDownloadFilter();
@@ -2885,6 +2886,7 @@ async function refreshLocalDownloads() {
         // popola anche la lista download (così i titoli gia' scaricati compaiono
         // automaticamente all'avvio, con la locandina)
         localDownloads = localFiles.map(f => ({ id: f.id, title: f.name, key: f.key || "", cover: f.cover || "", status: "completed", progress: 100, local: true }));
+        if (typeof renderHeroBillboard === "function") renderHeroBillboard();
     } catch (e) {}
 }
 
@@ -2894,6 +2896,7 @@ async function refreshDownloads() {
     localDownloads = (localFiles || []).map(f => ({ id: f.id, title: f.name, key: f.key || "", cover: f.cover || "", status: "completed", progress: 100, local: true }));
     try { const sresp = await fetch("/api/download/status"); renderDownloads(sresp.ok ? await sresp.json() : []); }
     catch (e) { renderDownloads([]); }
+    carouselizeDownloads();
     showToast(`Trovati ${localDownloads.length} titoli scaricati in /downloads`);
 }
 
@@ -4157,7 +4160,7 @@ function renderLibrary(data) {
 function _wrapTileRuns(container) {
     if (!container) return;
     const isTile = (k) => k.nodeType === 1 && k.classList &&
-        (k.classList.contains("library-item") || k.classList.contains("folder-card"));
+        (k.classList.contains("library-item") || k.classList.contains("folder-card") || k.classList.contains("download-item"));
     let run = [];
     const flush = () => {
         if (run.length) {
@@ -4176,22 +4179,59 @@ function carouselizeLibrary() {
     _wrapTileRuns(el.libraryList);
     el.libraryList.querySelectorAll(".fav-block, .cat-body").forEach(_wrapTileRuns);
 }
+function carouselizeDownloads() {
+    // Solo su PC: su mobile i download hanno gia' il loro layout a locandine.
+    if (!el.downloadsList || document.body.classList.contains("downloads-only")) return;
+    _wrapTileRuns(el.downloadsList);
+    el.downloadsList.querySelectorAll(".download-folder-body").forEach(_wrapTileRuns);
+}
 
+let _hbItems = [], _hbIdx = 0, _hbTimer = null, _hbSig = "";
+function _hbBuildList() {
+    const out = [], seen = new Set();
+    const push = (name, cover, type, rd, open) => {
+        const k = normName(name || ""); if (!name || !cover || seen.has(k)) return;
+        seen.add(k); out.push({ name: name, cover: cover, type: type || "", rd: rd || "", open: open });
+    };
+    // Preferiti in evidenza
+    (libraryCache || []).forEach(t => { if (t.favorite) push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); });
+    // Download completati
+    (localDownloads || []).forEach(d => { if (d.cover) push(d.title, d.cover, "", "", () => playDownloaded(d.id, d.title, d.key)); });
+    // Fallback: se non ci sono preferiti, mostra i primi titoli con locandina
+    if (out.length < 2) (libraryCache || []).forEach(t => { if (out.length < 8) push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); });
+    return out.slice(0, 12);
+}
 function renderHeroBillboard() {
     const host = document.getElementById("hero-billboard");
-    if (!host) return;
-    const titles = libraryCache || [];
-    const feat = titles.find(t => t.favorite && t.cover) || titles.find(t => t.cover) || titles[0];
-    if (!feat) { host.classList.add("hidden"); host.innerHTML = ""; return; }
+    if (!host || document.body.classList.contains("downloads-only")) return;
+    const items = _hbBuildList();
+    const sig = items.map(i => i.name).join("|");
+    if (sig === _hbSig && host.querySelector(".hb-content")) return;  // niente cambiato: non resettare lo slideshow
+    _hbSig = sig;
+    _hbItems = items;
+    if (_hbTimer) { clearInterval(_hbTimer); _hbTimer = null; }
+    if (!items.length) { host.classList.add("hidden"); host.innerHTML = ""; return; }
     host.classList.remove("hidden");
-    const cover = feat.cover ? escapeHtml(feat.cover) : "";
-    const yr = feat.release_date ? String(feat.release_date).slice(0, 4) : "";
+    if (_hbIdx >= items.length) _hbIdx = 0;
+    _hbRender(host, false);
+    _hbRestart(host);
+}
+function _hbRestart(host) {
+    if (_hbTimer) { clearInterval(_hbTimer); _hbTimer = null; }
+    if (_hbItems.length > 1) _hbTimer = setInterval(() => { _hbIdx = (_hbIdx + 1) % _hbItems.length; _hbRender(host, true); }, 7000);
+}
+function _hbRender(host, animate) {
+    const feat = _hbItems[_hbIdx]; if (!feat) return;
+    const cover = escapeHtml(feat.cover || "");
+    const yr = feat.rd ? String(feat.rd).slice(0, 4) : "";
     const kind = feat.type === "tv" ? "Serie" : (feat.type === "movie" ? "Film" : "");
+    const a = animate ? " hb-anim" : "";
+    const dots = _hbItems.map((_, i) => `<span class="hb-dot${i === _hbIdx ? " on" : ""}" data-i="${i}"></span>`).join("");
     host.innerHTML =
-        `<div class="hb-bg" style="background-image:url('${cover}')"></div>` +
-        `<div class="hb-poster"><img src="${cover}" alt="" loading="lazy"></div>` +
+        `<div class="hb-bg${a}" style="background-image:url('${cover}')"></div>` +
+        `<div class="hb-poster${a}"><img src="${cover}" alt="" loading="lazy"></div>` +
         `<div class="hb-shade"></div>` +
-        `<div class="hb-content">` +
+        `<div class="hb-content${a}">` +
             `<div class="hb-badge">In evidenza</div>` +
             `<h2 class="hb-title">${escapeHtml(feat.name || "")}</h2>` +
             `<div class="hb-meta">${kind}${yr ? " · " + escapeHtml(yr) : ""}</div>` +
@@ -4199,10 +4239,13 @@ function renderHeroBillboard() {
                 `<button class="primary-btn hb-play">▶ Riproduci</button>` +
                 `<button class="secondary-btn hb-info">Dettagli</button>` +
             `</div>` +
-        `</div>`;
-    const go = () => openFromLibrary(feat);
-    host.querySelector(".hb-play").addEventListener("click", go);
-    host.querySelector(".hb-info").addEventListener("click", go);
+        `</div>` +
+        (_hbItems.length > 1 ? `<div class="hb-dots">${dots}</div>` : "");
+    host.querySelector(".hb-play").addEventListener("click", feat.open);
+    host.querySelector(".hb-info").addEventListener("click", feat.open);
+    host.querySelectorAll(".hb-dot").forEach(d => d.addEventListener("click", () => {
+        _hbIdx = parseInt(d.getAttribute("data-i"), 10) || 0; _hbRender(host, true); _hbRestart(host);
+    }));
 }
 
 function openFromLibrary(item) {

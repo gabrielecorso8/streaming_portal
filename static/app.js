@@ -202,8 +202,15 @@ async function init() {
         el.videoPlayer.addEventListener("ended", function () { _clearPlayback(_playKey); });
     }
     if (el.headerSearchBtn) el.headerSearchBtn.addEventListener("click", () => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        setTimeout(() => { if (el.urlInput) el.urlInput.focus(); }, 300);
+        const open = document.body.classList.toggle("search-open");
+        el.headerSearchBtn.classList.toggle("active", open);
+        if (open) { window.scrollTo({ top: 0, behavior: "smooth" }); setTimeout(() => { if (el.urlInput) el.urlInput.focus(); }, 150); }
+    });
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && document.body.classList.contains("search-open")) {
+            document.body.classList.remove("search-open");
+            if (el.headerSearchBtn) el.headerSearchBtn.classList.remove("active");
+        }
     });
     if (el.headerLibraryBtn) el.headerLibraryBtn.addEventListener("click", () => {
         const target = document.querySelector("#library-list .cat-group") || el.libraryList;
@@ -4141,6 +4148,7 @@ function renderLibrary(data) {
     // orizzontale. Sicuro: tocca solo Preferiti e i gruppi categoria, NON i
     // contenuti interni delle cartelle (la ricerca per cartella resta intatta).
     carouselizeLibrary();
+    renderHeroBillboard();
 
     // Restore the scroll position so actions don't feel like a page reload.
     window.scrollTo({ top: scrollY });
@@ -4167,6 +4175,34 @@ function carouselizeLibrary() {
     if (!el.libraryList) return;
     _wrapTileRuns(el.libraryList);
     el.libraryList.querySelectorAll(".fav-block, .cat-body").forEach(_wrapTileRuns);
+}
+
+function renderHeroBillboard() {
+    const host = document.getElementById("hero-billboard");
+    if (!host) return;
+    const titles = libraryCache || [];
+    const feat = titles.find(t => t.favorite && t.cover) || titles.find(t => t.cover) || titles[0];
+    if (!feat) { host.classList.add("hidden"); host.innerHTML = ""; return; }
+    host.classList.remove("hidden");
+    const cover = feat.cover ? escapeHtml(feat.cover) : "";
+    const yr = feat.release_date ? String(feat.release_date).slice(0, 4) : "";
+    const kind = feat.type === "tv" ? "Serie" : (feat.type === "movie" ? "Film" : "");
+    host.innerHTML =
+        `<div class="hb-bg" style="background-image:url('${cover}')"></div>` +
+        `<div class="hb-poster"><img src="${cover}" alt="" loading="lazy"></div>` +
+        `<div class="hb-shade"></div>` +
+        `<div class="hb-content">` +
+            `<div class="hb-badge">In evidenza</div>` +
+            `<h2 class="hb-title">${escapeHtml(feat.name || "")}</h2>` +
+            `<div class="hb-meta">${kind}${yr ? " · " + escapeHtml(yr) : ""}</div>` +
+            `<div class="hb-actions">` +
+                `<button class="primary-btn hb-play">▶ Riproduci</button>` +
+                `<button class="secondary-btn hb-info">Dettagli</button>` +
+            `</div>` +
+        `</div>`;
+    const go = () => openFromLibrary(feat);
+    host.querySelector(".hb-play").addEventListener("click", go);
+    host.querySelector(".hb-info").addEventListener("click", go);
 }
 
 function openFromLibrary(item) {

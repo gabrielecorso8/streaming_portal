@@ -1901,3 +1901,78 @@ body {
     font-weight: 800; letter-spacing: .3px; font-size: 1.05rem;
 }
 #library-list .fav-block { display: block; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DISNEY+ HOME — hero billboard, ricerca dalla lente, risultati in riga
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* --- Ricerca: nascosta di default, si apre con la lente in alto --- */
+.hero { display: none; }
+body.search-open .hero {
+    display: block; animation: fade-rise .22s cubic-bezier(0.22,1,0.36,1) both;
+    margin-bottom: 22px;
+}
+#header-search-btn.active { color: var(--accent); background: rgba(34,166,255,.16); }
+
+/* --- Hero billboard --- */
+.hero-billboard {
+    position: relative; height: 46vh; min-height: 320px; max-height: 540px;
+    border-radius: 18px; overflow: hidden; margin: 4px 0 26px;
+    box-shadow: 0 26px 64px rgba(0,0,0,.55);
+    animation: fade-rise .4s cubic-bezier(0.22,1,0.36,1) both;
+}
+.hero-billboard.hidden { display: none; }
+.hb-bg { position: absolute; inset: 0; background-size: cover; background-position: center 28%;
+    filter: blur(20px) brightness(.5); transform: scale(1.2); }
+.hb-poster { position: absolute; right: 5%; top: 50%; transform: translateY(-50%);
+    height: 80%; aspect-ratio: 2/3; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 22px 48px rgba(0,0,0,.65); }
+.hb-poster img { width: 100%; height: 100%; object-fit: cover; }
+.hb-shade { position: absolute; inset: 0;
+    background:
+        linear-gradient(90deg, rgba(6,12,28,.95) 0%, rgba(6,12,28,.62) 42%, transparent 72%),
+        linear-gradient(180deg, transparent 52%, var(--bg-color) 100%); }
+.hb-content { position: absolute; left: 5%; bottom: 12%; max-width: 56%; z-index: 2; }
+.hb-badge { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .8px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+    text-shadow: 0 1px 8px rgba(0,0,0,.6); }
+.hb-title { font-size: clamp(1.9rem, 4.2vw, 3.4rem); font-weight: 900; line-height: 1.02;
+    text-shadow: 0 4px 26px rgba(0,0,0,.7); margin: 0 0 10px; }
+.hb-meta { color: var(--text-secondary); font-weight: 600; margin-bottom: 18px; }
+.hb-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.hb-actions .primary-btn { font-size: 1.02rem; padding: 12px 26px; }
+.hb-actions .secondary-btn { font-size: 1.02rem; padding: 12px 22px; }
+@media (max-width: 720px) {
+    .hb-poster { display: none; }
+    .hb-content { max-width: 88%; }
+    .hero-billboard { height: 40vh; }
+}
+
+/* --- Risultati ricerca: riga orizzontale di locandine --- */
+#search-results.results-grid {
+    display: flex; flex-wrap: nowrap; gap: 16px;
+    overflow-x: auto; overflow-y: hidden;
+    padding: 14px 4px 18px; scroll-snap-type: x proximity;
+}
+#search-results .media-card {
+    flex: 0 0 auto; width: 162px; scroll-snap-align: start;
+    position: relative; border-radius: 12px; padding: 0; background: transparent; border: none;
+    transition: transform var(--transition-normal); animation: none;
+}
+#search-results .media-card:hover { transform: translateY(-6px) scale(1.04); z-index: 6; }
+#search-results .media-card .media-cover {
+    width: 100%; height: auto; aspect-ratio: 2/3; border-radius: 12px; object-fit: cover;
+    box-shadow: 0 10px 26px rgba(0,0,0,.55); transition: box-shadow var(--transition-normal); display: block;
+}
+#search-results .media-card:hover .media-cover { box-shadow: 0 18px 42px rgba(0,0,0,.7), 0 0 0 2px var(--accent); }
+#search-results .media-info { padding: 8px 3px 0; }
+#search-results .media-actions {
+    position: absolute; top: 6px; left: 6px; right: 6px;
+    display: flex; justify-content: flex-end; gap: 3px; opacity: 0;
+    transition: opacity var(--transition-fast);
+    background: linear-gradient(180deg, rgba(4,8,20,.9), transparent);
+    border-radius: 12px 12px 0 0; padding: 6px 5px 14px;
+}
+#search-results .media-card:hover .media-actions { opacity: 1; }
+#search-results .media-actions .icon-btn { padding: 2px 5px; background: rgba(0,0,0,.4); border-radius: 6px; }
+#search-results .media-select { top: 6px; left: 6px; }

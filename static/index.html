@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SC Portal">
     <link rel="manifest" id="mf-link" href="/api/pwa/manifest?kind=mobile">
-    <link rel="stylesheet" href="styles.css?v=88">
+    <link rel="stylesheet" href="styles.css?v=89">
 </head>
 <body>
     <header class="app-header">
@@ -76,7 +76,10 @@
     </header>
 
     <main class="main-container">
-        <!-- Hero: paste link -->
+        <!-- Hero billboard (titolo in evidenza, stile Disney+) -->
+        <section id="hero-billboard" class="hero-billboard hidden"></section>
+
+        <!-- Ricerca: nascosta di default, si apre con la lente in alto -->
         <section class="hero">
             <div class="hero-heading">
                 <h2>Cerca film, serie tv, registi, attori…</h2>
@@ -316,6 +319,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=95"></script>
+    <script src="app.js?v=96"></script>
 </body>
 </html>

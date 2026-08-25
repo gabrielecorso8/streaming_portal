@@ -4137,8 +4137,36 @@ function renderLibrary(data) {
         el.libraryList.appendChild(none);
     }
 
+    // Disney+-style: raggruppa le tile (titoli/cartelle) in righe a scorrimento
+    // orizzontale. Sicuro: tocca solo Preferiti e i gruppi categoria, NON i
+    // contenuti interni delle cartelle (la ricerca per cartella resta intatta).
+    carouselizeLibrary();
+
     // Restore the scroll position so actions don't feel like a page reload.
     window.scrollTo({ top: scrollY });
+}
+
+function _wrapTileRuns(container) {
+    if (!container) return;
+    const isTile = (k) => k.nodeType === 1 && k.classList &&
+        (k.classList.contains("library-item") || k.classList.contains("folder-card"));
+    let run = [];
+    const flush = () => {
+        if (run.length) {
+            const row = document.createElement("div");
+            row.className = "disney-row";
+            container.insertBefore(row, run[0]);
+            run.forEach(x => row.appendChild(x));
+        }
+        run = [];
+    };
+    [...container.childNodes].forEach(k => { if (isTile(k)) run.push(k); else flush(); });
+    flush();
+}
+function carouselizeLibrary() {
+    if (!el.libraryList) return;
+    _wrapTileRuns(el.libraryList);
+    el.libraryList.querySelectorAll(".fav-block, .cat-body").forEach(_wrapTileRuns);
 }
 
 function openFromLibrary(item) {

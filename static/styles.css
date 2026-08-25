@@ -1804,3 +1804,100 @@ body {
 @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DISNEY+ — Caroselli orizzontali di locandine (branch disney-ui)
+   Raggruppa titoli e cartelle in righe che scorrono in orizzontale, con
+   tile "poster" che si sollevano all'hover. Solo presentazione: nessuna
+   logica toccata.
+   ═══════════════════════════════════════════════════════════════════════ */
+#library-list .disney-row {
+    display: flex; flex-wrap: nowrap; gap: 16px;
+    overflow-x: auto; overflow-y: hidden;
+    padding: 14px 4px 18px; margin: 0 -4px;
+    scroll-snap-type: x proximity;
+    scroll-behavior: smooth;
+}
+#library-list .disney-row::-webkit-scrollbar { height: 8px; }
+#library-list .disney-row::-webkit-scrollbar-thumb { background: rgba(34,166,255,.28); border-radius: 6px; }
+#library-list .disney-row > * { scroll-snap-align: start; }
+
+/* ---- Tile POSTER (titolo) ---- */
+#library-list .disney-row .library-item {
+    flex: 0 0 auto; width: 158px;
+    flex-direction: column; align-items: stretch; gap: 0;
+    padding: 0; background: transparent; border: none;
+    position: relative; border-radius: 12px;
+    transition: transform var(--transition-normal);
+    animation: none;
+}
+#library-list .disney-row .library-item:hover {
+    transform: translateY(-6px) scale(1.04); z-index: 6;
+    background: transparent; box-shadow: none;
+}
+#library-list .disney-row .library-item .library-cover {
+    width: 100%; height: auto; aspect-ratio: 2/3; border-radius: 12px;
+    box-shadow: 0 10px 26px rgba(0,0,0,.55);
+    transition: box-shadow var(--transition-normal);
+}
+#library-list .disney-row .library-item:hover .library-cover {
+    transform: none; box-shadow: 0 18px 42px rgba(0,0,0,.7), 0 0 0 2px var(--accent);
+}
+#library-list .disney-row .library-meta { padding: 8px 3px 0; }
+#library-list .disney-row .library-name {
+    white-space: normal; display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden; font-size: .84rem; line-height: 1.25;
+}
+#library-list .disney-row .library-item .library-actions {
+    position: absolute; top: 6px; left: 6px; right: 6px;
+    display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 3px;
+    opacity: 0; transform: translateY(-4px);
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    background: linear-gradient(180deg, rgba(4,8,20,.9), rgba(4,8,20,.15) 80%, transparent);
+    border-radius: 12px 12px 0 0; padding: 6px 5px 14px;
+}
+#library-list .disney-row .library-item:hover .library-actions { opacity: 1; transform: translateY(0); }
+#library-list .disney-row .library-item .library-actions .icon-btn {
+    padding: 2px 5px; font-size: .92rem; background: rgba(0,0,0,.4); border-radius: 6px;
+}
+#library-list .disney-row .library-item .library-actions .icon-btn:hover { background: rgba(34,166,255,.35); }
+
+/* ---- Tile CARTELLA ---- */
+#library-list .disney-row .folder-card {
+    flex: 0 0 auto; width: 172px; padding: 0; background: transparent;
+    border: none; position: relative; border-radius: 12px;
+    transition: transform var(--transition-normal); animation: none;
+}
+#library-list .disney-row .folder-card:hover { transform: translateY(-6px) scale(1.03); z-index: 6; }
+#library-list .disney-row .folder-head { flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
+#library-list .disney-row .folder-cover {
+    width: 100%; height: auto; aspect-ratio: 2/3; border-radius: 12px;
+    background-size: cover; background-position: center;
+    box-shadow: 0 10px 26px rgba(0,0,0,.55);
+    transition: box-shadow var(--transition-normal);
+}
+#library-list .disney-row .folder-card:hover .folder-cover { box-shadow: 0 18px 42px rgba(0,0,0,.7), 0 0 0 2px var(--accent); }
+#library-list .disney-row .folder-cover.placeholder {
+    background: linear-gradient(135deg, rgba(34,166,255,.22), rgba(111,139,255,.18));
+    display: flex; align-items: center; justify-content: center;
+}
+#library-list .disney-row .folder-meta { padding: 8px 3px 0; text-align: left; }
+#library-list .disney-row .folder-name { font-size: .86rem; }
+#library-list .disney-row .folder-count { font-size: .72rem; opacity: .65; }
+/* Controlli cartella: nascosti, compaiono in overlay all'hover per non
+   affollare la tile (restano pienamente funzionanti). */
+#library-list .disney-row .folder-actions {
+    position: absolute; top: 6px; right: 6px; left: 6px;
+    flex-wrap: wrap; justify-content: flex-end; gap: 3px;
+    opacity: 0; transition: opacity var(--transition-fast);
+    background: linear-gradient(180deg, rgba(4,8,20,.92), transparent);
+    border-radius: 12px 12px 0 0; padding: 6px 5px 14px;
+}
+#library-list .disney-row .folder-card:hover .folder-actions { opacity: 1; }
+#library-list .disney-row .folder-actions .custom-select { max-width: 78px; font-size: .68rem; }
+
+/* Titoli di sezione (Preferiti, gruppi) in stile "row title" */
+#library-list .fav-subtitle, #library-list .cat-title, #library-list .lib-rest-title {
+    font-weight: 800; letter-spacing: .3px; font-size: 1.05rem;
+}
+#library-list .fav-block { display: block; }

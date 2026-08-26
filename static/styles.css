@@ -2186,3 +2186,15 @@ body.downloads-only #hero-billboard { display: none !important; }
 
 /* Rotazione locandine nella casella "Cerca/Scarica/Organizza" */
 .welcome-btn.wb-img.full { transition: background-image .6s ease, transform .12s, border-color .15s; }
+
+/* Preferiti IDENTICO alle categorie: nessun riquadro, stesso font/colore --- */
+#library-list .fav-block {
+    display: block !important; padding: 0 !important; border: none !important;
+    background: none !important; box-shadow: none !important; margin: 10px 0 2px !important;
+}
+#library-list .fav-block .fav-subtitle,
+#library-list .fav-subtitle {
+    color: var(--text-primary) !important; opacity: 1 !important;
+    text-transform: none !important; letter-spacing: .2px !important;
+    font-size: 1.18rem !important; font-weight: 800 !important; margin: 4px 2px !important;
+}

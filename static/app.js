@@ -4066,7 +4066,7 @@ function renderLibrary(data) {
         favBlock.className = "fav-block";
         const favTitle = document.createElement("div");
         favTitle.className = "domains-subtitle fav-subtitle";
-        favTitle.textContent = "★ Preferiti";
+        favTitle.textContent = "Preferiti";
         favBlock.appendChild(favTitle);
         favs.forEach(it => favBlock.appendChild(titleRow(it)));
         // le cartelle preferite mostrano anche le loro sottocartelle (recurse)

@@ -2166,3 +2166,15 @@ body.downloads-only #hero-billboard { display: none !important; }
     background: linear-gradient(90deg, #eaf1fb, #a9c6ff); -webkit-background-clip: text;
     background-clip: text; -webkit-text-fill-color: transparent;
 }
+
+/* --- Locandine: solo frecce ‹›, stella preferiti, cartella/categoria --- */
+#library-list .disney-row .library-item .library-actions .lib-select,
+#library-list .disney-row .library-item .library-actions .play-title-btn,
+#library-list .disney-row .library-item .library-actions .ren-title-btn,
+#library-list .disney-row .library-item .library-actions .del-btn,
+#library-list .disney-row .library-item .library-actions label.icon-btn { display: none !important; }
+#search-results .media-card .newfolder-q-btn,
+#search-results .media-card .media-select { display: none !important; }
+/* frecce reorder ben visibili */
+#library-list .disney-row .library-item .library-actions .moveup-btn,
+#library-list .disney-row .library-item .library-actions .movedown-btn { font-size: 1.1rem; font-weight: 800; }

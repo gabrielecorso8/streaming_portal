@@ -501,17 +501,10 @@ function renderSearchPage() {
         return;
     }
     const total = searchAll.length;
-    const pages = Math.max(1, Math.ceil(total / SEARCH_PER_PAGE));
-    if (searchPage > pages) searchPage = pages;
-    if (searchPage < 1) searchPage = 1;
-    const start = (searchPage - 1) * SEARCH_PER_PAGE;
-    searchAll.slice(start, start + SEARCH_PER_PAGE).forEach(item => {
-        el.searchResults.appendChild(buildResultCard(item));
-    });
-    if (el.searchResultsTitle) {
-        el.searchResultsTitle.textContent = `Risultati per "${searchQ}" — ${total} titoli (pag. ${searchPage}/${pages})`;
-    }
-    renderPager(pages, total);
+    // Scroll orizzontale UNICO: mostra tutti i risultati, niente pagine.
+    searchAll.forEach(item => { el.searchResults.appendChild(buildResultCard(item)); });
+    if (el.searchResultsTitle) el.searchResultsTitle.textContent = `Risultati per "${searchQ}" — ${total} titoli`;
+    renderPager(1, total);
 }
 
 function buildResultCard(item) {
@@ -3318,8 +3311,8 @@ function titleRow(item, ctx) {
     // Up/down reorder controls only inside a folder (ctx provided).
     const _clen = ctx ? (ctx.combined ? (ctx.tokens ? ctx.tokens.length : 0) : (ctx.keys ? ctx.keys.length : 0)) : 0;
     const moveBtns = (ctx && !ctx.noReorder) ? `
-            <button class="icon-btn moveup-btn" title="Sposta su"${ctx.index === 0 ? " disabled" : ""}>⬆</button>
-            <button class="icon-btn movedown-btn" title="Sposta giù"${ctx.index >= _clen - 1 ? " disabled" : ""}>⬇</button>` : "";
+            <button class="icon-btn moveup-btn" title="Sposta a sinistra"${ctx.index === 0 ? " disabled" : ""}>‹</button>
+            <button class="icon-btn movedown-btn" title="Sposta a destra"${ctx.index >= _clen - 1 ? " disabled" : ""}>›</button>` : "";
     row.innerHTML = `
         ${cover}
         <div class="library-meta">
@@ -3811,7 +3804,7 @@ function renderLibrary(data) {
                       .map(o => `<option value="${o.id}"${(f.parent || "") === o.id ? " selected" : ""}>${escapeHtml(o.name)}</option>`)
         ).join("");
         const _rlen = reorderCtx ? (reorderCtx.tokens ? reorderCtx.tokens.length : (reorderCtx.list ? reorderCtx.list.length : 0)) : 0;
-        const folderMoveBtns = reorderCtx ? `<button class="icon-btn folder-moveup" title="Sposta su"${reorderCtx.index === 0 ? " disabled" : ""}>⬆</button><button class="icon-btn folder-movedown" title="Sposta giù"${reorderCtx.index >= _rlen - 1 ? " disabled" : ""}>⬇</button>` : "";
+        const folderMoveBtns = reorderCtx ? `<button class="icon-btn folder-moveup" title="Sposta a sinistra"${reorderCtx.index === 0 ? " disabled" : ""}>‹</button><button class="icon-btn folder-movedown" title="Sposta a destra"${reorderCtx.index >= _rlen - 1 ? " disabled" : ""}>›</button>` : "";
         card.innerHTML = `
             <div class="folder-head">
                 <div class="folder-cover ${f.cover ? "" : "placeholder"}" ${coverStyle}></div>

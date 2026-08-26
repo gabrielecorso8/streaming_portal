@@ -7,7 +7,8 @@ let lastTitleContext = ""; // Name of the title being opened (for domain-error m
 let currentLibKey = "";    // Library key of the title currently shown in the modal
 let libraryCache = [];     // Last known library list (to read favourite state)
 let openFolders = new Set(); // Folder ids currently expanded (kept across re-renders)
-let openGroups = new Set(); // categorie (saga/regista/genere) espanse
+let openGroups = new Set(); // (legacy)
+let closedGroups = new Set(); // categorie CHIUSE (default: tutte aperte)
 let openDownloadGroups = new Set(); // cartelle/sottocartelle download espanse
 let touchedDownloadGroups = new Set(); // ricorda quali gruppi download l'utente ha aperto/chiuso
 let localCustomFilters = new Set(); // filtri creati nella sessione corrente
@@ -44,6 +45,7 @@ const el = {
     proxyInput: document.getElementById("proxy-input"),
     saveProxyBtn: document.getElementById("save-proxy-btn"),
     urlInput: document.getElementById("url-input"),
+    miniSearch: document.getElementById("mini-search"),
     loadUrlBtn: document.getElementById("load-url-btn"),
     convertUrlBtn: document.getElementById("convert-url-btn"),
     searchResultsSection: document.getElementById("search-results-section"),
@@ -201,16 +203,15 @@ async function init() {
         el.videoPlayer.addEventListener("pause", _savePlayback);
         el.videoPlayer.addEventListener("ended", function () { _clearPlayback(_playKey); });
     }
-    if (el.headerSearchBtn) el.headerSearchBtn.addEventListener("click", () => {
-        const open = document.body.classList.toggle("search-open");
-        el.headerSearchBtn.classList.toggle("active", open);
-        if (open) { window.scrollTo({ top: 0, behavior: "smooth" }); setTimeout(() => { if (el.urlInput) el.urlInput.focus(); }, 150); }
+    const _closeMini = () => { if (el.miniSearch) el.miniSearch.classList.add("hidden"); if (el.headerSearchBtn) el.headerSearchBtn.classList.remove("active"); };
+    if (el.headerSearchBtn && el.miniSearch) el.headerSearchBtn.addEventListener("click", () => {
+        const nowHidden = el.miniSearch.classList.toggle("hidden");
+        el.headerSearchBtn.classList.toggle("active", !nowHidden);
+        if (!nowHidden) { el.miniSearch.value = el.urlInput ? el.urlInput.value : ""; setTimeout(() => el.miniSearch.focus(), 30); }
     });
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && document.body.classList.contains("search-open")) {
-            document.body.classList.remove("search-open");
-            if (el.headerSearchBtn) el.headerSearchBtn.classList.remove("active");
-        }
+    if (el.miniSearch) el.miniSearch.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { if (el.urlInput) el.urlInput.value = el.miniSearch.value; _vpnGuardBeforeOnline(); handleMainInput(); }
+        else if (e.key === "Escape") _closeMini();
     });
     if (el.headerLibraryBtn) el.headerLibraryBtn.addEventListener("click", () => {
         const target = document.querySelector("#library-list .cat-group") || el.libraryList;
@@ -285,6 +286,8 @@ async function init() {
     // Start polling downloads
     startDownloadsPolling();
     setupPlayerGestures();
+    setupDragScroll();
+    setTimeout(openWelcomeBanner, 500);
 
     // Load the saved/recent titles library and the remembered domains
     fetchLibrary();
@@ -396,6 +399,7 @@ function looksLikeUrl(value) {
 async function handleMainInput() {
     const value = el.urlInput.value.trim();
     if (!value) return;
+    _vpnGuardBeforeOnline();
     if (looksLikeUrl(value)) {
         await resolveDirectUrl(value);
     } else if (value.includes(";")) {
@@ -1703,6 +1707,7 @@ function _dupExists(title) {
 }
 
 async function triggerDownload(label, titleId, episodeId = null, hold = false) {
+    _vpnGuardBeforeOnline();
     if (_dupExists(label)) { showToast(`«${label}» è già scaricato o in coda: non lo riscarico.`, 4500); return; }
     warnNoProxyOnce();
     showToast("Preparazione download...");
@@ -4064,7 +4069,7 @@ function renderLibrary(data) {
     const buildCategoryGroup = (label, kindKey, list, icon, options = {}) => {
         const wrap = document.createElement("div");
         wrap.className = "cat-group";
-        const open = openGroups.has(kindKey);
+        const open = !closedGroups.has(kindKey);
         const head = document.createElement("div");
         head.className = "cat-head" + (open ? " open" : "");
         const coverThumb = options.custom
@@ -4094,7 +4099,7 @@ function renderLibrary(data) {
         head.addEventListener("click", () => {
             const hidden = body.classList.toggle("hidden");
             head.classList.toggle("open", !hidden);
-            if (hidden) openGroups.delete(kindKey); else openGroups.add(kindKey);
+            if (hidden) closedGroups.add(kindKey); else closedGroups.delete(kindKey);
         });
         const edit = head.querySelector(".cat-edit-btn");
         if (edit) edit.addEventListener("click", (e) => {
@@ -4190,8 +4195,11 @@ let _hbItems = [], _hbIdx = 0, _hbTimer = null, _hbSig = "";
 function _hbBuildList() {
     const out = [], seen = new Set();
     const push = (name, cover, type, rd, open) => {
-        const k = normName(name || ""); if (!name || !cover || seen.has(k)) return;
-        seen.add(k); out.push({ name: name, cover: cover, type: type || "", rd: rd || "", open: open });
+        // Serie: mostra SOLO la serie (non i singoli episodi).
+        const ep = (typeof parseEpisode === "function") ? parseEpisode(name || "") : null;
+        const disp = (ep && ep.series) ? ep.series : (name || "");
+        const k = normName(disp); if (!disp || !cover || seen.has(k)) return;
+        seen.add(k); out.push({ name: disp, cover: cover, type: (ep ? "tv" : (type || "")), rd: rd || "", open: open });
     };
     // Preferiti in evidenza
     (libraryCache || []).forEach(t => { if (t.favorite) push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); });
@@ -4218,7 +4226,7 @@ function renderHeroBillboard() {
 }
 function _hbRestart(host) {
     if (_hbTimer) { clearInterval(_hbTimer); _hbTimer = null; }
-    if (_hbItems.length > 1) _hbTimer = setInterval(() => { _hbIdx = (_hbIdx + 1) % _hbItems.length; _hbRender(host, true); }, 7000);
+    if (_hbItems.length > 1) _hbTimer = setInterval(() => { _hbIdx = (_hbIdx + 1) % _hbItems.length; _hbRender(host, true); }, 4500);
 }
 function _hbRender(host, animate) {
     const feat = _hbItems[_hbIdx]; if (!feat) return;
@@ -4240,12 +4248,15 @@ function _hbRender(host, animate) {
                 `<button class="secondary-btn hb-info">Dettagli</button>` +
             `</div>` +
         `</div>` +
-        (_hbItems.length > 1 ? `<div class="hb-dots">${dots}</div>` : "");
+        (_hbItems.length > 1 ? `<button class="hb-arrow hb-prev" aria-label="Precedente">‹</button><button class="hb-arrow hb-next" aria-label="Successivo">›</button><div class="hb-dots">${dots}</div>` : "");
     host.querySelector(".hb-play").addEventListener("click", feat.open);
     host.querySelector(".hb-info").addEventListener("click", feat.open);
     host.querySelectorAll(".hb-dot").forEach(d => d.addEventListener("click", () => {
         _hbIdx = parseInt(d.getAttribute("data-i"), 10) || 0; _hbRender(host, true); _hbRestart(host);
     }));
+    const _prev = host.querySelector(".hb-prev"), _next = host.querySelector(".hb-next");
+    if (_prev) _prev.addEventListener("click", () => { _hbIdx = (_hbIdx - 1 + _hbItems.length) % _hbItems.length; _hbRender(host, true); _hbRestart(host); });
+    if (_next) _next.addEventListener("click", () => { _hbIdx = (_hbIdx + 1) % _hbItems.length; _hbRender(host, true); _hbRestart(host); });
 }
 
 function openFromLibrary(item) {
@@ -4334,7 +4345,7 @@ async function createCustomFilter() {
         });
         if (r.ok) {
             localCustomFilters.add(kind);
-            openGroups.add(kind);
+            closedGroups.delete(kind);
             const data = await r.json();
             if (!((data.custom_filters || []).includes(kind))) data.custom_filters = [...(data.custom_filters || []), kind];
             if (lastLibraryData) {
@@ -4367,8 +4378,8 @@ async function renameCustomFilter(oldKind) {
             localCustomFilters.delete(oldKind);
             localCustomFilters.add(kind);
             if (openGroups.has(oldKind)) {
-                openGroups.delete(oldKind);
-                openGroups.add(kind);
+                closedGroups.delete(oldKind);
+                closedGroups.delete(kind);
             }
             renderLibrary(await r.json());
             showToast("Filtro aggiornato");
@@ -4391,7 +4402,7 @@ async function deleteCustomFilter(kind, count) {
         });
         if (r.ok) {
             localCustomFilters.delete(kind);
-            openGroups.delete(kind);
+            closedGroups.delete(kind);
             if (lastLibraryData) {
                 lastLibraryData.custom_filters = (lastLibraryData.custom_filters || []).filter(k => k !== kind);
             }
@@ -4788,6 +4799,76 @@ function _fmtTime(s) {
     s = Math.max(0, Math.floor(s || 0));
     var m = Math.floor(s / 60), ss = ("0" + (s % 60)).slice(-2), h = Math.floor(m / 60);
     return h > 0 ? (h + ":" + ("0" + (m % 60)).slice(-2) + ":" + ss) : (m + ":" + ss);
+}
+
+// ─── Modalita' "solo guardare" vs "cerca/scarica/organizza" + promemoria VPN ───
+function _mode() { try { return sessionStorage.getItem("scp_mode") || ""; } catch (e) { return ""; } }
+function _setMode(m) { try { sessionStorage.setItem("scp_mode", m); } catch (e) {} }
+
+function openWelcomeBanner() {
+    try { if (sessionStorage.getItem("scp_welcomed")) return; } catch (e) {}
+    try { sessionStorage.setItem("scp_welcomed", "1"); } catch (e) {}
+    if (document.body.classList.contains("downloads-only")) return;
+    const ov = document.createElement("div");
+    ov.className = "welcome-ov";
+    ov.innerHTML =
+        '<div class="welcome-card">' +
+        '<div class="welcome-logo"><svg viewBox="0 0 48 48" width="52" height="52"><defs><linearGradient id="wlg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6fd0ff"/><stop offset="1" stop-color="#1e6fff"/></linearGradient></defs><rect x="4" y="4" width="40" height="40" rx="13" fill="url(#wlg)"/><path d="M19 15.5 L34 24 L19 32.5 Z" fill="#fff"/></svg></div>' +
+        '<h2>Benvenuto su SC Portal</h2>' +
+        '<p>Cosa vuoi fare adesso?</p>' +
+        '<div class="welcome-choices">' +
+        '<button class="welcome-btn watch" data-x="watch"><span class="wb-emoji">🍿</span><span class="wb-t">Solo guardare</span><span class="wb-s">Riproduci i tuoi titoli. Nessuna VPN necessaria.</span></button>' +
+        '<button class="welcome-btn full" data-x="full"><span class="wb-emoji">🔎</span><span class="wb-t">Cerca · Scarica · Organizza</span><span class="wb-s">Attiva la VPN prima di procedere per non esporre il tuo IP.</span></button>' +
+        '</div></div>';
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.querySelector('[data-x="watch"]').addEventListener("click", () => { _setMode("watch"); close(); showToast("Modalita' visione: buona visione! 🍿", 4000); });
+    ov.querySelector('[data-x="full"]').addEventListener("click", () => { _setMode("full"); close(); showToast("Ricorda: attiva la VPN prima di cercare/scaricare. 🔒", 6000); });
+}
+
+function _vpnGuardBeforeOnline() {
+    // Se ha scelto "solo guardare" e poi cerca/scarica: ricordagli la VPN.
+    if (_mode() === "watch") { openVpnReminder(); _setMode("full"); }
+}
+
+function openVpnReminder() {
+    const ex = document.getElementById("vpn-reminder"); if (ex) return;
+    const ov = document.createElement("div");
+    ov.id = "vpn-reminder"; ov.className = "welcome-ov";
+    ov.innerHTML =
+        '<div class="welcome-card vpn">' +
+        '<div class="welcome-logo">🔒</div>' +
+        '<h2>Stai per andare online</h2>' +
+        '<p>Avevi scelto "solo guardare". Ora stai per <b>cercare o scaricare</b>: accendi la <b>VPN</b> per non esporre il tuo IP.</p>' +
+        '<div class="welcome-choices vpn-row">' +
+        '<button class="welcome-btn full" data-x="ok"><span class="wb-t">VPN attiva, procedi</span></button>' +
+        '<button class="welcome-btn" data-x="ip"><span class="wb-t">Verifica IP</span></button>' +
+        '</div></div>';
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.querySelector('[data-x="ok"]').addEventListener("click", close);
+    ov.querySelector('[data-x="ip"]').addEventListener("click", () => { close(); if (typeof openPrivacyPanel === "function") openPrivacyPanel(); });
+    ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+}
+
+// ─── Trascinamento orizzontale (drag-scroll) delle righe .disney-row ───
+function setupDragScroll() {
+    let down = false, startX = 0, startScroll = 0, row = null, moved = false;
+    document.addEventListener("mousedown", (e) => {
+        const r = e.target.closest(".disney-row"); if (!r) return;
+        if (e.target.closest("button, input, select, a, label, .cw-x")) return;
+        down = true; row = r; startX = e.pageX; startScroll = r.scrollLeft; moved = false;
+    });
+    document.addEventListener("mousemove", (e) => {
+        if (!down || !row) return;
+        const dx = e.pageX - startX;
+        if (Math.abs(dx) > 4) { moved = true; row.classList.add("dragging"); }
+        row.scrollLeft = startScroll - dx;
+    });
+    const end = () => { down = false; row = null; document.querySelectorAll(".disney-row.dragging").forEach(r => r.classList.remove("dragging")); };
+    document.addEventListener("mouseup", end);
+    document.addEventListener("mouseleave", end);
+    document.addEventListener("click", (e) => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
 }
 
 window.addEventListener("DOMContentLoaded", init);

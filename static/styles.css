@@ -2037,3 +2037,69 @@ body.downloads-only #hero-billboard { display: none !important; }
 .downloads-section .downloads-header h2, #library-section h2 {
     font-size: 1.35rem; font-weight: 800;
 }
+
+/* --- Nuovo logo azzurro --- */
+.logo-icon { width: 34px; height: 34px; filter: drop-shadow(0 4px 12px rgba(34,120,255,.5)); }
+
+/* --- Mini campo di ricerca (dalla lente) --- */
+.mini-search {
+    height: 38px; width: 240px; max-width: 40vw; border-radius: 999px;
+    border: 1px solid var(--border-hover); background: rgba(6,12,28,.85);
+    color: var(--text-primary); padding: 0 16px; font-size: .95rem;
+    outline: none; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    transition: box-shadow .2s, border-color .2s;
+}
+.mini-search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(34,166,255,.25); }
+.mini-search.hidden { display: none; }
+
+/* --- Frecce hero billboard --- */
+.hb-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 4;
+    width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(6,12,28,.5); border: 1px solid rgba(255,255,255,.18);
+    color: #fff; font-size: 2rem; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .2s, background .2s, transform .1s;
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.hero-billboard:hover .hb-arrow { opacity: 1; }
+.hb-arrow:hover { background: var(--accent); }
+.hb-arrow:active { transform: translateY(-50%) scale(.92); }
+.hb-prev { left: 14px; } .hb-next { right: 14px; }
+@media (max-width: 720px) { .hb-arrow { opacity: 1; width: 40px; height: 40px; } }
+
+/* --- Drag-scroll --- */
+.disney-row.dragging { cursor: grabbing; scroll-behavior: auto; }
+.disney-row.dragging * { pointer-events: none; }
+
+/* --- Banner di benvenuto / promemoria VPN --- */
+.welcome-ov {
+    position: fixed; inset: 0; z-index: 10050;
+    background: radial-gradient(1200px 600px at 50% 0%, rgba(20,40,90,.6), rgba(3,6,15,.86));
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center; padding: 22px;
+    animation: hb-fade .25s ease both;
+}
+.welcome-card {
+    width: 100%; max-width: 560px; background: linear-gradient(180deg, #101a34, #0a1226);
+    border: 1px solid var(--border-color); border-radius: 22px; padding: 34px 30px;
+    text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,.6);
+    animation: hb-in .35s cubic-bezier(.22,1,.36,1) both;
+}
+.welcome-logo { margin-bottom: 14px; font-size: 2.6rem; }
+.welcome-card h2 { font-size: 1.7rem; font-weight: 900; margin: 0 0 6px; }
+.welcome-card > p { color: var(--text-secondary); margin: 0 0 22px; }
+.welcome-choices { display: flex; gap: 14px; }
+.welcome-choices.vpn-row { justify-content: center; }
+.welcome-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 20px 16px; border-radius: 16px; cursor: pointer;
+    background: rgba(120,175,255,.08); border: 1px solid var(--border-color);
+    color: var(--text-primary); transition: transform .12s, border-color .15s, background .15s;
+}
+.welcome-btn:hover { transform: translateY(-3px); border-color: var(--accent); background: rgba(34,166,255,.12); }
+.welcome-btn.full { background: linear-gradient(180deg, rgba(34,166,255,.22), rgba(34,166,255,.10)); border-color: rgba(34,166,255,.5); }
+.wb-emoji { font-size: 1.9rem; }
+.wb-t { font-weight: 800; font-size: 1.02rem; }
+.wb-s { font-size: .8rem; color: var(--text-secondary); line-height: 1.3; }
+.welcome-card.vpn .welcome-btn { flex: 0 1 auto; min-width: 160px; }

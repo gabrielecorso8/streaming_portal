@@ -17,19 +17,28 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SC Portal">
     <link rel="manifest" id="mf-link" href="/api/pwa/manifest?kind=mobile">
-    <link rel="stylesheet" href="styles.css?v=90">
+    <link rel="stylesheet" href="styles.css?v=91">
 </head>
 <body>
     <header class="app-header">
         <div class="logo-container">
-            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 16.5V7.5L16 12L10 16.5Z" fill="currentColor"/>
+            <svg class="logo-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-label="SC Portal">
+                <defs>
+                    <linearGradient id="sc-logo-g" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stop-color="#6fd0ff"/>
+                        <stop offset="1" stop-color="#1e6fff"/>
+                    </linearGradient>
+                </defs>
+                <rect x="4" y="4" width="40" height="40" rx="13" fill="url(#sc-logo-g)"/>
+                <rect x="4" y="4" width="40" height="40" rx="13" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.2"/>
+                <path d="M19 15.5 L34 24 L19 32.5 Z" fill="#fff"/>
             </svg>
             <h1 class="app-title">SC<span>Portal</span></h1>
         </div>
         <button id="header-search-btn" class="icon-btn header-search-btn" type="button" title="Cerca">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </button>
+        <input id="mini-search" class="mini-search hidden" type="search" autocomplete="off" placeholder="Cerca titoli…">
         <button id="header-favorites-btn" class="icon-btn header-search-btn" type="button" title="Vai ai preferiti">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
         </button>
@@ -319,6 +328,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=97"></script>
+    <script src="app.js?v=98"></script>
 </body>
 </html>

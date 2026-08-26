@@ -4031,11 +4031,6 @@ function renderLibrary(data) {
         return;
     }
 
-    const createBtn = document.createElement("button");
-    createBtn.className = "secondary-btn small-btn create-folder-btn";
-    createBtn.textContent = "+ Nuova cartella";
-    createBtn.addEventListener("click", createFolder);
-    el.libraryList.appendChild(createBtn);
 
     // Drop-zone "radice": trascina qui una cartella per portarla fuori da ogni
     // cartella genitore (oppure trascina una cartella su un'altra per annidarla).
@@ -4088,8 +4083,10 @@ function renderLibrary(data) {
             ? `<button class="icon-btn cat-edit-btn" title="Rinomina filtro" type="button">✎</button>`
               + `<button class="icon-btn cat-del-btn" title="Elimina filtro" type="button">🗑</button>`
             : "";
-        head.innerHTML = `<span class="cat-title">${coverThumb}${icon} ${label}</span>`
-            + `<span class="cat-count">${list.length}</span>${coverBtn}${editBtn}<span class="cat-chevron">▾</span>`;
+        const dispLabel = _catLabel(kindKey, label);
+        const delBtn = options.custom ? '<button class="icon-btn cat-del-btn" title="Elimina categoria" type="button">✕</button>' : "";
+        head.innerHTML = `<span class="cat-title">${escapeHtml(dispLabel)}</span>`
+            + `<span class="cat-count">${list.length}</span>${delBtn}<span class="cat-chevron">▾</span>`;
         const body = document.createElement("div");
         body.className = "cat-body" + (open ? "" : " hidden");
         if (!list.length) {
@@ -4110,7 +4107,7 @@ function renderLibrary(data) {
             e.stopPropagation();
             renameCustomFilter(kindKey);
         });
-        if (options.custom) head.addEventListener("dblclick", (e) => { e.stopPropagation(); renameCustomFilter(kindKey); });
+        head.addEventListener("dblclick", (e) => { e.stopPropagation(); editCategoryTitle(kindKey, !!options.custom, dispLabel); });
         const del = head.querySelector(".cat-del-btn");
         if (del) del.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -4340,6 +4337,16 @@ async function createFolder() {
 
 function normalizeCustomFilterName(value) {
     return String(value || "").trim().toLowerCase().replace(/\s+/g, " ").replace(/[<>]/g, "").slice(0, 40);
+}
+
+function _catLabels() { try { return JSON.parse(localStorage.getItem("scp_catlabels") || "{}"); } catch (e) { return {}; } }
+function _catLabel(kind, def) { const m = _catLabels(); return (m[kind] != null && m[kind] !== "") ? m[kind] : def; }
+function _setCatLabel(kind, label) { const m = _catLabels(); if (label && label.trim()) m[kind] = label.trim(); else delete m[kind]; try { localStorage.setItem("scp_catlabels", JSON.stringify(m)); } catch (e) {} }
+function editCategoryTitle(kind, isCustom, current) {
+    const name = prompt("Titolo della categoria:", current || "");
+    if (name === null) return;
+    _setCatLabel(kind, name);
+    if (lastLibraryData) renderLibrary(lastLibraryData);
 }
 
 async function createCustomFilter() {

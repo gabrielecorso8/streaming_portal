@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SC Portal">
     <link rel="manifest" id="mf-link" href="/api/pwa/manifest?kind=mobile">
-    <link rel="stylesheet" href="styles.css?v=95">
+    <link rel="stylesheet" href="styles.css?v=96">
 </head>
 <body>
     <header class="app-header">
@@ -202,20 +202,6 @@
                 </div>
             </div>
             <div class="tool-body">
-                <span class="library-hint">I titoli che apri restano qui · clicca per riaprirli · ★ per i preferiti</span>
-                <input type="text" id="library-search" class="lib-search" placeholder="Cerca un titolo nella libreria…" autocomplete="off" spellcheck="false">
-                <div class="lib-filters">
-                    <select id="library-type" class="custom-select">
-                        <option value="">Film e serie</option>
-                        <option value="movie">Solo film</option>
-                        <option value="tv">Solo serie</option>
-                    </select>
-                    <select id="library-order" class="custom-select">
-                        <option value="">Rilevanza</option>
-                        <option value="recent">Uscita recente</option>
-                        <option value="oldest">Meno recente</option>
-                    </select>
-                </div>
                 <div id="library-list" class="library-list">
                     <div class="no-downloads">Nessun titolo salvato. Apri un link: comparirà qui come collegamento.</div>
                 </div>
@@ -328,6 +314,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=102"></script>
+    <script src="app.js?v=103"></script>
 </body>
 </html>

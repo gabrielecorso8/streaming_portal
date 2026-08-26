@@ -2116,3 +2116,36 @@ body.downloads-only #hero-billboard { display: none !important; }
 .wb-body { position: relative; z-index: 2; padding: 16px 16px 18px;
     display: flex; flex-direction: column; gap: 4px; text-align: left; width: 100%; }
 @media (max-width: 620px) { .welcome-choices { flex-direction: column; } }
+
+/* --- Libreria: intestazioni categoria "piatte" (solo titolo, niente riquadro) --- */
+#library-list .cat-group { background: transparent !important; border: none !important; padding: 0 !important; margin: 10px 0 2px !important; box-shadow: none !important; }
+#library-list .cat-head {
+    background: transparent !important; border: none !important; box-shadow: none !important;
+    padding: 4px 2px !important; cursor: pointer;
+}
+#library-list .cat-head:hover { background: transparent !important; }
+#library-list .cat-title { font-size: 1.18rem; font-weight: 800; letter-spacing: .2px; }
+#library-list .cat-head .cat-cover { display: none; }
+#library-list .cat-count { opacity: .5; font-weight: 600; }
+#library-list .cat-chevron { opacity: .5; }
+#library-list .fav-subtitle, #library-list .lib-rest-title {
+    background: transparent !important; border: none !important; padding: 4px 2px !important;
+    font-size: 1.18rem; font-weight: 800;
+}
+#library-list .custom-filter-btn { display: none; }
+
+/* --- Tile "+" (Nuova categoria / Aggiungi) come locandina vuota tratteggiata --- */
+#library-list .disney-row .add-tile { width: 158px; }
+#library-list .add-tile .folder-cover.add-plus {
+    aspect-ratio: 2/3; width: 100%; border-radius: 12px;
+    border: 2px dashed rgba(120,175,255,.35); background: rgba(120,175,255,.05) !important;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3rem; font-weight: 300; color: rgba(150,190,255,.7);
+    transition: border-color .18s, background .18s, color .18s, transform .18s;
+}
+#library-list .add-tile:hover { transform: translateY(-6px) scale(1.03); }
+#library-list .add-tile:hover .add-plus {
+    border-color: var(--accent); background: rgba(34,166,255,.14) !important; color: var(--accent);
+}
+#library-list .add-tile .folder-name { font-size: .84rem; opacity: .85; }
+#library-list .add-tile.new-cat { margin-top: 8px; }

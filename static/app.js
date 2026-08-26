@@ -4109,6 +4109,7 @@ function renderLibrary(data) {
             e.stopPropagation();
             renameCustomFilter(kindKey);
         });
+        if (options.custom) head.addEventListener("dblclick", (e) => { e.stopPropagation(); renameCustomFilter(kindKey); });
         const del = head.querySelector(".cat-del-btn");
         if (del) del.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -4118,6 +4119,13 @@ function renderLibrary(data) {
         if (coverLbl) coverLbl.addEventListener("click", (e) => e.stopPropagation());
         const coverInput = head.querySelector(".cat-cover-input");
         if (coverInput) coverInput.addEventListener("change", (e) => { e.stopPropagation(); uploadFilterCover(kindKey, e.target); });
+        // Tile "+" in fondo alla categoria per aggiungere una nuova voce (cartella
+        // di questa tipologia) — invita a organizzare.
+        const addTile = document.createElement("div");
+        addTile.className = "folder-card add-tile";
+        addTile.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Aggiungi</span></div></div>';
+        addTile.addEventListener("click", () => addFolderToCategory(kindKey));
+        body.appendChild(addTile);
         wrap.appendChild(head);
         wrap.appendChild(body);
         return wrap;
@@ -4131,11 +4139,11 @@ function renderLibrary(data) {
         .filter(k => k && !["saga", "regista", "genere"].includes(k)))]
         .sort()
         .forEach(k => el.libraryList.appendChild(buildCategoryGroup(k.charAt(0).toUpperCase() + k.slice(1), k, byKind(k), "▣", { custom: true, cover: filterCovers[k] || "" })));
-    const customFilterBtn = document.createElement("button");
-    customFilterBtn.className = "secondary-btn small-btn custom-filter-btn";
-    customFilterBtn.textContent = "+ Nuovo filtro";
-    customFilterBtn.addEventListener("click", createCustomFilter);
-    el.libraryList.appendChild(customFilterBtn);
+    const newCatTile = document.createElement("div");
+    newCatTile.className = "folder-card add-tile new-cat";
+    newCatTile.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Nuova categoria</span></div></div>';
+    newCatTile.addEventListener("click", createCustomFilter);
+    el.libraryList.appendChild(newCatTile);
 
     const uncategorized = rootFolders.filter(f => !(f.kind || ""));
     if (uncategorized.length) {
@@ -4471,6 +4479,20 @@ async function removeFolder(id, name) {
         const r = await fetch("/api/folders/remove", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
         if (r.ok) renderLibrary(await r.json());
     } catch (e) { showToast("Errore eliminazione cartella"); }
+}
+
+async function addFolderToCategory(kind) {
+    const name = prompt("Nome della nuova voce" + (kind ? " (" + kind + ")" : "") + " — es. il titolo, la serie o il regista:");
+    if (name === null || !name.trim()) return;
+    try {
+        const r = await fetch("/api/folders/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name.trim() }) });
+        if (!r.ok) { showToast("Errore nella creazione"); return; }
+        const data = await r.json();
+        const created = (data.folders || []).filter(x => (x.name || "").trim() === name.trim()).pop();
+        if (created && kind) { closedGroups.delete(kind); await setFolderKind(created.id, kind); }
+        else { renderLibrary(data); }
+        showToast("Creata: " + name.trim());
+    } catch (e) { showToast("Errore nella creazione"); }
 }
 
 async function setFolderKind(id, kind) {

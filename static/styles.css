@@ -2149,3 +2149,20 @@ body.downloads-only #hero-billboard { display: none !important; }
 }
 #library-list .add-tile .folder-name { font-size: .84rem; opacity: .85; }
 #library-list .add-tile.new-cat { margin-top: 8px; }
+
+/* --- Download a locandine: navigazione serie/stagioni --- */
+#downloads-list .dl-poster { position: relative; cursor: pointer; }
+#downloads-list .dl-poster .dl-poster-badge {
+    position: absolute; top: 8px; left: 8px; z-index: 3;
+    font-size: .62rem; font-weight: 800; letter-spacing: .5px;
+    background: rgba(4,8,20,.78); color: var(--accent);
+    padding: 3px 8px; border-radius: 7px; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+#downloads-list .dl-back {
+    margin: 8px 0 2px; background: rgba(120,175,255,.10); border: 1px solid var(--border-color);
+}
+#downloads-list .dl-crumb-title {
+    font-size: 1.3rem; font-weight: 800; margin: 4px 2px 2px;
+    background: linear-gradient(90deg, #eaf1fb, #a9c6ff); -webkit-background-clip: text;
+    background-clip: text; -webkit-text-fill-color: transparent;
+}

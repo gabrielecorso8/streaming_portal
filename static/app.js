@@ -2062,73 +2062,81 @@ function renderDownloads(downloads) {
     activeRows.forEach(dl => el.downloadsList.appendChild(buildDownloadItem(dl)));
 
     const completedRows = allRows.filter(dl => !isActiveRow(dl));
-    const rootMap = new Map();
-    completedRows.forEach(dl => {
-        const placement = downloadPlacementFor(dl);
-        const rootKey = placement.root ? downloadGroupKey(placement.root) : "__noroot__";
-        if (!rootMap.has(rootKey)) rootMap.set(rootKey, { meta: placement.root, subs: new Map() });
-        const rootEntry = rootMap.get(rootKey);
-        const sub = placement.sub || { id: `single:${normName(dl.title)}`, name: dl.title, cover: "" };
-        const subKey = downloadGroupKey(sub);
-        if (!rootEntry.subs.has(subKey)) rootEntry.subs.set(subKey, { meta: sub, rows: [] });
-        rootEntry.subs.get(subKey).rows.push(dl);
+    _renderDownloadPosters(completedRows);
+}
+
+// --- Download a LOCANDINE: film diretti, serie -> stagioni -> episodi --------
+let _dlView = { level: "root", series: "", season: 0 };
+function _dlGroup(rows) {
+    const movies = [], series = new Map();
+    rows.forEach(dl => {
+        const ep = parseEpisode(dl.title);
+        if (ep && ep.series) {
+            const k = normName(ep.series);
+            let s = series.get(k);
+            if (!s) { s = { name: ep.series, cover: dl.cover || "", seasons: new Map() }; series.set(k, s); }
+            if (!s.cover && dl.cover) s.cover = dl.cover;
+            if (!s.seasons.has(ep.season)) s.seasons.set(ep.season, []);
+            s.seasons.get(ep.season).push(dl);
+        } else movies.push(dl);
     });
+    return { movies, series };
+}
+function _dlPosterTile(name, cover, sub, onClick, badge) {
+    const t = document.createElement("div");
+    t.className = "download-item dl-poster";
+    t.innerHTML =
+        (cover ? `<img class="library-cover dl-cover" src="${escapeHtml(cover)}" loading="lazy">` : `<div class="library-cover placeholder dl-cover"></div>`) +
+        (badge ? `<span class="dl-poster-badge">${escapeHtml(badge)}</span>` : "") +
+        `<div class="download-meta"><span class="download-name">${escapeHtml(name)}</span>${sub ? `<span class="download-status">${escapeHtml(sub)}</span>` : ""}</div>`;
+    t.addEventListener("click", onClick);
+    return t;
+}
+function _dlReRender() { _dlSig = ""; renderDownloads(_downloadsSnapshot); }
+function _dlBack(label, onClick) {
+    const b = document.createElement("button");
+    b.className = "secondary-btn small-btn dl-back";
+    b.textContent = "‹ " + label;
+    b.addEventListener("click", onClick);
+    el.downloadsList.appendChild(b);
+}
+function _renderDownloadPosters(rows) {
+    const g = _dlGroup(rows);
+    const byEp = (a, b) => { const ea = parseEpisode(a.title), eb = parseEpisode(b.title); return (ea && eb) ? (ea.episode - eb.episode) : 0; };
+    const row = document.createElement("div"); row.className = "disney-row dl-poster-row";
 
-    // Rende una "serie" spezzata per stagione; il resto come righe/cartelle.
-    const renderSub = (sub, parentBody) => {
-        const isSeries = String(sub.meta.id || "").startsWith("series:")
-            && sub.rows.some(dl => parseEpisode(dl.title));
-        if (isSeries) {
-            const subNode = buildDownloadFolderNode(sub.meta, sub.rows.length, "sub");
-            parentBody.appendChild(subNode.wrap);
-            const seasons = new Map();
-            sub.rows.forEach(dl => {
-                const ep = parseEpisode(dl.title);
-                const sN = ep ? ep.season : 0;
-                if (!seasons.has(sN)) seasons.set(sN, []);
-                seasons.get(sN).push(dl);
-            });
-            [...seasons.keys()].sort((a, b) => a - b).forEach(sN => {
-                const rows = seasons.get(sN).sort((a, b) => {
-                    const ea = parseEpisode(a.title), eb = parseEpisode(b.title);
-                    return (ea && eb) ? (ea.episode - eb.episode) : 0;
-                });
-                const seasonMeta = { id: `${sub.meta.id}:s${sN}`, name: `Stagione ${sN}`, cover: sub.meta.cover };
-                const seasonNode = buildDownloadFolderNode(seasonMeta, rows.length, "season");
-                subNode.body.appendChild(seasonNode.wrap);
-                rows.forEach(dl => seasonNode.body.appendChild(buildDownloadItem(dl, true)));
-            });
-            return;
-        }
-        if (sub.rows.length < 2) {
-            sub.rows.forEach(dl => parentBody.appendChild(buildDownloadItem(dl, true)));
-            return;
-        }
-        const subNode = buildDownloadFolderNode(sub.meta, sub.rows.length, "sub");
-        parentBody.appendChild(subNode.wrap);
-        sub.rows.forEach(dl => subNode.body.appendChild(buildDownloadItem(dl, true)));
-    };
+    if (_dlView.level !== "root" && !g.series.get(normName(_dlView.series))) _dlView = { level: "root" };
 
-    [...rootMap.entries()]
-        .sort((a, b) => ((a[1].meta && a[1].meta.name) || "").localeCompare((b[1].meta && b[1].meta.name) || ""))
-        .forEach(([rootKey, root]) => {
-            if (rootKey === "__noroot__" || !root.meta) {
-                [...root.subs.values()]
-                    .sort((a, b) => (a.meta.name || "").localeCompare(b.meta.name || ""))
-                    .forEach(sub => renderSub(sub, el.downloadsList));
-                return;
-            }
-            const rootCount = [...root.subs.values()].reduce((n, s) => n + s.rows.length, 0);
-            if (rootCount < 2) {
-                [...root.subs.values()].forEach(sub => renderSub(sub, el.downloadsList));
-                return;
-            }
-            const rootNode = buildDownloadFolderNode(root.meta, rootCount, "root");
-            el.downloadsList.appendChild(rootNode.wrap);
-            [...root.subs.values()]
-                .sort((a, b) => (a.meta.name || "").localeCompare(b.meta.name || ""))
-                .forEach(sub => renderSub(sub, rootNode.body));
+    if (_dlView.level === "root") {
+        g.movies.sort((a, b) => (a.title || "").localeCompare(b.title || "")).forEach(dl => row.appendChild(buildDownloadItem(dl)));
+        [...g.series.values()].sort((a, b) => a.name.localeCompare(b.name)).forEach(s => {
+            const sn = [...s.seasons.keys()].sort((a, b) => a - b);
+            const sub = sn.length > 1 ? `${sn.length} stagioni` : `${s.seasons.get(sn[0]).length} episodi`;
+            row.appendChild(_dlPosterTile(s.name, s.cover, sub, () => {
+                _dlView = (sn.length > 1) ? { level: "series", series: s.name } : { level: "season", series: s.name, season: sn[0] };
+                _dlReRender();
+            }, "SERIE"));
         });
+        if (!row.children.length) { el.downloadsList.appendChild(Object.assign(document.createElement("div"), { className: "no-downloads", textContent: "Nessun download ancora." })); return; }
+        el.downloadsList.appendChild(row);
+        return;
+    }
+    const s = g.series.get(normName(_dlView.series));
+    if (_dlView.level === "series") {
+        _dlBack("Tutti i download", () => { _dlView = { level: "root" }; _dlReRender(); });
+        el.downloadsList.appendChild(Object.assign(document.createElement("div"), { className: "dl-crumb-title", textContent: s.name }));
+        [...s.seasons.keys()].sort((a, b) => a - b).forEach(sN => {
+            row.appendChild(_dlPosterTile("Stagione " + sN, s.cover, s.seasons.get(sN).length + " episodi", () => { _dlView = { level: "season", series: s.name, season: sN }; _dlReRender(); }, "S" + sN));
+        });
+        el.downloadsList.appendChild(row);
+        return;
+    }
+    // livello stagione: episodi
+    const multi = [...s.seasons.keys()].length > 1;
+    _dlBack(multi ? s.name : "Tutti i download", () => { _dlView = multi ? { level: "series", series: s.name } : { level: "root" }; _dlReRender(); });
+    el.downloadsList.appendChild(Object.assign(document.createElement("div"), { className: "dl-crumb-title", textContent: s.name + " · Stagione " + _dlView.season }));
+    (s.seasons.get(_dlView.season) || []).slice().sort(byEp).forEach(dl => row.appendChild(buildDownloadItem(dl, true)));
+    el.downloadsList.appendChild(row);
 }
 
 // --- "Titoli offline": video salvati DENTRO l'app (IndexedDB), riproducibili

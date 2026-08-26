@@ -2062,7 +2062,7 @@ function renderDownloads(downloads) {
     activeRows.forEach(dl => el.downloadsList.appendChild(buildDownloadItem(dl)));
 
     const completedRows = allRows.filter(dl => !isActiveRow(dl));
-    _renderDownloadPosters(completedRows);
+    _renderDownloadPosters(completedRows, buildDownloadItem);
 }
 
 // --- Download a LOCANDINE: film diretti, serie -> stagioni -> episodi --------
@@ -2100,7 +2100,7 @@ function _dlBack(label, onClick) {
     b.addEventListener("click", onClick);
     el.downloadsList.appendChild(b);
 }
-function _renderDownloadPosters(rows) {
+function _renderDownloadPosters(rows, buildDownloadItem) {
     const g = _dlGroup(rows);
     const byEp = (a, b) => { const ea = parseEpisode(a.title), eb = parseEpisode(b.title); return (ea && eb) ? (ea.episode - eb.episode) : 0; };
     const row = document.createElement("div"); row.className = "disney-row dl-poster-row";

@@ -2183,3 +2183,6 @@ body.downloads-only #hero-billboard { display: none !important; }
 #continue-section { display: none; }
 #continue-section.has-items { display: block; }
 #continue-list .cw-time { color: var(--accent); font-weight: 600; }
+
+/* Rotazione locandine nella casella "Cerca/Scarica/Organizza" */
+.welcome-btn.wb-img.full { transition: background-image .6s ease, transform .12s, border-color .15s; }

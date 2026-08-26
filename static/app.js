@@ -4867,9 +4867,28 @@ function openWelcomeBanner() {
         '<button class="welcome-btn wb-img full" data-x="full" style="background-image:url(&apos;/welcome-browse.jpg&apos;)"><span class="wb-veil"></span><span class="wb-body"><span class="wb-t">Cerca · Scarica · Organizza</span><span class="wb-s">Attiva la VPN prima di procedere per non esporre il tuo IP.</span></span></button>' +
         '</div></div>';
     document.body.appendChild(ov);
-    const close = () => ov.remove();
+    const close = () => { if (ov._rot) clearInterval(ov._rot); ov.remove(); };
     ov.querySelector('[data-x="watch"]').addEventListener("click", () => { _setMode("watch"); close(); showToast("Modalita' visione: buona visione!", 4000); });
     ov.querySelector('[data-x="full"]').addEventListener("click", () => { _setMode("full"); close(); showToast("Ricorda: attiva la VPN prima di cercare/scaricare.", 6000); });
+    // Sfondo della casella "Cerca/Scarica/Organizza": rotazione dinamica di TUTTE
+    // le locandine presenti nella piattaforma (libreria + download).
+    const _startCoverRotation = () => {
+        if (ov._rot) return;
+        const covers = [];
+        (libraryCache || []).forEach(t => { if (t.cover) covers.push(t.cover); });
+        (localDownloads || []).forEach(d => { if (d.cover) covers.push(d.cover); });
+        const uniq = [...new Set(covers)];
+        if (uniq.length < 2) return;
+        const box = ov.querySelector(".full"); if (!box) return;
+        // mescola
+        for (let i = uniq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [uniq[i], uniq[j]] = [uniq[j], uniq[i]]; }
+        let i = 0;
+        const set = () => { box.style.backgroundImage = "url('" + String(uniq[i % uniq.length]).replace(/'/g, "%27") + "')"; };
+        set();
+        ov._rot = setInterval(() => { i++; set(); }, 2500);
+    };
+    _startCoverRotation();
+    setTimeout(_startCoverRotation, 1600);
 }
 
 function _vpnGuardBeforeOnline() {

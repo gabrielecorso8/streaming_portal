@@ -286,6 +286,8 @@ async function init() {
     try {
         const mc = document.querySelector(".main-container");
         if (mc && el.searchResultsSection) mc.insertBefore(el.searchResultsSection, mc.firstChild);
+        const cs = document.getElementById("continue-section"), ls = document.getElementById("library-section");
+        if (cs && ls && ls.parentNode) ls.parentNode.insertBefore(cs, ls);
     } catch (e) {}
     startDownloadsPolling();
     setupPlayerGestures();
@@ -2200,16 +2202,25 @@ function _removeProgress(key) {
 
 function _cwItems() {
     const store = (typeof _progressStore === "function") ? _progressStore() : {};
-    const items = [];
-    // Titoli su PC (serviti dal server, chiave dl:)
+    const items = [], seen = new Set();
+    const add = (o) => { const k = normName(o.name || ""); if (!k || seen.has(k)) return; seen.add(k); items.push(o); };
+    // Download completati (chiave dl:)
     (localFiles || []).forEach(f => {
         const rec = store["dl:" + f.id];
-        if (rec && rec.t > 15 && !_isWatched(f.id)) items.push({ key: "dl:" + f.id, id: f.id, name: f.name, cover: f.cover || "", dlkey: f.key || "", t: rec.t, kind: "pc" });
+        if (rec && rec.t > 15 && !_isWatched(f.id)) add({ key: "dl:" + f.id, id: f.id, name: f.name, cover: f.cover || "", dlkey: f.key || "", t: rec.t, kind: "pc" });
     });
-    // Titoli offline (salvati nell'app, chiave mob:) — con locandina e ripresa.
+    // Titoli guardati in streaming (chiave sc:) mappati alla libreria
+    Object.keys(store).forEach(k => {
+        if (k.indexOf("sc:") !== 0) return;
+        const rec = store[k]; if (!(rec && rec.t > 15)) return;
+        const tid = k.split(":")[1];
+        const item = (libraryCache || []).find(t => String(t.key || "").split("-")[0] === String(tid));
+        if (item) add({ key: k, id: item.key, name: item.name, cover: item.cover || "", t: rec.t, kind: "sc", libItem: item });
+    });
+    // Titoli offline (chiave mob:)
     _mobStore().forEach(m => {
         const rec = store["mob:" + m.id];
-        if (rec && rec.t > 15) items.push({ key: "mob:" + m.id, id: m.id, name: m.name, cover: m.cover || "", t: rec.t, kind: "mob" });
+        if (rec && rec.t > 15) add({ key: "mob:" + m.id, id: m.id, name: m.name, cover: m.cover || "", t: rec.t, kind: "mob" });
     });
     return items;
 }
@@ -2234,7 +2245,7 @@ function _cwRemoveMenu(item) {
 }
 
 function renderContinueWatching(force) {
-    if (!_isMobileView() || !el.downloadsList) return;
+    if (!document.getElementById("continue-list")) return;
     const items = _cwItems();
     const sig = items.map(i => i.key + ":" + Math.round(i.t)).join("|");
     const sec = document.getElementById("continue-section");
@@ -2259,6 +2270,7 @@ function renderContinueWatching(force) {
         card.querySelector(".cw-x").addEventListener("click", (e) => { e.stopPropagation(); _cwRemoveMenu(item); });
         card.addEventListener("click", () => {
             if (item.kind === "mob") playMobileTitle(item.id, item.name);
+            else if (item.kind === "sc") openFromLibrary(item.libItem);
             else playDownloaded(item.id, item.name, item.dlkey);
         });
         row.appendChild(card);
@@ -4166,6 +4178,7 @@ function renderLibrary(data) {
     // contenuti interni delle cartelle (la ricerca per cartella resta intatta).
     carouselizeLibrary();
     renderHeroBillboard();
+    renderContinueWatching();
 
     // Restore the scroll position so actions don't feel like a page reload.
     window.scrollTo({ top: scrollY });

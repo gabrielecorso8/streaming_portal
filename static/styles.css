@@ -2178,3 +2178,8 @@ body.downloads-only #hero-billboard { display: none !important; }
 /* frecce reorder ben visibili */
 #library-list .disney-row .library-item .library-actions .moveup-btn,
 #library-list .disney-row .library-item .library-actions .movedown-btn { font-size: 1.1rem; font-weight: 800; }
+
+/* "Riprendi a guardare" visibile anche su PC quando ci sono titoli */
+#continue-section { display: none; }
+#continue-section.has-items { display: block; }
+#continue-list .cw-time { color: var(--accent); font-weight: 600; }

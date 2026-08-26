@@ -283,7 +283,10 @@ async function init() {
     if (el.urlInput) el.urlInput.addEventListener("input", toggleClearBtn);
     toggleClearBtn();
 
-    // Start polling downloads
+    try {
+        const mc = document.querySelector(".main-container");
+        if (mc && el.searchResultsSection) mc.insertBefore(el.searchResultsSection, mc.firstChild);
+    } catch (e) {}
     startDownloadsPolling();
     setupPlayerGestures();
     setupDragScroll();
@@ -4817,13 +4820,13 @@ function openWelcomeBanner() {
         '<h2>Benvenuto su SC Portal</h2>' +
         '<p>Cosa vuoi fare adesso?</p>' +
         '<div class="welcome-choices">' +
-        '<button class="welcome-btn watch" data-x="watch"><span class="wb-emoji">🍿</span><span class="wb-t">Solo guardare</span><span class="wb-s">Riproduci i tuoi titoli. Nessuna VPN necessaria.</span></button>' +
-        '<button class="welcome-btn full" data-x="full"><span class="wb-emoji">🔎</span><span class="wb-t">Cerca · Scarica · Organizza</span><span class="wb-s">Attiva la VPN prima di procedere per non esporre il tuo IP.</span></button>' +
+        '<button class="welcome-btn wb-img watch" data-x="watch" style="background-image:url(&apos;/welcome-watch.jpg&apos;)"><span class="wb-veil"></span><span class="wb-body"><span class="wb-t">Solo guardare</span><span class="wb-s">Riproduci i tuoi titoli. Nessuna VPN necessaria.</span></span></button>' +
+        '<button class="welcome-btn wb-img full" data-x="full" style="background-image:url(&apos;/welcome-browse.jpg&apos;)"><span class="wb-veil"></span><span class="wb-body"><span class="wb-t">Cerca · Scarica · Organizza</span><span class="wb-s">Attiva la VPN prima di procedere per non esporre il tuo IP.</span></span></button>' +
         '</div></div>';
     document.body.appendChild(ov);
     const close = () => ov.remove();
-    ov.querySelector('[data-x="watch"]').addEventListener("click", () => { _setMode("watch"); close(); showToast("Modalita' visione: buona visione! 🍿", 4000); });
-    ov.querySelector('[data-x="full"]').addEventListener("click", () => { _setMode("full"); close(); showToast("Ricorda: attiva la VPN prima di cercare/scaricare. 🔒", 6000); });
+    ov.querySelector('[data-x="watch"]').addEventListener("click", () => { _setMode("watch"); close(); showToast("Modalita' visione: buona visione!", 4000); });
+    ov.querySelector('[data-x="full"]').addEventListener("click", () => { _setMode("full"); close(); showToast("Ricorda: attiva la VPN prima di cercare/scaricare.", 6000); });
 }
 
 function _vpnGuardBeforeOnline() {
@@ -4837,7 +4840,7 @@ function openVpnReminder() {
     ov.id = "vpn-reminder"; ov.className = "welcome-ov";
     ov.innerHTML =
         '<div class="welcome-card vpn">' +
-        '<div class="welcome-logo">🔒</div>' +
+        '<div class="welcome-logo"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#55bdff" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></div>' +
         '<h2>Stai per andare online</h2>' +
         '<p>Avevi scelto "solo guardare". Ora stai per <b>cercare o scaricare</b>: accendi la <b>VPN</b> per non esporre il tuo IP.</p>' +
         '<div class="welcome-choices vpn-row">' +

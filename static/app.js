@@ -4422,8 +4422,8 @@ function openFolderInline(anchorEl, folder) {
         });
         const addT = document.createElement("div");
         addT.className = "folder-card add-tile";
-        addT.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Aggiungi titoli</span></div></div>';
-        addT.addEventListener("click", (e) => { e.stopPropagation(); openAddTitlesToFolder(current); });
+        addT.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Aggiungi</span></div></div>';
+        addT.addEventListener("click", (e) => { e.stopPropagation(); openFolderAddModal(current, () => renderContent(curMode, false)); });
         row.appendChild(addT);
     };
     sortSel.addEventListener("change", () => renderContent(sortSel.value, true));
@@ -4808,6 +4808,23 @@ async function openAddTitlesToCategory(kind, label) {
     });
 }
 
+function openFolderAddModal(folder, afterAdd) {
+    const ov = document.createElement("div"); ov.className = "welcome-ov create-ov";
+    ov.innerHTML =
+        '<div class="welcome-card create-card cat-choose">' +
+        '<div class="create-head"><h2>Aggiungi in «' + escapeHtml(folder.name || "") + '»</h2><button class="cm-close" title="Chiudi">✕</button></div>' +
+        '<div class="cat-choose-body">' +
+        '<button class="choose-opt cc-titles"><span class="choose-ic">➕</span><span class="choose-tx"><b>Aggiungi titoli</b><small>Uno o più titoli in questa cartella</small></span></button>' +
+        '<button class="choose-opt cc-folder"><span class="choose-ic">📁</span><span class="choose-tx"><b>Crea una sottocartella</b><small>Una cartella dentro questa</small></span></button>' +
+        '</div></div>';
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.querySelector(".cm-close").addEventListener("click", close);
+    ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    ov.querySelector(".cc-titles").addEventListener("click", () => { close(); openAddTitlesToFolder(folder); });
+    ov.querySelector(".cc-folder").addEventListener("click", () => { close(); openCreateFolderModal(null, { parentId: folder.id, afterDone: afterAdd }); });
+}
+
 async function openAddTitlesToFolder(folder) {
     const ov = document.createElement("div"); ov.className = "welcome-ov create-ov";
     ov.innerHTML =
@@ -4874,12 +4891,13 @@ async function openAddTitlesToFolder(folder) {
     });
 }
 
-function openCreateFolderModal(kind) {
+function openCreateFolderModal(kind, opts) {
+    opts = opts || {};
     const ex = document.querySelector(".create-ov"); if (ex) ex.remove();
     const ov = document.createElement("div"); ov.className = "welcome-ov create-ov";
     ov.innerHTML =
         '<div class="welcome-card create-card">' +
-        '<div class="create-head"><h2>Nuova cartella</h2><button class="cm-close" title="Chiudi">✕</button></div>' +
+        '<div class="create-head"><h2>' + (opts.parentId ? "Nuova sottocartella" : "Nuova cartella") + '</h2><button class="cm-close" title="Chiudi">✕</button></div>' +
         '<div class="create-body">' +
         '<label class="cm-cover"><input type="file" accept="image/*" class="cm-cover-input" hidden><div class="cm-cover-box"><span>+ Locandina</span></div></label>' +
         '<div class="cm-fields">' +
@@ -4955,10 +4973,18 @@ function openCreateFolderModal(kind) {
             const keys = [...selLib.keys()];
             for (const it of selExt.values()) { try { if (await saveSearchItem(it) && it.id_and_slug) keys.push(it.id_and_slug); } catch (e) {} }
             if (keys.length) { try { await fetch("/api/folders/add-items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: created.id, keys }) }); } catch (e) {} }
+            if (opts.parentId) {
+                try {
+                    const pr = await fetch("/api/folders/parent", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: created.id, parent: opts.parentId }) });
+                    if (pr.ok) { const pl = await pr.json(); if (lastLibraryData) lastLibraryData.folders = (pl && pl.folders) || lastLibraryData.folders; }
+                } catch (e) {}
+            }
             if (typeof closedGroups !== "undefined" && kind) closedGroups.delete(kind);
-            await fetchLibrary();
-            showToast("Cartella creata: " + name + (keys.length ? ` (+${keys.length} titoli)` : ""));
+            showToast((opts.parentId ? "Sottocartella creata: " : "Cartella creata: ") + name + (keys.length ? ` (+${keys.length} titoli)` : ""));
             close();
+            if (typeof opts.afterDone === "function") opts.afterDone();
+            else await fetchLibrary();
+            return;
         } catch (e) { showToast("Errore"); }
     });
 }

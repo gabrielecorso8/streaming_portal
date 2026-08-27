@@ -4158,12 +4158,22 @@ function renderLibrary(data) {
         if (coverLbl) coverLbl.addEventListener("click", (e) => e.stopPropagation());
         const coverInput = head.querySelector(".cat-cover-input");
         if (coverInput) coverInput.addEventListener("change", (e) => { e.stopPropagation(); uploadFilterCover(kindKey, e.target); });
-        // Tile "+" in fondo alla categoria per aggiungere una nuova voce (cartella
-        // di questa tipologia) — invita a organizzare.
+        // Titoli aggiunti direttamente nella categoria (senza cartella)
+        (_catTitles()[kindKey] || []).forEach(key => {
+            const it = (libraryCache || []).find(x => x && x.key === key);
+            if (!it) return;
+            const tile = titleRow(it, { noReorder: true });
+            const rm = document.createElement("button");
+            rm.className = "cat-loose-remove"; rm.title = "Rimuovi dalla categoria"; rm.textContent = "✕";
+            rm.addEventListener("click", (e) => { e.stopPropagation(); _removeCatTitle(kindKey, key); if (lastLibraryData) renderLibrary(lastLibraryData); });
+            tile.appendChild(rm);
+            body.appendChild(tile);
+        });
+        // Tile "+" in fondo alla categoria: scegli se aggiungere titoli o una cartella.
         const addTile = document.createElement("div");
         addTile.className = "folder-card add-tile";
         addTile.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Aggiungi</span></div></div>';
-        addTile.addEventListener("click", () => openCreateFolderModal(kindKey));
+        addTile.addEventListener("click", () => openCategoryAddModal(kindKey, dispLabel));
         body.appendChild(addTile);
         wrap.appendChild(head);
         wrap.appendChild(body);
@@ -4490,6 +4500,9 @@ function normalizeCustomFilterName(value) {
     return String(value || "").trim().toLowerCase().replace(/\s+/g, " ").replace(/[<>]/g, "").slice(0, 40);
 }
 
+function _catTitles() { try { return JSON.parse(localStorage.getItem("scp_cattitles") || "{}"); } catch (e) { return {}; } }
+function _addCatTitles(kind, keys) { const m = _catTitles(); const cur = new Set(m[kind] || []); (keys || []).forEach(k => k && cur.add(k)); m[kind] = [...cur]; try { localStorage.setItem("scp_cattitles", JSON.stringify(m)); } catch (e) {} }
+function _removeCatTitle(kind, key) { const m = _catTitles(); m[kind] = (m[kind] || []).filter(k => k !== key); if (!m[kind].length) delete m[kind]; try { localStorage.setItem("scp_cattitles", JSON.stringify(m)); } catch (e) {} }
 function _catLabels() { try { return JSON.parse(localStorage.getItem("scp_catlabels") || "{}"); } catch (e) { return {}; } }
 function _catLabel(kind, def) { const m = _catLabels(); return (m[kind] != null && m[kind] !== "") ? m[kind] : def; }
 function _setCatLabel(kind, label) { const m = _catLabels(); if (label && label.trim()) m[kind] = label.trim(); else delete m[kind]; try { localStorage.setItem("scp_catlabels", JSON.stringify(m)); } catch (e) {} }
@@ -4638,6 +4651,85 @@ async function removeFolder(id, name) {
         const r = await fetch("/api/folders/remove", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
         if (r.ok) renderLibrary(await r.json());
     } catch (e) { showToast("Errore eliminazione cartella"); }
+}
+
+function openCategoryAddModal(kind, label) {
+    const ov = document.createElement("div"); ov.className = "welcome-ov create-ov";
+    ov.innerHTML =
+        '<div class="welcome-card create-card cat-choose">' +
+        '<div class="create-head"><h2>Aggiungi a «' + escapeHtml(label || kind) + '»</h2><button class="cm-close" title="Chiudi">✕</button></div>' +
+        '<div class="cat-choose-body">' +
+        '<button class="choose-opt cc-titles"><span class="choose-ic">➕</span><span class="choose-tx"><b>Aggiungi titoli</b><small>Uno o più titoli, direttamente nella categoria</small></span></button>' +
+        '<button class="choose-opt cc-folder"><span class="choose-ic">📁</span><span class="choose-tx"><b>Crea una cartella</b><small>Una sola cartella per volta</small></span></button>' +
+        '</div></div>';
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.querySelector(".cm-close").addEventListener("click", close);
+    ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    ov.querySelector(".cc-titles").addEventListener("click", () => { close(); openAddTitlesToCategory(kind, label); });
+    ov.querySelector(".cc-folder").addEventListener("click", () => { close(); openCreateFolderModal(kind); });
+}
+
+async function openAddTitlesToCategory(kind, label) {
+    const ov = document.createElement("div"); ov.className = "welcome-ov create-ov";
+    ov.innerHTML =
+        '<div class="welcome-card create-card">' +
+        '<div class="create-head"><h2>Aggiungi titoli a «' + escapeHtml(label || kind) + '»</h2><button class="cm-close" title="Chiudi">✕</button></div>' +
+        '<div class="cm-fields" style="width:100%">' +
+        '<input type="search" class="cm-search" placeholder="Cerca titoli da aggiungere (libreria e non)…" autocomplete="off">' +
+        '<div class="cm-results"></div></div>' +
+        '<div class="create-actions"><span class="cm-selcount"></span><button class="secondary-btn cm-cancel">Annulla</button><button class="primary-btn cm-add">Aggiungi</button></div>' +
+        '</div>';
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.querySelector(".cm-close").addEventListener("click", close);
+    ov.querySelector(".cm-cancel").addEventListener("click", close);
+    ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    const selLib = new Map(), selExt = new Map(); let cmExt = [];
+    const updCount = () => { const n = selLib.size + selExt.size; ov.querySelector(".cm-selcount").textContent = n ? (n + " selezionati") : ""; };
+    const resultsEl = ov.querySelector(".cm-results");
+    const already = new Set(_catTitles()[kind] || []);
+    const renderRes = (libM, extM) => {
+        let html = "";
+        if (libM.length) html += '<div class="cm-sec">Dalla libreria</div>' + libM.map(it =>
+            `<label class="cm-item"><input type="checkbox" data-src="lib" data-key="${escapeHtml(it.key)}" ${selLib.has(it.key) ? "checked" : ""}>${it.cover ? `<img src="${escapeHtml(it.cover)}">` : '<span class="cm-ph"></span>'}<span class="cm-nm">${escapeHtml(it.name || "")}</span></label>`).join("");
+        if (extM.length) html += '<div class="cm-sec">Nuovi titoli</div>' + extM.map(it =>
+            `<label class="cm-item"><input type="checkbox" data-src="ext" data-id="${escapeHtml(it.id_and_slug || "")}" ${selExt.has(it.id_and_slug) ? "checked" : ""}>${it.cover ? `<img src="${escapeHtml(it.cover)}">` : '<span class="cm-ph"></span>'}<span class="cm-nm">${escapeHtml(it.name || "")}</span></label>`).join("");
+        resultsEl.innerHTML = html || '<div class="cm-empty">Scrivi per cercare…</div>';
+        resultsEl.querySelectorAll("input[type=checkbox]").forEach(cb => cb.addEventListener("change", () => {
+            if (cb.dataset.src === "lib") { const it = (libraryCache || []).find(x => x.key === cb.dataset.key); if (cb.checked && it) selLib.set(it.key, it); else selLib.delete(cb.dataset.key); }
+            else { const it = cmExt.find(x => x.id_and_slug === cb.dataset.id); if (cb.checked && it) selExt.set(it.id_and_slug, it); else selExt.delete(cb.dataset.id); }
+            updCount();
+        }));
+    };
+    let tmr;
+    const doSearch = () => {
+        const q = ov.querySelector(".cm-search").value.trim().toLowerCase();
+        const libM = (libraryCache || []).filter(it => (it.name || "").toLowerCase().includes(q) && !already.has(it.key)).slice(0, 40);
+        renderRes(libM, q ? cmExt : []);
+        clearTimeout(tmr); if (!q) { cmExt = []; return; }
+        tmr = setTimeout(async () => {
+            try {
+                const r = await fetch("/api/search?q=" + encodeURIComponent(q));
+                const ext = r.ok ? await r.json() : [];
+                const libNames = new Set((libraryCache || []).map(x => normName(x.name)));
+                cmExt = (ext || []).filter(x => x.id_and_slug && !libNames.has(normName(x.name))).slice(0, 40);
+                renderRes(libM, cmExt);
+            } catch (e) {}
+        }, 400);
+    };
+    ov.querySelector(".cm-search").addEventListener("input", doSearch);
+    doSearch();
+    ov.querySelector(".cm-add").addEventListener("click", async () => {
+        const keys = [...selLib.keys()];
+        let needRefresh = false;
+        for (const it of selExt.values()) { try { if (await saveSearchItem(it) && it.id_and_slug) { keys.push(it.id_and_slug); needRefresh = true; } } catch (e) {} }
+        if (!keys.length) { showToast("Nessun titolo selezionato"); return; }
+        _addCatTitles(kind, keys);
+        showToast("Aggiunti " + keys.length + " titoli");
+        close();
+        if (needRefresh) await fetchLibrary(); else if (lastLibraryData) renderLibrary(lastLibraryData);
+    });
 }
 
 async function openAddTitlesToFolder(folder) {

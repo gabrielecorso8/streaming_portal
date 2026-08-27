@@ -2453,3 +2453,21 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
     border: 1px solid var(--border-color); border-radius: 8px; }
 .drill-titlebar .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
 .drill-titlebar .folder-inline-sort { max-width: 180px; margin: 0; }
+
+/* Modale scelta: aggiungi titoli oppure una cartella */
+.create-card.cat-choose { max-width: 460px; }
+.cat-choose-body { display: flex; flex-direction: column; gap: 12px; padding: 6px 2px 4px; }
+.choose-opt { display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 16px;
+    background: rgba(120,175,255,.07); border: 1px solid var(--border-color); border-radius: 14px; cursor: pointer;
+    color: var(--text-primary); transition: border-color .15s, transform .12s, background .15s; }
+.choose-opt:hover { border-color: var(--accent); background: rgba(34,166,255,.12); transform: translateY(-1px); }
+.choose-opt .choose-ic { font-size: 1.6rem; line-height: 1; }
+.choose-opt .choose-tx { display: flex; flex-direction: column; gap: 2px; }
+.choose-opt .choose-tx b { font-size: 1.02rem; }
+.choose-opt .choose-tx small { color: var(--text-secondary); font-size: .82rem; }
+/* Titolo sciolto in categoria: pulsante rimuovi */
+.library-item .cat-loose-remove { position: absolute; top: 6px; left: 6px; z-index: 6; width: 22px; height: 22px;
+    border-radius: 50%; border: none; background: rgba(8,14,28,.82); color: #fff; font-size: .8rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s; }
+.library-item:hover .cat-loose-remove { opacity: 1; }
+.library-item .cat-loose-remove:hover { background: #d24b4b; }

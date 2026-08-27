@@ -287,10 +287,12 @@ async function init() {
     try {
         const mc = document.querySelector(".main-container");
         if (mc && el.searchResultsSection) mc.insertBefore(el.searchResultsSection, mc.firstChild);
-        const cs = document.getElementById("continue-section"), ls = document.getElementById("library-section");
-        if (cs && ls && ls.parentNode) ls.parentNode.insertBefore(cs, ls);
-        const ds = document.getElementById("downloads-section"), hb = document.getElementById("hero-billboard");
+        const hb = document.getElementById("hero-billboard");
+        const ds = document.getElementById("downloads-section");
+        const cs = document.getElementById("continue-section");
+        // Ordine: hero -> Riprendi a guardare -> Titoli scaricati -> Libreria
         if (ds && hb && hb.parentNode) hb.parentNode.insertBefore(ds, hb.nextSibling);
+        if (cs && ds && ds.parentNode) ds.parentNode.insertBefore(cs, ds);
     } catch (e) {}
     startDownloadsPolling();
     setupPlayerGestures();
@@ -4299,7 +4301,7 @@ function openFolderInline(anchorEl, folder) {
     // Filtri/ordinamento del contenuto della cartella
     const sortSel = document.createElement("select");
     sortSel.className = "folder-inline-sort custom-select";
-    sortSel.innerHTML = '<option value="score">Rilevanza (voto)</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option><option value="custom">Personalizzato</option>';
+    sortSel.innerHTML = '<option value="score">Rilevanza</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option><option value="custom">Personalizzato</option>';
     sortSel.addEventListener("click", (e) => e.stopPropagation());
     row.appendChild(sortSel);
 
@@ -4317,13 +4319,18 @@ function openFolderInline(anchorEl, folder) {
         };
         subs.forEach(sf => add(buildFolderCard(sf, false)));
         let items = (folder.items || []).map(it => (libraryCache || []).find(x => x.key === it.key) || it);
-        if (mode === "score") items.sort((a, b) => num(b.score) - num(a.score));
+        if (mode === "score") {
+            const anyScore = items.some(x => x && x.score != null && String(x.score) !== "");
+            if (anyScore) items.sort((a, b) => num(b.score) - num(a.score));
+            else items.sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "it"));
+        }
         else if (mode === "recent") items.sort((a, b) => String(b.release_date || "").localeCompare(String(a.release_date || "")));
         else if (mode === "oldest") items.sort((a, b) => String(a.release_date || "").localeCompare(String(b.release_date || "")));
         items.forEach(it => add(titleRow(it, { noReorder: true })));
         if (!subs.length && !items.length) { const em = document.createElement("span"); em.className = "cm-empty"; em.textContent = "Cartella vuota"; row.appendChild(em); contentNodes.push(em); }
     };
     sortSel.addEventListener("change", () => renderContent(sortSel.value, true));
+    sortSel.addEventListener("input", () => renderContent(sortSel.value, true));
     renderContent("score", true);
 
     row.dataset.drilled = folder.id;

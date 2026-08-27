@@ -2398,3 +2398,11 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 #continue-list, #downloads-list, #offline-list, #library-list { margin-top: 0 !important; }
 #continue-list .cw-row, #offline-list .cw-row, #downloads-list .disney-row,
 #library-list .disney-row { padding: 4px 4px 6px !important; }
+
+/* ═══ Azzera i gap interni delle sezioni (erano gap:1.25rem/1rem) ═══ */
+#continue-section, #downloads-section, #offline-section, #library-section { gap: 0 !important; }
+#downloads-list, #continue-list, #offline-list { gap: 0 !important; }
+#library-section .tool-body, #downloads-section .tool-body { gap: 0 !important; }
+/* tutte le righe: solo lo spazio del titolo, poi quasi attaccate */
+#continue-section .downloads-header, #downloads-section .downloads-header,
+#offline-section .downloads-header { margin: 0 !important; padding: 0 !important; }

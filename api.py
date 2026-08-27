@@ -1985,6 +1985,23 @@ class FolderItems(BaseModel):
     keys: List[str] = []
 
 
+class FolderItemKey(BaseModel):
+    id: str
+    key: str
+
+
+@app.post("/api/folders/remove-item")
+def remove_item_from_folder(payload: FolderItemKey):
+    """Rimuove un singolo titolo SOLO da questa cartella (resta in libreria e in
+    eventuali altre cartelle)."""
+    f = next((x for x in _folders() if x["id"] == payload.id), None)
+    if not f:
+        raise HTTPException(status_code=404, detail="Cartella non trovata")
+    f["items"] = [k for k in f.get("items", []) if k != payload.key]
+    save_settings(SETTINGS)
+    return _folders_payload()
+
+
 @app.post("/api/folders/add-items")
 def add_items_to_folder(payload: FolderItems):
     """Add several library titles to a folder at once (multi-select). Existing

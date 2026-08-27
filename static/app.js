@@ -4042,6 +4042,10 @@ function renderLibrary(data) {
                 await handleFolderAdd(f.id, data);
             }
         });
+        const rmF = document.createElement("button");
+        rmF.className = "tile-remove"; rmF.title = "Elimina cartella"; rmF.textContent = "✕";
+        rmF.addEventListener("click", (e) => { e.stopPropagation(); removeFolder(f.id, f.name); });
+        card.appendChild(rmF);
         return card;
     };
 
@@ -4345,28 +4349,60 @@ function openFolderInline(anchorEl, folder) {
     const restore = () => { header.remove(); row.innerHTML = ""; saved.forEach(n => row.appendChild(n)); delete row.dataset.drilled; };
     back.addEventListener("click", (e) => { e.stopPropagation(); restore(); });
 
-    const data = lastLibraryData || {};
-    const folders = data.folders || [];
-    const subs = folders.filter(fo => (fo.parent || "") === folder.id);
     const num = (v) => { const n = parseFloat(v); return isNaN(n) ? -1 : n; };
+    const dOf = (x) => String((x && x.release_date) || "");
+    const eOf = (x) => { const e = parseEpisode((x && x.name) || ""); return e ? (e.season * 1000 + e.episode) : 999999; };
+    const resolveItem = (it) => (libraryCache || []).find(z => z.key === ((it && it.key) || it)) || (typeof it === "object" ? it : null);
+    // Data di riferimento di una sottocartella = quella del suo titolo PIU' VECCHIO.
+    const folderOldest = (sf) => {
+        let bestD = "", bestE = 999999, seen = false;
+        (sf.items || []).forEach(it => {
+            const o = resolveItem(it); if (!o) return;
+            const d = dOf(o), e = eOf(o);
+            if (!seen || d.localeCompare(bestD) < 0 || (d === bestD && e < bestE)) { bestD = d; bestE = e; seen = true; }
+        });
+        return { d: bestD, e: bestE };
+    };
+    let curMode = "score";
+    const removeFolderInline = async (sf) => {
+        if (!confirm(`Eliminare la sottocartella "${sf.name || ""}"? I titoli restano in libreria.`)) return;
+        try {
+            const r = await fetch("/api/folders/remove", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: sf.id }) });
+            if (r.ok) { const pl = await r.json(); if (lastLibraryData) lastLibraryData.folders = (pl && pl.folders) || lastLibraryData.folders; renderContent(curMode, false); }
+        } catch (e) { showToast("Errore"); }
+    };
+    const removeTitleInline = async (o) => {
+        try {
+            const r = await fetch("/api/folders/remove-item", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: folder.id, key: o.key }) });
+            if (r.ok) { const pl = await r.json(); if (lastLibraryData) lastLibraryData.folders = (pl && pl.folders) || lastLibraryData.folders; }
+            folder.items = (folder.items || []).filter(it => ((it && it.key) || it) !== o.key);
+            renderContent(curMode, false);
+        } catch (e) { showToast("Errore"); }
+    };
+    const removeBtn = (title, fn) => { const b = document.createElement("button"); b.className = "tile-remove"; b.title = title; b.textContent = "✕"; b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); return b; };
     const renderContent = (mode, animate) => {
+        curMode = mode;
         row.innerHTML = "";
         let idx = 0;
         const add = (el2) => { if (!el2) return; if (animate) el2.style.animation = "drill-fade .4s " + Math.min(idx * 0.035, 0.6) + "s ease both"; row.appendChild(el2); idx++; };
-        subs.forEach(sf => { try { add(_subFolderTile(sf)); } catch (e) {} });
-        let items = (folder.items || []).map(it => (libraryCache || []).find(x => x.key === (it && it.key)) || it).filter(Boolean);
-        if (mode === "score") {
-            const anyScore = items.some(x => x && x.score != null && String(x.score) !== "");
-            if (anyScore) items.sort((a, b) => num(b.score) - num(a.score));
-            else items.sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "it"));
-        } else if (mode === "recent" || mode === "oldest") {
-            const dOf = (x) => String(x.release_date || "");
-            const eOf = (x) => { const e = parseEpisode(x.name || ""); return e ? (e.season * 1000 + e.episode) : -1; };
-            const nOf = (x) => String(x.name || "");
-            if (mode === "recent") items.sort((a, b) => dOf(b).localeCompare(dOf(a)) || (eOf(b) - eOf(a)) || nOf(a).localeCompare(nOf(b)));
-            else items.sort((a, b) => dOf(a).localeCompare(dOf(b)) || (eOf(a) - eOf(b)) || nOf(a).localeCompare(nOf(b)));
-        }
-        items.forEach(it => { try { add(titleRow(it, { noReorder: true })); } catch (e) {} });
+        const folders = (lastLibraryData && lastLibraryData.folders) || [];
+        const subs = folders.filter(fo => (fo.parent || "") === folder.id);
+        const items = (folder.items || []).map(resolveItem).filter(Boolean);
+        // Lista unificata: sottocartelle + titoli, ordinati INSIEME dallo stesso filtro.
+        let entries = [];
+        subs.forEach(sf => { const od = folderOldest(sf); entries.push({ kind: "folder", sf, name: String(sf.name || ""), d: od.d, e: od.e, score: -1 }); });
+        items.forEach(o => { entries.push({ kind: "title", o, name: String(o.name || ""), d: dOf(o), e: eOf(o), score: num(o.score) }); });
+        const byName = (a, b) => a.name.localeCompare(b.name, "it");
+        if (mode === "score") entries.sort((a, b) => (b.score - a.score) || byName(a, b));
+        else if (mode === "recent") entries.sort((a, b) => b.d.localeCompare(a.d) || (b.e - a.e) || byName(a, b));
+        else if (mode === "oldest") entries.sort((a, b) => a.d.localeCompare(b.d) || (a.e - b.e) || byName(a, b));
+        // "custom": nessun ordinamento (sottocartelle poi titoli, ordine originale)
+        entries.forEach(en => {
+            try {
+                if (en.kind === "folder") { const t = _subFolderTile(en.sf); t.appendChild(removeBtn("Elimina cartella", () => removeFolderInline(en.sf))); add(t); }
+                else { const t = titleRow(en.o, { noReorder: true }); t.appendChild(removeBtn("Rimuovi dalla cartella", () => removeTitleInline(en.o))); add(t); }
+            } catch (e) {}
+        });
         const addT = document.createElement("div");
         addT.className = "folder-card add-tile";
         addT.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Aggiungi titoli</span></div></div>';

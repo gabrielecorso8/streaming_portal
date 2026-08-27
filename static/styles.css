@@ -2471,3 +2471,11 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
     display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s; }
 .library-item:hover .cat-loose-remove { opacity: 1; }
 .library-item .cat-loose-remove:hover { background: #d24b4b; }
+
+/* Pulsante rimuovi condiviso su cartelle, sottocartelle e titoli (hover) */
+.folder-card { position: relative; }
+.tile-remove { position: absolute; top: 6px; left: 6px; z-index: 8; width: 22px; height: 22px;
+    border-radius: 50%; border: none; background: rgba(8,14,28,.85); color: #fff; font-size: .78rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s, background .15s; }
+.folder-card:hover .tile-remove, .library-item:hover .tile-remove { opacity: 1; }
+.tile-remove:hover { background: #d24b4b; }

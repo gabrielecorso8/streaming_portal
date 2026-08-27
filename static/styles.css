@@ -2445,3 +2445,11 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 #library-list .disney-row .folder-card .folder-actions .folderfav-btn { margin-left: auto; }
 /* risultati ricerca: solo stella */
 #search-results .media-card .media-actions > *:not(.fav-q-btn) { display: none !important; }
+
+/* Header cartella aperta: titolo + rinomina + locandina + filtro in riga */
+.drill-titlebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.drill-titlebar .drill-title { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); }
+.drill-titlebar .icon-btn { padding: 3px 7px; font-size: .95rem; background: rgba(120,175,255,.10);
+    border: 1px solid var(--border-color); border-radius: 8px; }
+.drill-titlebar .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+.drill-titlebar .folder-inline-sort { max-width: 180px; margin: 0; }

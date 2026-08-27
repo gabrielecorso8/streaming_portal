@@ -4283,6 +4283,19 @@ function _hbBuildList() {
     if (out.length < 2) (libraryCache || []).forEach(t => { if (out.length < 8) push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); });
     return out.slice(0, 12);
 }
+function _subFolderTile(sf) {
+    const card = document.createElement("div");
+    card.className = "folder-card";
+    const cover = sf.cover ? escapeHtml(sf.cover) : "";
+    card.innerHTML =
+        '<div class="folder-head">' +
+        (cover ? `<div class="folder-cover" style="background-image:url('${cover}')"></div>` : '<div class="folder-cover placeholder"></div>') +
+        `<div class="folder-meta"><span class="folder-name">${escapeHtml(sf.name || "")}</span>` +
+        `<span class="folder-count">${(sf.items || []).length} titoli</span></div></div>`;
+    card.querySelector(".folder-head").addEventListener("click", (e) => { e.stopPropagation(); openFolderInline(card, sf); });
+    return card;
+}
+
 function openFolderInline(anchorEl, folder) {
     const row = anchorEl.closest(".disney-row");
     if (!row) { _libView = { folderId: folder.id }; renderLibrary(lastLibraryData); return; }
@@ -4297,7 +4310,27 @@ function openFolderInline(anchorEl, folder) {
     const title = document.createElement("div"); title.className = "drill-title"; title.textContent = folder.name;
     const sortSel = document.createElement("select"); sortSel.className = "folder-inline-sort custom-select";
     sortSel.innerHTML = '<option value="score">Rilevanza</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option><option value="custom">Personalizzato</option>';
-    header.appendChild(back); header.appendChild(title); header.appendChild(sortSel);
+    const titleRowEl = document.createElement("div");
+    titleRowEl.className = "drill-titlebar";
+    const editBtn = document.createElement("button"); editBtn.className = "icon-btn drill-edit"; editBtn.title = "Rinomina"; editBtn.textContent = "✎";
+    const coverLbl = document.createElement("label"); coverLbl.className = "icon-btn drill-cover"; coverLbl.title = "Cambia locandina"; coverLbl.innerHTML = '🖼️<input type="file" accept="image/*" hidden>';
+    editBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const nm = prompt("Nome della cartella:", folder.name);
+        if (nm === null || !nm.trim()) return;
+        try {
+            await fetch("/api/folders/rename", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: folder.id, name: nm.trim() }) });
+            folder.name = nm.trim(); title.textContent = nm.trim();
+            const lf = (lastLibraryData && lastLibraryData.folders || []).find(x => x.id === folder.id); if (lf) lf.name = nm.trim();
+            showToast("Rinominata");
+        } catch (er) { showToast("Errore"); }
+    });
+    coverLbl.querySelector("input").addEventListener("change", async (e) => {
+        e.stopPropagation();
+        try { await uploadFolderCover(folder.id, e.target); showToast("Locandina aggiornata"); } catch (er) {}
+    });
+    titleRowEl.appendChild(title); titleRowEl.appendChild(editBtn); titleRowEl.appendChild(coverLbl); titleRowEl.appendChild(sortSel);
+    header.appendChild(back); header.appendChild(titleRowEl);
     wrap.insertBefore(header, row);
     const restore = () => { header.remove(); row.innerHTML = ""; saved.forEach(n => row.appendChild(n)); delete row.dataset.drilled; };
     back.addEventListener("click", (e) => { e.stopPropagation(); restore(); });
@@ -4310,7 +4343,7 @@ function openFolderInline(anchorEl, folder) {
         row.innerHTML = "";
         let idx = 0;
         const add = (el2) => { if (!el2) return; if (animate) el2.style.animation = "drill-fade .4s " + Math.min(idx * 0.035, 0.6) + "s ease both"; row.appendChild(el2); idx++; };
-        subs.forEach(sf => { try { add(buildFolderCard(sf, false)); } catch (e) {} });
+        subs.forEach(sf => { try { add(_subFolderTile(sf)); } catch (e) {} });
         let items = (folder.items || []).map(it => (libraryCache || []).find(x => x.key === (it && it.key)) || it).filter(Boolean);
         if (mode === "score") {
             const anyScore = items.some(x => x && x.score != null && String(x.score) !== "");

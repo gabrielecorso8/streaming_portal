@@ -4303,7 +4303,7 @@ function _hbBuildList() {
     if (out.length < 2) (libraryCache || []).forEach(t => { if (out.length < 8) push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); });
     return out.slice(0, 12);
 }
-function _subFolderTile(sf) {
+function _subFolderTile(sf, onOpen) {
     const card = document.createElement("div");
     card.className = "folder-card";
     const cover = sf.cover ? escapeHtml(sf.cover) : "";
@@ -4312,7 +4312,7 @@ function _subFolderTile(sf) {
         (cover ? `<div class="folder-cover" style="background-image:url('${cover}')"></div>` : '<div class="folder-cover placeholder"></div>') +
         `<div class="folder-meta"><span class="folder-name">${escapeHtml(sf.name || "")}</span>` +
         `<span class="folder-count">${(sf.items || []).length} titoli</span></div></div>`;
-    card.querySelector(".folder-head").addEventListener("click", (e) => { e.stopPropagation(); openFolderInline(card, sf); });
+    card.querySelector(".folder-head").addEventListener("click", (e) => { e.stopPropagation(); if (typeof onOpen === "function") onOpen(); else openFolderInline(card, sf); });
     return card;
 }
 
@@ -4322,6 +4322,10 @@ function openFolderInline(anchorEl, folder) {
     const wrap = row.closest(".row-wrap") || row.parentNode;
     if (wrap.querySelector(".drill-header")) return;
     const saved = Array.from(row.childNodes);
+
+    // Cartella corrente + stack per la navigazione annidata (sottocartelle).
+    let current = folder;
+    const stack = [];
 
     // Header VERTICALE sopra la riga: indietro (in alto), titolo, poi il filtro sotto.
     const header = document.createElement("div"); header.className = "drill-header";
@@ -4336,24 +4340,31 @@ function openFolderInline(anchorEl, folder) {
     const coverLbl = document.createElement("label"); coverLbl.className = "icon-btn drill-cover"; coverLbl.title = "Cambia locandina"; coverLbl.innerHTML = '🖼️<input type="file" accept="image/*" hidden>';
     editBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        const nm = prompt("Nome della cartella:", folder.name);
+        const nm = prompt("Nome della cartella:", current.name);
         if (nm === null || !nm.trim()) return;
         try {
-            await fetch("/api/folders/rename", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: folder.id, name: nm.trim() }) });
-            folder.name = nm.trim(); title.textContent = nm.trim();
-            const lf = (lastLibraryData && lastLibraryData.folders || []).find(x => x.id === folder.id); if (lf) lf.name = nm.trim();
+            await fetch("/api/folders/rename", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: current.id, name: nm.trim() }) });
+            current.name = nm.trim(); title.textContent = nm.trim();
+            const lf = (lastLibraryData && lastLibraryData.folders || []).find(x => x.id === current.id); if (lf) lf.name = nm.trim();
             showToast("Rinominata");
         } catch (er) { showToast("Errore"); }
     });
     coverLbl.querySelector("input").addEventListener("change", async (e) => {
         e.stopPropagation();
-        try { await uploadFolderCover(folder.id, e.target); showToast("Locandina aggiornata"); } catch (er) {}
+        try { await uploadFolderCover(current.id, e.target); showToast("Locandina aggiornata"); } catch (er) {}
     });
     titleRowEl.appendChild(title); titleRowEl.appendChild(editBtn); titleRowEl.appendChild(coverLbl); titleRowEl.appendChild(sortSel);
     header.appendChild(back); header.appendChild(titleRowEl);
     wrap.insertBefore(header, row);
     const restore = () => { header.remove(); row.innerHTML = ""; saved.forEach(n => row.appendChild(n)); delete row.dataset.drilled; };
-    back.addEventListener("click", (e) => { e.stopPropagation(); restore(); });
+    // Indietro: se dentro una sottocartella torna al livello superiore, altrimenti chiude il drill.
+    back.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (stack.length) { current = stack.pop(); title.textContent = current.name; sortSel.value = "score"; renderContent("score", true); }
+        else restore();
+    });
+    // Entra in una sottocartella (in-place, senza chiudere il drill).
+    const openSub = (sf) => { stack.push(current); current = sf; title.textContent = sf.name; sortSel.value = "score"; renderContent("score", true); row.scrollLeft = 0; };
 
     const num = (v) => { const n = parseFloat(v); return isNaN(n) ? -1 : n; };
     const dOf = (x) => String((x && x.release_date) || "");
@@ -4379,9 +4390,9 @@ function openFolderInline(anchorEl, folder) {
     };
     const removeTitleInline = async (o) => {
         try {
-            const r = await fetch("/api/folders/remove-item", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: folder.id, key: o.key }) });
+            const r = await fetch("/api/folders/remove-item", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: current.id, key: o.key }) });
             if (r.ok) { const pl = await r.json(); if (lastLibraryData) lastLibraryData.folders = (pl && pl.folders) || lastLibraryData.folders; }
-            folder.items = (folder.items || []).filter(it => ((it && it.key) || it) !== o.key);
+            current.items = (current.items || []).filter(it => ((it && it.key) || it) !== o.key);
             renderContent(curMode, false);
         } catch (e) { showToast("Errore"); }
     };
@@ -4392,8 +4403,8 @@ function openFolderInline(anchorEl, folder) {
         let idx = 0;
         const add = (el2) => { if (!el2) return; if (animate) el2.style.animation = "drill-fade .4s " + Math.min(idx * 0.035, 0.6) + "s ease both"; row.appendChild(el2); idx++; };
         const folders = (lastLibraryData && lastLibraryData.folders) || [];
-        const subs = folders.filter(fo => (fo.parent || "") === folder.id);
-        const items = (folder.items || []).map(resolveItem).filter(Boolean);
+        const subs = folders.filter(fo => (fo.parent || "") === current.id);
+        const items = (current.items || []).map(resolveItem).filter(Boolean);
         // Lista unificata: sottocartelle + titoli, ordinati INSIEME dallo stesso filtro.
         let entries = [];
         subs.forEach(sf => { const od = folderOldest(sf); entries.push({ kind: "folder", sf, name: String(sf.name || ""), d: od.d, e: od.e, score: -1 }); });
@@ -4405,14 +4416,14 @@ function openFolderInline(anchorEl, folder) {
         // "custom": nessun ordinamento (sottocartelle poi titoli, ordine originale)
         entries.forEach(en => {
             try {
-                if (en.kind === "folder") { const t = _subFolderTile(en.sf); t.appendChild(removeBtn("Elimina cartella", () => removeFolderInline(en.sf))); add(t); }
+                if (en.kind === "folder") { const t = _subFolderTile(en.sf, () => openSub(en.sf)); t.appendChild(removeBtn("Elimina cartella", () => removeFolderInline(en.sf))); add(t); }
                 else { const t = titleRow(en.o, { noReorder: true }); t.appendChild(removeBtn("Rimuovi dalla cartella", () => removeTitleInline(en.o))); add(t); }
             } catch (e) {}
         });
         const addT = document.createElement("div");
         addT.className = "folder-card add-tile";
         addT.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Aggiungi titoli</span></div></div>';
-        addT.addEventListener("click", (e) => { e.stopPropagation(); openAddTitlesToFolder(folder); });
+        addT.addEventListener("click", (e) => { e.stopPropagation(); openAddTitlesToFolder(current); });
         row.appendChild(addT);
     };
     sortSel.addEventListener("change", () => renderContent(sortSel.value, true));

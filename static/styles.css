@@ -2237,3 +2237,32 @@ body.downloads-only #hero-billboard { display: none !important; }
 #library-list .disney-row .folder-card .folder-kind-badge { display: none !important; }
 /* corpo inline delle cartelle non serve piu' (apertura in orizzontale) */
 #library-list .disney-row .folder-card .folder-domains { display: none !important; }
+
+/* --- Modale "+" : crea cartella (nome+immagine) + aggiungi titoli --- */
+.create-card { max-width: 640px; text-align: left; padding: 22px; }
+.create-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.create-head h2 { margin: 0; font-size: 1.4rem; }
+.cm-close { background: none; border: none; color: var(--text-secondary); font-size: 1.1rem; cursor: pointer; }
+.create-body { display: flex; gap: 16px; }
+.cm-cover { flex: 0 0 auto; cursor: pointer; }
+.cm-cover-box { width: 122px; aspect-ratio: 2/3; border-radius: 12px;
+    border: 2px dashed rgba(120,175,255,.35); background: rgba(120,175,255,.05);
+    background-size: cover; background-position: center; display: flex; align-items: center;
+    justify-content: center; color: rgba(150,190,255,.75); font-size: .78rem; text-align: center; transition: border-color .15s; }
+.cm-cover:hover .cm-cover-box { border-color: var(--accent); }
+.cm-cover-box.has { border-style: solid; color: transparent; }
+.cm-fields { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.cm-name, .cm-search { width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: 10px;
+    border: 1px solid var(--border-color); background: rgba(255,255,255,.04); color: var(--text-primary); font-size: .95rem; outline: none; }
+.cm-name:focus, .cm-search:focus { border-color: var(--accent); }
+.cm-results { max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px; padding: 6px; }
+.cm-sec { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); padding: 8px 4px 3px; }
+.cm-item { display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 8px; cursor: pointer; }
+.cm-item:hover { background: rgba(120,175,255,.08); }
+.cm-item img, .cm-item .cm-ph { width: 34px; height: 50px; object-fit: cover; border-radius: 5px; background: rgba(255,255,255,.07); flex: 0 0 auto; }
+.cm-item .cm-nm { font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-item input { width: 18px; height: 18px; accent-color: var(--accent); flex: 0 0 auto; }
+.cm-empty { color: var(--text-muted); padding: 20px; text-align: center; }
+.create-actions { display: flex; align-items: center; gap: 12px; justify-content: flex-end; margin-top: 16px; }
+.cm-selcount { margin-right: auto; color: var(--accent); font-weight: 600; font-size: .85rem; }
+@media (max-width: 560px) { .create-body { flex-direction: column; } .cm-cover-box { width: 100px; } }

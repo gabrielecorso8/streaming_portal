@@ -4281,58 +4281,44 @@ function _hbBuildList() {
 function openFolderInline(anchorEl, folder) {
     const row = anchorEl.closest(".disney-row");
     if (!row) { _libView = { folderId: folder.id }; renderLibrary(lastLibraryData); return; }
-    // Salva i nodi correnti della riga (con i loro listener) per il "indietro".
+    const wrap = row.closest(".row-wrap") || row.parentNode;
+    if (wrap.querySelector(".drill-header")) return;
     const saved = Array.from(row.childNodes);
-    row.innerHTML = "";
+
+    // Header VERTICALE sopra la riga: indietro (in alto), titolo, poi il filtro sotto.
+    const header = document.createElement("div"); header.className = "drill-header";
     const back = document.createElement("button");
-    back.className = "secondary-btn small-btn inline-back";
-    back.textContent = "\u2039 Indietro";
-    back.addEventListener("click", (e) => {
-        e.stopPropagation();
-        row.innerHTML = "";
-        saved.forEach(n => row.appendChild(n));
-        delete row.dataset.drilled;
-    });
-    row.appendChild(back);
-    const crumb = document.createElement("span");
-    crumb.className = "inline-crumb";
-    crumb.textContent = folder.name;
-    row.appendChild(crumb);
-    // Filtri/ordinamento del contenuto della cartella
-    const sortSel = document.createElement("select");
-    sortSel.className = "folder-inline-sort custom-select";
+    back.className = "secondary-btn small-btn inline-back"; back.textContent = "\u2039 Indietro";
+    const title = document.createElement("div"); title.className = "drill-title"; title.textContent = folder.name;
+    const sortSel = document.createElement("select"); sortSel.className = "folder-inline-sort custom-select";
     sortSel.innerHTML = '<option value="score">Rilevanza</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option><option value="custom">Personalizzato</option>';
-    sortSel.addEventListener("click", (e) => e.stopPropagation());
-    row.appendChild(sortSel);
+    header.appendChild(back); header.appendChild(title); header.appendChild(sortSel);
+    wrap.insertBefore(header, row);
+    const ra = wrap.querySelector(".row-arrows"); if (ra) ra.style.display = "none";
+    const restore = () => { header.remove(); if (ra) ra.style.display = ""; row.innerHTML = ""; saved.forEach(n => row.appendChild(n)); delete row.dataset.drilled; };
+    back.addEventListener("click", (e) => { e.stopPropagation(); restore(); });
 
     const data = lastLibraryData || {};
     const folders = data.folders || [];
     const subs = folders.filter(fo => (fo.parent || "") === folder.id);
-    const contentNodes = [];
     const num = (v) => { const n = parseFloat(v); return isNaN(n) ? -1 : n; };
     const renderContent = (mode, animate) => {
-        contentNodes.forEach(n => n.remove()); contentNodes.length = 0;
+        row.innerHTML = "";
         let idx = 0;
-        const add = (el2) => {
-            if (animate) el2.style.animation = "drill-fade .4s " + Math.min(idx * 0.035, 0.6) + "s ease both";
-            row.appendChild(el2); contentNodes.push(el2); idx++;
-        };
-        subs.forEach(sf => add(buildFolderCard(sf, false)));
-        let items = (folder.items || []).map(it => (libraryCache || []).find(x => x.key === it.key) || it);
+        const add = (el2) => { if (!el2) return; if (animate) el2.style.animation = "drill-fade .4s " + Math.min(idx * 0.035, 0.6) + "s ease both"; row.appendChild(el2); idx++; };
+        subs.forEach(sf => { try { add(buildFolderCard(sf, false)); } catch (e) {} });
+        let items = (folder.items || []).map(it => (libraryCache || []).find(x => x.key === (it && it.key)) || it).filter(Boolean);
         if (mode === "score") {
             const anyScore = items.some(x => x && x.score != null && String(x.score) !== "");
             if (anyScore) items.sort((a, b) => num(b.score) - num(a.score));
             else items.sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "it"));
-        }
-        else if (mode === "recent") items.sort((a, b) => String(b.release_date || "").localeCompare(String(a.release_date || "")));
+        } else if (mode === "recent") items.sort((a, b) => String(b.release_date || "").localeCompare(String(a.release_date || "")));
         else if (mode === "oldest") items.sort((a, b) => String(a.release_date || "").localeCompare(String(b.release_date || "")));
-        items.forEach(it => add(titleRow(it, { noReorder: true })));
-        if (!subs.length && !items.length) { const em = document.createElement("span"); em.className = "cm-empty"; em.textContent = "Cartella vuota"; row.appendChild(em); contentNodes.push(em); }
+        items.forEach(it => { try { add(titleRow(it, { noReorder: true })); } catch (e) {} });
+        if (!row.children.length) { const em = document.createElement("span"); em.className = "cm-empty"; em.textContent = "Cartella vuota"; row.appendChild(em); }
     };
     sortSel.addEventListener("change", () => renderContent(sortSel.value, true));
-    sortSel.addEventListener("input", () => renderContent(sortSel.value, true));
     renderContent("score", true);
-
     row.dataset.drilled = folder.id;
     row.scrollLeft = 0;
 }

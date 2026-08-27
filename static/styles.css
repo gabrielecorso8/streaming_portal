@@ -2406,3 +2406,18 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 /* tutte le righe: solo lo spazio del titolo, poi quasi attaccate */
 #continue-section .downloads-header, #downloads-section .downloads-header,
 #offline-section .downloads-header { margin: 0 !important; padding: 0 !important; }
+
+/* Header cartella aperta: indietro (sopra), titolo, filtro (sotto) — verticale */
+.drill-header { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 0 2px 2px; }
+.drill-header .inline-back { align-self: flex-start; }
+.drill-header .drill-title { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; }
+.drill-header .folder-inline-sort { max-width: 200px; margin: 0; }
+
+/* Riprendi a guardare: nome 1 riga + caption vicina al titolo successivo */
+#continue-list .cw-nm { -webkit-line-clamp: 1 !important; }
+#continue-list .cw-row { padding: 4px 4px 4px !important; }
+#continue-list .cw-time { margin-top: 1px; font-size: .72rem; }
+/* Titoli scaricati: nome max 2 righe compatte, poco spazio sotto */
+#downloads-list .disney-row .download-name { line-height: 1.15 !important; font-size: .8rem !important; }
+#downloads-list .disney-row .download-status { font-size: .7rem !important; }
+#downloads-list .disney-row { padding: 4px 4px 4px !important; }

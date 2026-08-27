@@ -2266,3 +2266,40 @@ body.downloads-only #hero-billboard { display: none !important; }
 .create-actions { display: flex; align-items: center; gap: 12px; justify-content: flex-end; margin-top: 16px; }
 .cm-selcount { margin-right: auto; color: var(--accent); font-weight: 600; font-size: .85rem; }
 @media (max-width: 560px) { .create-body { flex-direction: column; } .cm-cover-box { width: 100px; } }
+
+/* ═══ COMPATTAZIONE: niente riquadri sezioni, gap minimo, niente scrollbar ═══ */
+#downloads-section, #continue-section, #library-section {
+    background: none !important; border: none !important; box-shadow: none !important;
+    padding: 0 !important; margin: 0 0 6px !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+#downloads-section:hover, #continue-section:hover, #library-section:hover { border: none !important; }
+#downloads-section .downloads-header, #continue-section .downloads-header,
+#library-section .downloads-header, #library-section .tool-toggle {
+    padding: 0 2px !important; margin: 0 !important; min-height: 0 !important;
+}
+#downloads-section .tool-body, #library-section .tool-body { padding: 0 !important; }
+/* Gap minimo titolo -> locandina */
+#downloads-list, #continue-list, #offline-list, #library-list { margin-top: 2px !important; }
+.downloads-header h2 { margin: 0 !important; }
+
+/* Niente barre di scorrimento sulle righe di locandine */
+.disney-row, .cw-row, #search-results.results-grid { scrollbar-width: none; -ms-overflow-style: none; }
+.disney-row::-webkit-scrollbar, .cw-row::-webkit-scrollbar, #search-results.results-grid::-webkit-scrollbar { display: none; height: 0; }
+
+/* Frecce ‹ › in alto a destra di ogni riga (al posto della scrollbar) */
+.row-arrows { display: flex; justify-content: flex-end; gap: 6px; margin: 0 6px -30px 0; position: relative; z-index: 4; height: 0; }
+.row-arrow {
+    width: 30px; height: 30px; border-radius: 8px; background: rgba(20,30,58,.85);
+    border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer;
+    font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center;
+    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); transition: background .15s, border-color .15s;
+}
+.row-arrow:hover { background: var(--accent); border-color: var(--accent); color: #04122b; }
+
+/* "Nuova Categoria" come titolo (stesso stile delle categorie) */
+.cat-newcategory {
+    font-size: 1.18rem; font-weight: 800; letter-spacing: .2px; color: var(--text-secondary);
+    margin: 8px 2px 2px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    transition: color .15s;
+}
+.cat-newcategory:hover { color: var(--accent); }

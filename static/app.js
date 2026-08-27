@@ -2278,6 +2278,7 @@ function renderContinueWatching(force) {
         });
         row.appendChild(card);
     });
+    attachRowArrows(box);
 }
 
 function setupMobileDownloadsUX() {
@@ -2352,6 +2353,7 @@ function renderMobileTitles(force) {
         card.querySelector(".cw-x").addEventListener("click", (e) => { e.stopPropagation(); deleteMobileTitle(id, nm); });
         card.addEventListener("click", () => playMobileTitle(id, nm));
     });
+    attachRowArrows(box);
 }
 
 function applyDownloadFilter() {
@@ -4167,11 +4169,12 @@ function renderLibrary(data) {
         .filter(k => k && !["saga", "regista", "genere"].includes(k)))]
         .sort()
         .forEach(k => el.libraryList.appendChild(buildCategoryGroup(k.charAt(0).toUpperCase() + k.slice(1), k, byKind(k), "▣", { custom: true, cover: filterCovers[k] || "" })));
-    const newCatTile = document.createElement("div");
-    newCatTile.className = "folder-card add-tile new-cat";
-    newCatTile.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Nuova categoria</span></div></div>';
-    newCatTile.addEventListener("click", createCustomFilter);
-    el.libraryList.appendChild(newCatTile);
+    const newCat = document.createElement("div");
+    newCat.className = "cat-newcategory";
+    newCat.textContent = "\uFF0B Nuova Categoria";
+    newCat.title = "Crea una nuova categoria";
+    newCat.addEventListener("click", createCustomFilter);
+    el.libraryList.appendChild(newCat);
 
     const uncategorized = rootFolders.filter(f => !(f.kind || ""));
     if (uncategorized.length) {
@@ -4219,16 +4222,34 @@ function _wrapTileRuns(container) {
     [...container.childNodes].forEach(k => { if (isTile(k)) run.push(k); else flush(); });
     flush();
 }
+function attachRowArrows(scope) {
+    if (!scope) return;
+    scope.querySelectorAll(".disney-row, .cw-row").forEach(row => {
+        if (row.dataset.arrowed) return;
+        row.dataset.arrowed = "1";
+        const nav = document.createElement("div");
+        nav.className = "row-arrows";
+        nav.innerHTML = '<button class="row-arrow" data-d="-1" aria-label="Scorri a sinistra">\u2039</button><button class="row-arrow" data-d="1" aria-label="Scorri a destra">\u203A</button>';
+        row.parentNode.insertBefore(nav, row);
+        const amt = () => Math.max(220, Math.round(row.clientWidth * 0.85));
+        nav.querySelectorAll(".row-arrow").forEach(b => b.addEventListener("click", (e) => {
+            e.stopPropagation();
+            row.scrollBy({ left: amt() * parseInt(b.getAttribute("data-d"), 10), behavior: "smooth" });
+        }));
+    });
+}
 function carouselizeLibrary() {
     if (!el.libraryList) return;
     _wrapTileRuns(el.libraryList);
     el.libraryList.querySelectorAll(".fav-block, .cat-body").forEach(_wrapTileRuns);
+    attachRowArrows(el.libraryList);
 }
 function carouselizeDownloads() {
     // Solo su PC: su mobile i download hanno gia' il loro layout a locandine.
     if (!el.downloadsList || document.body.classList.contains("downloads-only")) return;
     _wrapTileRuns(el.downloadsList);
     el.downloadsList.querySelectorAll(".download-folder-body").forEach(_wrapTileRuns);
+    attachRowArrows(el.downloadsList);
 }
 
 let _hbItems = [], _hbIdx = 0, _hbTimer = null, _hbSig = "";

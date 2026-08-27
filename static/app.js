@@ -297,6 +297,7 @@ async function init() {
     startDownloadsPolling();
     setupPlayerGestures();
     setupDragScroll();
+    setupVpnAutoRefresh();
     setTimeout(openWelcomeBanner, 500);
 
     // Load the saved/recent titles library and the remembered domains
@@ -4315,7 +4316,11 @@ function openFolderInline(anchorEl, folder) {
         } else if (mode === "recent") items.sort((a, b) => String(b.release_date || "").localeCompare(String(a.release_date || "")));
         else if (mode === "oldest") items.sort((a, b) => String(a.release_date || "").localeCompare(String(b.release_date || "")));
         items.forEach(it => { try { add(titleRow(it, { noReorder: true })); } catch (e) {} });
-        if (!row.children.length) { const em = document.createElement("span"); em.className = "cm-empty"; em.textContent = "Cartella vuota"; row.appendChild(em); }
+        const addT = document.createElement("div");
+        addT.className = "folder-card add-tile";
+        addT.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Aggiungi titoli</span></div></div>';
+        addT.addEventListener("click", (e) => { e.stopPropagation(); openAddTitlesToFolder(folder); });
+        row.appendChild(addT);
     };
     sortSel.addEventListener("change", () => renderContent(sortSel.value, true));
     renderContent("score", true);
@@ -4592,6 +4597,69 @@ async function removeFolder(id, name) {
         const r = await fetch("/api/folders/remove", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
         if (r.ok) renderLibrary(await r.json());
     } catch (e) { showToast("Errore eliminazione cartella"); }
+}
+
+async function openAddTitlesToFolder(folder) {
+    const ov = document.createElement("div"); ov.className = "welcome-ov create-ov";
+    ov.innerHTML =
+        '<div class="welcome-card create-card">' +
+        '<div class="create-head"><h2>Aggiungi titoli a «' + escapeHtml(folder.name) + '»</h2><button class="cm-close" title="Chiudi">✕</button></div>' +
+        '<div class="cm-fields" style="width:100%">' +
+        '<input type="search" class="cm-search" placeholder="Cerca titoli da aggiungere (libreria e non)…" autocomplete="off">' +
+        '<div class="cm-results"></div></div>' +
+        '<div class="create-actions"><span class="cm-selcount"></span><button class="secondary-btn cm-cancel">Annulla</button><button class="primary-btn cm-add">Aggiungi</button></div>' +
+        '</div>';
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.querySelector(".cm-close").addEventListener("click", close);
+    ov.querySelector(".cm-cancel").addEventListener("click", close);
+    ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    const selLib = new Map(), selExt = new Map(); let cmExt = [];
+    const updCount = () => { const n = selLib.size + selExt.size; ov.querySelector(".cm-selcount").textContent = n ? (n + " selezionati") : ""; };
+    const resultsEl = ov.querySelector(".cm-results");
+    const already = new Set((folder.items || []).map(x => (x && x.key) || x));
+    const renderRes = (libM, extM) => {
+        let html = "";
+        if (libM.length) html += '<div class="cm-sec">Dalla libreria</div>' + libM.map(it =>
+            `<label class="cm-item"><input type="checkbox" data-src="lib" data-key="${escapeHtml(it.key)}" ${selLib.has(it.key) ? "checked" : ""}>${it.cover ? `<img src="${escapeHtml(it.cover)}">` : '<span class="cm-ph"></span>'}<span class="cm-nm">${escapeHtml(it.name || "")}</span></label>`).join("");
+        if (extM.length) html += '<div class="cm-sec">Nuovi titoli</div>' + extM.map(it =>
+            `<label class="cm-item"><input type="checkbox" data-src="ext" data-id="${escapeHtml(it.id_and_slug || "")}" ${selExt.has(it.id_and_slug) ? "checked" : ""}>${it.cover ? `<img src="${escapeHtml(it.cover)}">` : '<span class="cm-ph"></span>'}<span class="cm-nm">${escapeHtml(it.name || "")}</span></label>`).join("");
+        resultsEl.innerHTML = html || '<div class="cm-empty">Scrivi per cercare…</div>';
+        resultsEl.querySelectorAll("input[type=checkbox]").forEach(cb => cb.addEventListener("change", () => {
+            if (cb.dataset.src === "lib") { const it = (libraryCache || []).find(x => x.key === cb.dataset.key); if (cb.checked && it) selLib.set(it.key, it); else selLib.delete(cb.dataset.key); }
+            else { const it = cmExt.find(x => x.id_and_slug === cb.dataset.id); if (cb.checked && it) selExt.set(it.id_and_slug, it); else selExt.delete(cb.dataset.id); }
+            updCount();
+        }));
+    };
+    let tmr;
+    const doSearch = () => {
+        const q = ov.querySelector(".cm-search").value.trim().toLowerCase();
+        const libM = (libraryCache || []).filter(it => (it.name || "").toLowerCase().includes(q) && !already.has(it.key)).slice(0, 40);
+        renderRes(libM, q ? cmExt : []);
+        clearTimeout(tmr); if (!q) { cmExt = []; return; }
+        tmr = setTimeout(async () => {
+            try {
+                const r = await fetch("/api/search?q=" + encodeURIComponent(q));
+                const ext = r.ok ? await r.json() : [];
+                const libNames = new Set((libraryCache || []).map(x => normName(x.name)));
+                cmExt = (ext || []).filter(x => x.id_and_slug && !libNames.has(normName(x.name))).slice(0, 40);
+                renderRes(libM, cmExt);
+            } catch (e) {}
+        }, 400);
+    };
+    ov.querySelector(".cm-search").addEventListener("input", doSearch);
+    doSearch();
+    ov.querySelector(".cm-add").addEventListener("click", async () => {
+        const keys = [...selLib.keys()];
+        for (const it of selExt.values()) { try { if (await saveSearchItem(it) && it.id_and_slug) keys.push(it.id_and_slug); } catch (e) {} }
+        if (!keys.length) { showToast("Nessun titolo selezionato"); return; }
+        try {
+            await fetch("/api/folders/add-items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: folder.id, keys }) });
+            showToast("Aggiunti " + keys.length + " titoli a " + folder.name);
+            close();
+            await fetchLibrary();
+        } catch (e) { showToast("Errore"); }
+    });
 }
 
 function openCreateFolderModal(kind) {
@@ -5104,6 +5172,28 @@ function openVpnReminder() {
 }
 
 // ─── Trascinamento orizzontale (drag-scroll) delle righe .disney-row ───
+let _vpnPrevIp = null;
+function setupVpnAutoRefresh() {
+    const check = async () => {
+        try {
+            const r = await fetch(withLanToken("/api/privacy/ip-status"), { cache: "no-store" });
+            if (!r.ok) return;
+            const d = await r.json();
+            const ip = d.current_ip_masked || "";
+            if (!ip) return;
+            if (_vpnPrevIp !== null && ip !== _vpnPrevIp) {
+                // L'IP e' cambiato (VPN accesa/cambiata): aggiorna le locandine.
+                showToast("Rete cambiata (VPN): aggiorno le locandine…", 4000);
+                try { await fetchLibrary(); } catch (e) {}
+                try { refreshDownloads(); } catch (e) {}
+            }
+            _vpnPrevIp = ip;
+        } catch (e) {}
+    };
+    check();
+    setInterval(check, 20000);
+}
+
 function setupDragScroll() {
     let down = false, startX = 0, startScroll = 0, row = null, moved = false;
     document.addEventListener("mousedown", (e) => {

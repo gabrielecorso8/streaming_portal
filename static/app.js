@@ -3801,15 +3801,19 @@ function renderLibrary(data) {
             crumb.textContent = cur.name;
             el.libraryList.appendChild(crumb);
             // sottocartelle come tile, poi i titoli
-            folders.filter(f => (f.parent || "") === cur.id).forEach(sf => el.libraryList.appendChild(buildFolderCard(sf, false)));
+            const subF = folders.filter(f => (f.parent || "") === cur.id);
+            subF.forEach(sf => el.libraryList.appendChild(buildFolderCard(sf, false)));
             (cur.items || []).forEach(it => {
                 const libItem = libraryCache.find(x => x.key === it.key) || it;
                 el.libraryList.appendChild(titleRow(libItem, { noReorder: true }));
             });
+            if (!subF.length && !(cur.items || []).length) {
+                el.libraryList.appendChild(Object.assign(document.createElement("div"), { className: "no-downloads", textContent: "Cartella vuota. Usa il + per aggiungere titoli o crea una sottocartella." }));
+            }
             carouselizeLibrary();
             renderHeroBillboard();
             renderContinueWatching();
-            window.scrollTo({ top: scrollY });
+            window.scrollTo({ top: 0 });
             return;
         }
     }
@@ -4227,10 +4231,14 @@ function attachRowArrows(scope) {
     scope.querySelectorAll(".disney-row, .cw-row").forEach(row => {
         if (row.dataset.arrowed) return;
         row.dataset.arrowed = "1";
+        const wrap = document.createElement("div");
+        wrap.className = "row-wrap";
+        row.parentNode.insertBefore(wrap, row);
+        wrap.appendChild(row);
         const nav = document.createElement("div");
         nav.className = "row-arrows";
         nav.innerHTML = '<button class="row-arrow" data-d="-1" aria-label="Scorri a sinistra">\u2039</button><button class="row-arrow" data-d="1" aria-label="Scorri a destra">\u203A</button>';
-        row.parentNode.insertBefore(nav, row);
+        wrap.appendChild(nav);
         const amt = () => Math.max(220, Math.round(row.clientWidth * 0.85));
         nav.querySelectorAll(".row-arrow").forEach(b => b.addEventListener("click", (e) => {
             e.stopPropagation();

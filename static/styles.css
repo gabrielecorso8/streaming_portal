@@ -2303,3 +2303,28 @@ body.downloads-only #hero-billboard { display: none !important; }
     transition: color .15s;
 }
 .cat-newcategory:hover { color: var(--accent); }
+
+/* ═══ FIX compattazione: frecce senza margine negativo (non coprono i titoli) ═══ */
+.row-wrap { position: relative; }
+.row-arrows {
+    position: absolute !important; top: -30px !important; right: 6px !important;
+    margin: 0 !important; height: auto !important; display: flex; gap: 6px; z-index: 6;
+}
+.row-arrow { width: 28px; height: 28px; font-size: 1rem; }
+
+/* Nome cartella aperta = stesso font delle categorie (niente gradiente) */
+.dl-crumb-title {
+    font-size: 1.18rem !important; font-weight: 800 !important; letter-spacing: .2px !important;
+    color: var(--text-primary) !important; background: none !important;
+    -webkit-text-fill-color: currentColor !important; margin: 2px 2px 2px !important;
+}
+#downloads-list .dl-crumb-title { font-size: 1.18rem !important; }
+.dl-back { margin: 6px 0 2px !important; }
+
+/* Locandine leggermente piu' piccole */
+#library-list .disney-row .library-item,
+#library-list .disney-row .add-tile,
+#downloads-list .disney-row .download-item,
+#downloads-list .disney-row .dl-poster { width: 140px !important; }
+#library-list .disney-row .folder-card { width: 150px !important; }
+#search-results .media-card { width: 144px !important; }

@@ -2351,3 +2351,22 @@ body.downloads-only #hero-billboard { display: none !important; }
 #downloads-list .disney-row .download-item,
 #downloads-list .disney-row .dl-poster { width: 132px !important; }
 #library-list .disney-row .folder-card { width: 140px !important; }
+
+/* Nomi lunghi: vanno a capo (max 2 righe), poi "..." */
+#library-list .disney-row .folder-name,
+#library-list .disney-row .library-name,
+#downloads-list .disney-row .download-name,
+#search-results .media-card .media-title,
+.cw-card .cw-nm {
+    white-space: normal !important; display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important; -webkit-box-orient: vertical !important;
+    overflow: hidden !important; line-height: 1.2 !important;
+}
+
+/* Drill-down INLINE: "indietro" + nome cartella dentro la stessa riga */
+.disney-row .inline-back { flex: 0 0 auto; align-self: center; margin-right: 4px; }
+.disney-row .inline-crumb {
+    flex: 0 0 auto; align-self: center; margin-right: 10px;
+    font-weight: 800; font-size: 1.05rem; color: var(--text-primary);
+}
+.disney-row .cm-empty { align-self: center; }

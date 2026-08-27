@@ -3978,15 +3978,14 @@ function renderLibrary(data) {
         }
         card.querySelector(".folder-head").addEventListener("click", (e) => {
             if (e.target.closest(".folder-actions")) return;
-            _libView = { folderId: f.id };
-            renderLibrary(lastLibraryData);
+            openFolderInline(card, f);
         });
         card.querySelector(".subf-btn").addEventListener("click", (e) => { e.stopPropagation(); createSubfolder(f.id); });
         card.querySelector(".adddom-btn").addEventListener("click", (e) => { e.stopPropagation(); openFolderPicker(f.id); });
         card.querySelector(".cover-input").addEventListener("change", (e) => uploadFolderCover(f.id, e.target));
         card.querySelector(".ren-btn").addEventListener("click", (e) => { e.stopPropagation(); renameFolder(f.id, f.name); });
         card.querySelector(".delf-btn").addEventListener("click", (e) => { e.stopPropagation(); removeFolder(f.id, f.name); });
-        card.querySelector(".toggle-btn").addEventListener("click", (e) => { e.stopPropagation(); _libView = { folderId: f.id }; renderLibrary(lastLibraryData); });
+        card.querySelector(".toggle-btn").addEventListener("click", (e) => { e.stopPropagation(); openFolderInline(card, f); });
         const favBtn = card.querySelector(".folderfav-btn");
         if (favBtn) favBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleFolderFavorite(f.id); });
         if (reorderCtx) {
@@ -4278,6 +4277,41 @@ function _hbBuildList() {
     if (out.length < 2) (libraryCache || []).forEach(t => { if (out.length < 8) push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); });
     return out.slice(0, 12);
 }
+function openFolderInline(anchorEl, folder) {
+    const row = anchorEl.closest(".disney-row");
+    if (!row) { _libView = { folderId: folder.id }; renderLibrary(lastLibraryData); return; }
+    // Salva i nodi correnti della riga (con i loro listener) per il "indietro".
+    const saved = Array.from(row.childNodes);
+    row.innerHTML = "";
+    const back = document.createElement("button");
+    back.className = "secondary-btn small-btn inline-back";
+    back.textContent = "\u2039 Indietro";
+    back.addEventListener("click", (e) => {
+        e.stopPropagation();
+        row.innerHTML = "";
+        saved.forEach(n => row.appendChild(n));
+        delete row.dataset.drilled;
+    });
+    row.appendChild(back);
+    const crumb = document.createElement("span");
+    crumb.className = "inline-crumb";
+    crumb.textContent = folder.name;
+    row.appendChild(crumb);
+    const data = lastLibraryData || {};
+    const folders = data.folders || [];
+    const subs = folders.filter(fo => (fo.parent || "") === folder.id);
+    subs.forEach(sf => row.appendChild(buildFolderCard(sf, false)));
+    (folder.items || []).forEach(it => {
+        const libItem = (libraryCache || []).find(x => x.key === it.key) || it;
+        row.appendChild(titleRow(libItem, { noReorder: true }));
+    });
+    if (!subs.length && !(folder.items || []).length) {
+        const em = document.createElement("span"); em.className = "cm-empty"; em.textContent = "Cartella vuota"; row.appendChild(em);
+    }
+    row.dataset.drilled = folder.id;
+    row.scrollLeft = 0;
+}
+
 function renderHeroBillboard() {
     const host = document.getElementById("hero-billboard");
     if (!host || document.body.classList.contains("downloads-only")) return;

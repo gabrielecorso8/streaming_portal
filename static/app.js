@@ -288,6 +288,8 @@ async function init() {
         if (mc && el.searchResultsSection) mc.insertBefore(el.searchResultsSection, mc.firstChild);
         const cs = document.getElementById("continue-section"), ls = document.getElementById("library-section");
         if (cs && ls && ls.parentNode) ls.parentNode.insertBefore(cs, ls);
+        const ds = document.getElementById("downloads-section"), hb = document.getElementById("hero-billboard");
+        if (ds && hb && hb.parentNode) hb.parentNode.insertBefore(ds, hb.nextSibling);
     } catch (e) {}
     startDownloadsPolling();
     setupPlayerGestures();
@@ -4044,20 +4046,6 @@ function renderLibrary(data) {
     }
 
 
-    // Drop-zone "radice": trascina qui una cartella per portarla fuori da ogni
-    // cartella genitore (oppure trascina una cartella su un'altra per annidarla).
-    const rootZone = document.createElement("div");
-    rootZone.className = "root-dropzone";
-    rootZone.textContent = "Trascina qui una cartella per portarla in radice";
-    rootZone.addEventListener("dragover", (e) => { e.preventDefault(); rootZone.classList.add("drag-over"); });
-    rootZone.addEventListener("dragleave", () => rootZone.classList.remove("drag-over"));
-    rootZone.addEventListener("drop", async (e) => {
-        e.preventDefault(); rootZone.classList.remove("drag-over");
-        let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
-        if (data.src === "folder" && data.id) await nestFolder(data.id, "");
-    });
-    el.libraryList.appendChild(rootZone);
-
     // Favourites shortcut (always shown, persists across sessions)
     const favs = libraryCache.filter(it => it && it.favorite);
     const favFolders = folders.filter(f => f && f.favorite);
@@ -4864,7 +4852,7 @@ function openWelcomeBanner() {
         '<p>Cosa vuoi fare adesso?</p>' +
         '<div class="welcome-choices">' +
         '<button class="welcome-btn wb-img watch" data-x="watch" style="background-image:url(&apos;/welcome-watch.jpg&apos;)"><span class="wb-veil"></span><span class="wb-body"><span class="wb-t">Solo guardare</span><span class="wb-s">Riproduci i tuoi titoli. Nessuna VPN necessaria.</span></span></button>' +
-        '<button class="welcome-btn wb-img full" data-x="full" style="background-image:url(&apos;/welcome-browse.jpg&apos;)"><span class="wb-veil"></span><span class="wb-body"><span class="wb-t">Cerca · Scarica · Organizza</span><span class="wb-s">Attiva la VPN prima di procedere per non esporre il tuo IP.</span></span></button>' +
+        '<button class="welcome-btn wb-img full" data-x="full"><span class="wb-rot rotA"></span><span class="wb-rot rotB"></span><span class="wb-veil"></span><span class="wb-body"><span class="wb-t">Cerca · Scarica · Organizza</span><span class="wb-s">Attiva la VPN prima di procedere per non esporre il tuo IP.</span></span></button>' +
         '</div></div>';
     document.body.appendChild(ov);
     const close = () => { if (ov._rot) clearInterval(ov._rot); ov.remove(); };
@@ -4872,20 +4860,29 @@ function openWelcomeBanner() {
     ov.querySelector('[data-x="full"]').addEventListener("click", () => { _setMode("full"); close(); showToast("Ricorda: attiva la VPN prima di cercare/scaricare.", 6000); });
     // Sfondo della casella "Cerca/Scarica/Organizza": rotazione dinamica di TUTTE
     // le locandine presenti nella piattaforma (libreria + download).
+    const _url = (u) => "url('" + String(u).replace(/'/g, "%27") + "')";
     const _startCoverRotation = () => {
-        if (ov._rot) return;
+        const box = ov.querySelector(".full"); if (!box) return;
+        const layers = box.querySelectorAll(".wb-rot"); if (layers.length < 2) return;
         const covers = [];
         (libraryCache || []).forEach(t => { if (t.cover) covers.push(t.cover); });
         (localDownloads || []).forEach(d => { if (d.cover) covers.push(d.cover); });
-        const uniq = [...new Set(covers)];
+        let uniq = [...new Set(covers)];
+        if (!uniq.length) { layers[0].style.backgroundImage = _url("/welcome-browse.jpg"); layers[0].classList.add("show"); return; }
+        for (let k = uniq.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [uniq[k], uniq[j]] = [uniq[j], uniq[k]]; }
+        if (ov._rot) clearInterval(ov._rot);
+        layers[0].style.backgroundImage = _url(uniq[0]); layers[0].classList.add("show");
+        layers[1].classList.remove("show");
+        let i = 0, cur = 0;
         if (uniq.length < 2) return;
-        const box = ov.querySelector(".full"); if (!box) return;
-        // mescola
-        for (let i = uniq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [uniq[i], uniq[j]] = [uniq[j], uniq[i]]; }
-        let i = 0;
-        const set = () => { box.style.backgroundImage = "url('" + String(uniq[i % uniq.length]).replace(/'/g, "%27") + "')"; };
-        set();
-        ov._rot = setInterval(() => { i++; set(); }, 2500);
+        ov._rot = setInterval(() => {
+            i = (i + 1) % uniq.length;
+            const next = layers[cur ^ 1];
+            next.style.backgroundImage = _url(uniq[i]);
+            next.classList.add("show");
+            layers[cur].classList.remove("show");
+            cur ^= 1;
+        }, 3800);
     };
     _startCoverRotation();
     setTimeout(_startCoverRotation, 1600);

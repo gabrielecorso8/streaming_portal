@@ -2479,3 +2479,12 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
     display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s, background .15s; }
 .folder-card:hover .tile-remove, .library-item:hover .tile-remove { opacity: 1; }
 .tile-remove:hover { background: #d24b4b; }
+
+/* Selettore fonte ricerca (StreamingCommunity / AnimeWorld) nei modali */
+.src-toggle { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
+.src-toggle .src-lab { font-size: .78rem; color: var(--text-secondary); margin-right: 2px; }
+.src-toggle .src-opt { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border-color);
+    background: rgba(120,175,255,.06); color: var(--text-secondary); font-size: .82rem; cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s; }
+.src-toggle .src-opt:hover { border-color: var(--accent); color: var(--text-primary); }
+.src-toggle .src-opt.active { background: var(--accent); border-color: var(--accent); color: #041018; font-weight: 700; }

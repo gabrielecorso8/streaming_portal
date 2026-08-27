@@ -2242,6 +2242,8 @@ function _cwRemoveMenu(item) {
     ov.innerHTML = html; document.body.appendChild(ov);
     const close = () => ov.remove();
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    const srcTog = _srcToggle();
+    { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
     ov.querySelector('[data-x="list"]').addEventListener("click", () => { close(); _removeProgress(item.key); renderContinueWatching(true); showToast("Rimosso da Continua a guardare"); });
     const dpc = ov.querySelector('[data-x="delpc"]');
     if (dpc) dpc.addEventListener("click", () => { close(); deleteDownload(item.id, item.name); });
@@ -2483,6 +2485,8 @@ function openMobilePlayChoice(dl) {
     document.body.appendChild(ov);
     const close = () => ov.remove();
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    const srcTog = _srcToggle();
+    { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
     ov.querySelector('[data-x="play"]').addEventListener("click", () => { close(); playDownloaded(dl.id, dl.title, dl.key); });
     ov.querySelector('[data-x="save"]').addEventListener("click", () => { close(); saveDownloadToDevice(dl.id, dl.file || dl.title, dl.cover || ""); });
     ov.querySelector('[data-x="watch"]').addEventListener("click", () => { close(); _toggleWatched(dl.id); showToast(_isWatched(dl.id) ? "Segnato come visto" : "Segnato come non visto"); renderContinueWatching(); applyDownloadFilter(); });
@@ -2604,6 +2608,8 @@ function saveDownloadToDevice(id, filename, cover) {
     document.body.appendChild(ov);
     const close = () => ov.remove();
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    const srcTog = _srcToggle();
+    { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
     ov.querySelector('[data-x="file"]').addEventListener("click", () => { close(); _nativeFileDownload(id, name); });
     ov.querySelector('[data-x="mob"]').addEventListener("click", () => { close(); _fetchBlobThen(id, name, (blob) => addMobileTitle(name, cover || "", blob)); });
     ov.querySelector('[data-x="share"]').addEventListener("click", () => {
@@ -4689,6 +4695,24 @@ async function removeFolder(id, name) {
     } catch (e) { showToast("Errore eliminazione cartella"); }
 }
 
+function _srcToggle() {
+    const w = document.createElement("div");
+    w.className = "src-toggle";
+    w.innerHTML = '<span class="src-lab">Cerca su</span>' +
+        '<button type="button" class="src-opt active" data-src="sc">StreamingCommunity</button>' +
+        '<button type="button" class="src-opt" data-src="aw">AnimeWorld</button>';
+    let cur = "sc";
+    w._get = () => cur;
+    w._onchange = null;
+    w.querySelectorAll(".src-opt").forEach(b => b.addEventListener("click", (e) => {
+        e.preventDefault();
+        cur = b.dataset.src;
+        w.querySelectorAll(".src-opt").forEach(x => x.classList.toggle("active", x === b));
+        if (typeof w._onchange === "function") w._onchange();
+    }));
+    return w;
+}
+
 function openCategoryAddModal(kind, label) {
     const ov = document.createElement("div"); ov.className = "welcome-ov create-ov";
     ov.innerHTML =
@@ -4702,6 +4726,8 @@ function openCategoryAddModal(kind, label) {
     const close = () => ov.remove();
     ov.querySelector(".cm-close").addEventListener("click", close);
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    const srcTog = _srcToggle();
+    { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
     ov.querySelector(".cc-titles").addEventListener("click", () => { close(); openAddTitlesToCategory(kind, label); });
     ov.querySelector(".cc-folder").addEventListener("click", () => { close(); openCreateFolderModal(kind); });
 }
@@ -4721,6 +4747,8 @@ async function openAddTitlesToCategory(kind, label) {
     ov.querySelector(".cm-close").addEventListener("click", close);
     ov.querySelector(".cm-cancel").addEventListener("click", close);
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    const srcTog = _srcToggle();
+    { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
     const selLib = new Map(), selExt = new Map(); let cmExt = [];
     const updCount = () => { const n = selLib.size + selExt.size; ov.querySelector(".cm-selcount").textContent = n ? (n + " selezionati") : ""; };
     const resultsEl = ov.querySelector(".cm-results");
@@ -4746,7 +4774,7 @@ async function openAddTitlesToCategory(kind, label) {
         clearTimeout(tmr); if (!q) { cmExt = []; return; }
         tmr = setTimeout(async () => {
             try {
-                const r = await fetch("/api/search?q=" + encodeURIComponent(q));
+                const r = await fetch("/api/search?q=" + encodeURIComponent(q) + "&sources=" + srcTog._get());
                 const ext = r.ok ? await r.json() : [];
                 const libNames = new Set((libraryCache || []).map(x => normName(x.name)));
                 cmExt = (ext || []).filter(x => x.id_and_slug && !libNames.has(normName(x.name))).slice(0, 40);
@@ -4755,6 +4783,7 @@ async function openAddTitlesToCategory(kind, label) {
         }, 400);
     };
     ov.querySelector(".cm-search").addEventListener("input", doSearch);
+    srcTog._onchange = doSearch;
     doSearch();
     ov.querySelector(".cm-add").addEventListener("click", async () => {
         const keys = [...selLib.keys()];
@@ -4783,6 +4812,8 @@ async function openAddTitlesToFolder(folder) {
     ov.querySelector(".cm-close").addEventListener("click", close);
     ov.querySelector(".cm-cancel").addEventListener("click", close);
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    const srcTog = _srcToggle();
+    { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
     const selLib = new Map(), selExt = new Map(); let cmExt = [];
     const updCount = () => { const n = selLib.size + selExt.size; ov.querySelector(".cm-selcount").textContent = n ? (n + " selezionati") : ""; };
     const resultsEl = ov.querySelector(".cm-results");
@@ -4808,7 +4839,7 @@ async function openAddTitlesToFolder(folder) {
         clearTimeout(tmr); if (!q) { cmExt = []; return; }
         tmr = setTimeout(async () => {
             try {
-                const r = await fetch("/api/search?q=" + encodeURIComponent(q));
+                const r = await fetch("/api/search?q=" + encodeURIComponent(q) + "&sources=" + srcTog._get());
                 const ext = r.ok ? await r.json() : [];
                 const libNames = new Set((libraryCache || []).map(x => normName(x.name)));
                 cmExt = (ext || []).filter(x => x.id_and_slug && !libNames.has(normName(x.name))).slice(0, 40);
@@ -4817,6 +4848,7 @@ async function openAddTitlesToFolder(folder) {
         }, 400);
     };
     ov.querySelector(".cm-search").addEventListener("input", doSearch);
+    srcTog._onchange = doSearch;
     doSearch();
     ov.querySelector(".cm-add").addEventListener("click", async () => {
         const keys = [...selLib.keys()];
@@ -4851,6 +4883,8 @@ function openCreateFolderModal(kind) {
     ov.querySelector(".cm-close").addEventListener("click", close);
     ov.querySelector(".cm-cancel").addEventListener("click", close);
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    const srcTog = _srcToggle();
+    { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
 
     const selLib = new Map(), selExt = new Map();
     let cmExt = [];
@@ -4884,7 +4918,7 @@ function openCreateFolderModal(kind) {
         if (!q) { cmExt = []; return; }
         tmr = setTimeout(async () => {
             try {
-                const r = await fetch("/api/search?q=" + encodeURIComponent(q));
+                const r = await fetch("/api/search?q=" + encodeURIComponent(q) + "&sources=" + srcTog._get());
                 const ext = r.ok ? await r.json() : [];
                 const libNames = new Set((libraryCache || []).map(x => normName(x.name)));
                 cmExt = (ext || []).filter(x => x.id_and_slug && !libNames.has(normName(x.name))).slice(0, 40);
@@ -4893,6 +4927,7 @@ function openCreateFolderModal(kind) {
         }, 400);
     };
     ov.querySelector(".cm-search").addEventListener("input", doSearch);
+    srcTog._onchange = doSearch;
     doSearch();
 
     ov.querySelector(".cm-create").addEventListener("click", async () => {
@@ -5338,6 +5373,8 @@ function openVpnReminder() {
     ov.querySelector('[data-x="ok"]').addEventListener("click", close);
     ov.querySelector('[data-x="ip"]').addEventListener("click", () => { close(); if (typeof openPrivacyPanel === "function") openPrivacyPanel(); });
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    const srcTog = _srcToggle();
+    { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
 }
 
 // ─── Trascinamento orizzontale (drag-scroll) delle righe .disney-row ───

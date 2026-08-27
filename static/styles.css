@@ -2328,3 +2328,26 @@ body.downloads-only #hero-billboard { display: none !important; }
 #downloads-list .disney-row .dl-poster { width: 140px !important; }
 #library-list .disney-row .folder-card { width: 150px !important; }
 #search-results .media-card { width: 144px !important; }
+
+/* ═══ Home stile Disney+: righe multiple impilate, compatte, minimali ═══ */
+#library-section .tool-body { display: block !important; padding: 0 !important; }
+#library-section.collapsed .tool-body { display: block !important; }
+/* Conteggio categoria rimosso (in conflitto con le frecce) */
+#library-list .cat-count { display: none !important; }
+#library-list .cat-chevron { display: none !important; }
+/* Spaziatura verticale minima -> piu' righe visibili contemporaneamente */
+#library-list .cat-group { margin: 0 0 2px !important; }
+#library-list .disney-row,
+#downloads-list .disney-row { padding: 4px 4px 6px !important; }
+#continue-list .cw-row, #offline-list .cw-row { padding: 4px 4px 6px !important; }
+#library-list .cat-title, #library-list .fav-subtitle,
+#library-list .fav-block .fav-subtitle, #library-list .lib-rest-title,
+.cat-newcategory { font-size: 1.05rem !important; margin: 4px 2px 0 !important; }
+.downloads-header h2 { font-size: 1.05rem !important; margin: 2px 2px 0 !important; }
+#downloads-section, #continue-section, #library-section { margin: 0 0 2px !important; }
+/* Poster un filo piu' piccoli per densita' "streaming" */
+#library-list .disney-row .library-item,
+#library-list .disney-row .add-tile,
+#downloads-list .disney-row .download-item,
+#downloads-list .disney-row .dl-poster { width: 132px !important; }
+#library-list .disney-row .folder-card { width: 140px !important; }

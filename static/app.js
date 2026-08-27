@@ -7,6 +7,7 @@ let lastTitleContext = ""; // Name of the title being opened (for domain-error m
 let currentLibKey = "";    // Library key of the title currently shown in the modal
 let libraryCache = [];     // Last known library list (to read favourite state)
 let openFolders = new Set(); // Folder ids currently expanded (kept across re-renders)
+let _libView = { folderId: null }; // cartella aperta (drill-down orizzontale)
 let openGroups = new Set(); // (legacy)
 let closedGroups = new Set(); // categorie CHIUSE (default: tutte aperte)
 let openDownloadGroups = new Set(); // cartelle/sottocartelle download espanse
@@ -3331,12 +3332,11 @@ function titleRow(item, ctx) {
         ${cover}
         <div class="library-meta">
             <span class="library-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
-            <span class="library-sub">${typeBadge}${item.is_clone ? " · clone" : ""}</span>
+            <div class="lib-below"><button class="icon-btn tofolder-btn" title="Metti in una cartella/categoria">📂 Cartella</button></div>
         </div>
         <div class="library-actions"><label class="lib-select" title="Seleziona"><input type="checkbox" ${librarySel.has(item.key) ? "checked" : ""}></label>${moveBtns}
             <button class="icon-btn play-title-btn" title="Riproduci">▶</button>
-            <button class="icon-btn tofolder-btn" title="Metti in cartelle">📂</button>
-            <label class="icon-btn" title="Cambia locandina">🖼️<input type="file" accept="image/*" class="libcover-input" hidden></label>
+            <label class="icon-btn libcover-lbl" title="Cambia locandina">🖼️<input type="file" accept="image/*" class="libcover-input" hidden></label>
             <button class="icon-btn ren-title-btn" title="Rinomina titolo">✎</button>
             <button class="icon-btn fav-btn" title="${item.favorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}">${item.favorite ? "★" : "☆"}</button>
             <button class="icon-btn del-btn" title="Rimuovi dalla libreria">✕</button>
@@ -3782,6 +3782,35 @@ function renderLibrary(data) {
     el.libraryList.innerHTML = "";
 
     const allFolders = folders;
+
+    // --- Apertura cartella in ORIZZONTALE (sostituisce la vista, con "indietro") ---
+    if (_libView.folderId) {
+        const cur = folders.find(f => f.id === _libView.folderId);
+        if (!cur) { _libView = { folderId: null }; }
+        else {
+            const parent = cur.parent ? folders.find(f => f.id === cur.parent) : null;
+            const back = document.createElement("button");
+            back.className = "secondary-btn small-btn dl-back";
+            back.textContent = "‹ " + (parent ? parent.name : "Libreria");
+            back.addEventListener("click", () => { _libView = { folderId: (cur.parent || null) }; renderLibrary(lastLibraryData); });
+            el.libraryList.appendChild(back);
+            const crumb = document.createElement("div");
+            crumb.className = "dl-crumb-title";
+            crumb.textContent = cur.name;
+            el.libraryList.appendChild(crumb);
+            // sottocartelle come tile, poi i titoli
+            folders.filter(f => (f.parent || "") === cur.id).forEach(sf => el.libraryList.appendChild(buildFolderCard(sf, false)));
+            (cur.items || []).forEach(it => {
+                const libItem = libraryCache.find(x => x.key === it.key) || it;
+                el.libraryList.appendChild(titleRow(libItem, { noReorder: true }));
+            });
+            carouselizeLibrary();
+            renderHeroBillboard();
+            renderContinueWatching();
+            window.scrollTo({ top: scrollY });
+            return;
+        }
+    }
     const buildFolderCard = (f, recurse = true, reorderCtx = null) => {
         const card = document.createElement("div");
         card.className = "folder-card";
@@ -3943,14 +3972,15 @@ function renderLibrary(data) {
         }
         card.querySelector(".folder-head").addEventListener("click", (e) => {
             if (e.target.closest(".folder-actions")) return;
-            toggleFolder();
+            _libView = { folderId: f.id };
+            renderLibrary(lastLibraryData);
         });
         card.querySelector(".subf-btn").addEventListener("click", (e) => { e.stopPropagation(); createSubfolder(f.id); });
         card.querySelector(".adddom-btn").addEventListener("click", (e) => { e.stopPropagation(); openFolderPicker(f.id); });
         card.querySelector(".cover-input").addEventListener("change", (e) => uploadFolderCover(f.id, e.target));
         card.querySelector(".ren-btn").addEventListener("click", (e) => { e.stopPropagation(); renameFolder(f.id, f.name); });
         card.querySelector(".delf-btn").addEventListener("click", (e) => { e.stopPropagation(); removeFolder(f.id, f.name); });
-        card.querySelector(".toggle-btn").addEventListener("click", (e) => { e.stopPropagation(); toggleFolder(); });
+        card.querySelector(".toggle-btn").addEventListener("click", (e) => { e.stopPropagation(); _libView = { folderId: f.id }; renderLibrary(lastLibraryData); });
         const favBtn = card.querySelector(".folderfav-btn");
         if (favBtn) favBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleFolderFavorite(f.id); });
         if (reorderCtx) {

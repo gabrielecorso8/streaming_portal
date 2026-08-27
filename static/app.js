@@ -3334,7 +3334,6 @@ function titleRow(item, ctx) {
         ${cover}
         <div class="library-meta">
             <span class="library-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
-            <div class="lib-below"><button class="icon-btn tofolder-btn" title="Metti in una cartella/categoria">📂 Cartella</button></div>
         </div>
         <div class="library-actions"><label class="lib-select" title="Seleziona"><input type="checkbox" ${librarySel.has(item.key) ? "checked" : ""}></label>${moveBtns}
             <button class="icon-btn play-title-btn" title="Riproduci">▶</button>
@@ -3354,7 +3353,7 @@ function titleRow(item, ctx) {
             updateLibrarySelBar();
         });
     }
-    row.querySelector(".tofolder-btn").addEventListener("click", (e) => { e.stopPropagation(); openTitleFolderPicker(item); });
+    { const _tf = row.querySelector(".tofolder-btn"); if (_tf) _tf.addEventListener("click", (e) => { e.stopPropagation(); openTitleFolderPicker(item); }); }
     row.querySelector(".play-title-btn").addEventListener("click", (e) => { e.stopPropagation(); playLibraryTitle(item); });
     row.querySelector(".libcover-input").addEventListener("change", (e) => { e.stopPropagation(); uploadTitleCover(item.key, e.target); });
     row.querySelector(".ren-title-btn").addEventListener("click", (e) => { e.stopPropagation(); if (ctx && ctx.folderId) renameInFolder(ctx.folderId, item.key, item.name); else renameTitle(item.key, item.name); });
@@ -4297,17 +4296,31 @@ function openFolderInline(anchorEl, folder) {
     crumb.className = "inline-crumb";
     crumb.textContent = folder.name;
     row.appendChild(crumb);
+    // Filtri/ordinamento del contenuto della cartella
+    const sortSel = document.createElement("select");
+    sortSel.className = "folder-inline-sort custom-select";
+    sortSel.innerHTML = '<option value="score">Rilevanza (voto)</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option><option value="custom">Personalizzato</option>';
+    sortSel.addEventListener("click", (e) => e.stopPropagation());
+    row.appendChild(sortSel);
+
     const data = lastLibraryData || {};
     const folders = data.folders || [];
     const subs = folders.filter(fo => (fo.parent || "") === folder.id);
-    subs.forEach(sf => row.appendChild(buildFolderCard(sf, false)));
-    (folder.items || []).forEach(it => {
-        const libItem = (libraryCache || []).find(x => x.key === it.key) || it;
-        row.appendChild(titleRow(libItem, { noReorder: true }));
-    });
-    if (!subs.length && !(folder.items || []).length) {
-        const em = document.createElement("span"); em.className = "cm-empty"; em.textContent = "Cartella vuota"; row.appendChild(em);
-    }
+    const contentNodes = [];
+    const num = (v) => { const n = parseFloat(v); return isNaN(n) ? -1 : n; };
+    const renderContent = (mode) => {
+        contentNodes.forEach(n => n.remove()); contentNodes.length = 0;
+        subs.forEach(sf => { const el2 = buildFolderCard(sf, false); row.appendChild(el2); contentNodes.push(el2); });
+        let items = (folder.items || []).map(it => (libraryCache || []).find(x => x.key === it.key) || it);
+        if (mode === "score") items.sort((a, b) => num(b.score) - num(a.score));
+        else if (mode === "recent") items.sort((a, b) => String(b.release_date || "").localeCompare(String(a.release_date || "")));
+        else if (mode === "oldest") items.sort((a, b) => String(a.release_date || "").localeCompare(String(b.release_date || "")));
+        items.forEach(it => { const el2 = titleRow(it, { noReorder: true }); row.appendChild(el2); contentNodes.push(el2); });
+        if (!subs.length && !items.length) { const em = document.createElement("span"); em.className = "cm-empty"; em.textContent = "Cartella vuota"; row.appendChild(em); contentNodes.push(em); }
+    };
+    sortSel.addEventListener("change", () => renderContent(sortSel.value));
+    renderContent("score");
+
     row.dataset.drilled = folder.id;
     row.scrollLeft = 0;
 }

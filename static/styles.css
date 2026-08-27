@@ -2370,3 +2370,10 @@ body.downloads-only #hero-billboard { display: none !important; }
     font-weight: 800; font-size: 1.05rem; color: var(--text-primary);
 }
 .disney-row .cm-empty { align-self: center; }
+
+/* Filtro/ordinamento dentro una cartella aperta */
+.disney-row .folder-inline-sort {
+    flex: 0 0 auto; align-self: center; margin-right: 12px;
+    font-size: .82rem; padding: 6px 10px; max-width: 180px;
+    background: rgba(120,175,255,.10); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 8px;
+}

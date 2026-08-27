@@ -3316,7 +3316,11 @@ async function addToLibrary(url, data) {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify(entry)
         });
-        if (r.ok) { await fetchLibrary(); updateModalStar(); }
+        if (r.ok) {
+            const already = (libraryCache || []).some(x => x && x.key === entry.key);
+            if (!already) await fetchLibrary();   // solo se e' un titolo NUOVO
+            updateModalStar();
+        }
     } catch (e) { /* non-fatal */ }
 }
 
@@ -4295,8 +4299,7 @@ function openFolderInline(anchorEl, folder) {
     sortSel.innerHTML = '<option value="score">Rilevanza</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option><option value="custom">Personalizzato</option>';
     header.appendChild(back); header.appendChild(title); header.appendChild(sortSel);
     wrap.insertBefore(header, row);
-    const ra = wrap.querySelector(".row-arrows"); if (ra) ra.style.display = "none";
-    const restore = () => { header.remove(); if (ra) ra.style.display = ""; row.innerHTML = ""; saved.forEach(n => row.appendChild(n)); delete row.dataset.drilled; };
+    const restore = () => { header.remove(); row.innerHTML = ""; saved.forEach(n => row.appendChild(n)); delete row.dataset.drilled; };
     back.addEventListener("click", (e) => { e.stopPropagation(); restore(); });
 
     const data = lastLibraryData || {};
@@ -4313,8 +4316,13 @@ function openFolderInline(anchorEl, folder) {
             const anyScore = items.some(x => x && x.score != null && String(x.score) !== "");
             if (anyScore) items.sort((a, b) => num(b.score) - num(a.score));
             else items.sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "it"));
-        } else if (mode === "recent") items.sort((a, b) => String(b.release_date || "").localeCompare(String(a.release_date || "")));
-        else if (mode === "oldest") items.sort((a, b) => String(a.release_date || "").localeCompare(String(b.release_date || "")));
+        } else if (mode === "recent" || mode === "oldest") {
+            const dOf = (x) => String(x.release_date || "");
+            const eOf = (x) => { const e = parseEpisode(x.name || ""); return e ? (e.season * 1000 + e.episode) : -1; };
+            const nOf = (x) => String(x.name || "");
+            if (mode === "recent") items.sort((a, b) => dOf(b).localeCompare(dOf(a)) || (eOf(b) - eOf(a)) || nOf(a).localeCompare(nOf(b)));
+            else items.sort((a, b) => dOf(a).localeCompare(dOf(b)) || (eOf(a) - eOf(b)) || nOf(a).localeCompare(nOf(b)));
+        }
         items.forEach(it => { try { add(titleRow(it, { noReorder: true })); } catch (e) {} });
         const addT = document.createElement("div");
         addT.className = "folder-card add-tile";

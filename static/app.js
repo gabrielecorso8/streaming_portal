@@ -4308,18 +4308,23 @@ function openFolderInline(anchorEl, folder) {
     const subs = folders.filter(fo => (fo.parent || "") === folder.id);
     const contentNodes = [];
     const num = (v) => { const n = parseFloat(v); return isNaN(n) ? -1 : n; };
-    const renderContent = (mode) => {
+    const renderContent = (mode, animate) => {
         contentNodes.forEach(n => n.remove()); contentNodes.length = 0;
-        subs.forEach(sf => { const el2 = buildFolderCard(sf, false); row.appendChild(el2); contentNodes.push(el2); });
+        let idx = 0;
+        const add = (el2) => {
+            if (animate) el2.style.animation = "drill-fade .4s " + Math.min(idx * 0.035, 0.6) + "s ease both";
+            row.appendChild(el2); contentNodes.push(el2); idx++;
+        };
+        subs.forEach(sf => add(buildFolderCard(sf, false)));
         let items = (folder.items || []).map(it => (libraryCache || []).find(x => x.key === it.key) || it);
         if (mode === "score") items.sort((a, b) => num(b.score) - num(a.score));
         else if (mode === "recent") items.sort((a, b) => String(b.release_date || "").localeCompare(String(a.release_date || "")));
         else if (mode === "oldest") items.sort((a, b) => String(a.release_date || "").localeCompare(String(b.release_date || "")));
-        items.forEach(it => { const el2 = titleRow(it, { noReorder: true }); row.appendChild(el2); contentNodes.push(el2); });
+        items.forEach(it => add(titleRow(it, { noReorder: true })));
         if (!subs.length && !items.length) { const em = document.createElement("span"); em.className = "cm-empty"; em.textContent = "Cartella vuota"; row.appendChild(em); contentNodes.push(em); }
     };
-    sortSel.addEventListener("change", () => renderContent(sortSel.value));
-    renderContent("score");
+    sortSel.addEventListener("change", () => renderContent(sortSel.value, true));
+    renderContent("score", true);
 
     row.dataset.drilled = folder.id;
     row.scrollLeft = 0;
@@ -5109,9 +5114,10 @@ function openVpnReminder() {
 function setupDragScroll() {
     let down = false, startX = 0, startScroll = 0, row = null, moved = false;
     document.addEventListener("mousedown", (e) => {
+        moved = false;
         const r = e.target.closest(".disney-row"); if (!r) return;
-        if (e.target.closest("button, input, select, a, label, .cw-x")) return;
-        down = true; row = r; startX = e.pageX; startScroll = r.scrollLeft; moved = false;
+        if (e.target.closest("button, input, select, option, a, label, .cw-x")) return;
+        down = true; row = r; startX = e.pageX; startScroll = r.scrollLeft;
     });
     document.addEventListener("mousemove", (e) => {
         if (!down || !row) return;
@@ -5122,7 +5128,7 @@ function setupDragScroll() {
     const end = () => { down = false; row = null; document.querySelectorAll(".disney-row.dragging").forEach(r => r.classList.remove("dragging")); };
     document.addEventListener("mouseup", end);
     document.addEventListener("mouseleave", end);
-    document.addEventListener("click", (e) => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+    document.addEventListener("click", (e) => { if (moved && !e.target.closest("select, input, button, a, label, option")) { e.stopPropagation(); e.preventDefault(); } moved = false; }, true);
 }
 
 window.addEventListener("DOMContentLoaded", init);

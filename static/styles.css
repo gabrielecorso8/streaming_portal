@@ -2377,3 +2377,24 @@ body.downloads-only #hero-billboard { display: none !important; }
     font-size: .82rem; padding: 6px 10px; max-width: 180px;
     background: rgba(120,175,255,.10); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 8px;
 }
+
+/* Select filtri: leggibili (niente bianco su bianco) */
+.folder-inline-sort { background-color: #172440 !important; color: var(--text-primary) !important; }
+select.custom-select option, .folder-inline-sort option, #search-type option,
+#search-sort option, #search-genre option { background: #14161c; color: #eaf1fb; }
+
+/* Animazione apertura cartella: apparizione graduale dei titoli */
+@keyframes drill-fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* ═══ Spaziatura UNIFORME (riferimento: saghe/registi/generi) ═══ */
+#library-list .fav-block,
+#continue-section, #downloads-section, #offline-section, #library-section { margin: 0 0 2px !important; }
+#library-list .fav-subtitle, #library-list .fav-block .fav-subtitle,
+#library-list .lib-rest-title, .cat-newcategory,
+#continue-section .downloads-header h2, #downloads-section .downloads-header h2,
+#offline-section .downloads-header h2 { font-size: 1.05rem !important; margin: 4px 2px 0 !important; }
+#continue-section .downloads-header, #downloads-section .downloads-header,
+#offline-section .downloads-header { padding: 0 !important; margin: 0 !important; min-height: 0 !important; }
+#continue-list, #downloads-list, #offline-list, #library-list { margin-top: 0 !important; }
+#continue-list .cw-row, #offline-list .cw-row, #downloads-list .disney-row,
+#library-list .disney-row { padding: 4px 4px 6px !important; }

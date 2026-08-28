@@ -4399,6 +4399,37 @@ function openFolderInline(anchorEl, folder) {
         } catch (e) { showToast("Errore"); }
     };
     const removeBtn = (title, fn) => { const b = document.createElement("button"); b.className = "tile-remove"; b.title = title; b.textContent = "✕"; b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); return b; };
+    let draggedEl = null;
+    const saveDrillOrder = async () => {
+        const tokens = [...row.querySelectorAll(".drill-tile")].map(t => t.dataset.token).filter(Boolean);
+        current.order = tokens;
+        curMode = "custom"; sortSel.value = "custom"; _setFolderSort(current.id, "custom");
+        try {
+            const r = await fetch("/api/folders/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: current.id, order: tokens }) });
+            if (r.ok) { const pl = await r.json(); if (lastLibraryData) { lastLibraryData.folders = (pl && pl.folders) || lastLibraryData.folders; const nf = lastLibraryData.folders.find(x => x.id === current.id); if (nf) { nf.order = tokens; current = nf; } } }
+        } catch (e) {}
+        showToast("Ordine personalizzato salvato");
+    };
+    const _makeDraggable = (t) => {
+        t.classList.add("drill-tile");
+        t.setAttribute("draggable", "true");
+        t.addEventListener("dragstart", (e) => { draggedEl = t; t.classList.add("dragging"); try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", t.dataset.token || ""); } catch (_) {} });
+        t.addEventListener("dragend", async () => { t.classList.remove("dragging"); if (draggedEl) { draggedEl = null; await saveDrillOrder(); } });
+    };
+    const _dragAfter = (x) => {
+        const tiles = [...row.querySelectorAll(".drill-tile:not(.dragging)")];
+        let best = null, bestOff = -Infinity;
+        tiles.forEach(ch => { const b = ch.getBoundingClientRect(); const off = x - b.left - b.width / 2; if (off < 0 && off > bestOff) { bestOff = off; best = ch; } });
+        return best;
+    };
+    row.addEventListener("dragover", (e) => {
+        if (!draggedEl) return;
+        e.preventDefault();
+        const after = _dragAfter(e.clientX);
+        const addTile = row.querySelector(".add-tile");
+        if (after == null) { if (addTile) row.insertBefore(draggedEl, addTile); else row.appendChild(draggedEl); }
+        else row.insertBefore(draggedEl, after);
+    });
     const renderContent = (mode, animate) => {
         curMode = mode;
         sortSel.value = mode;
@@ -4416,11 +4447,19 @@ function openFolderInline(anchorEl, folder) {
         if (mode === "score") entries.sort((a, b) => (b.score - a.score) || byName(a, b));
         else if (mode === "recent") entries.sort((a, b) => b.d.localeCompare(a.d) || (b.e - a.e) || byName(a, b));
         else if (mode === "oldest") entries.sort((a, b) => a.d.localeCompare(b.d) || (a.e - b.e) || byName(a, b));
-        // "custom": nessun ordinamento (sottocartelle poi titoli, ordine originale)
+        else if (mode === "custom") {
+            const ord = current.order || [];
+            const tok = (en) => en.kind === "folder" ? ("f:" + en.sf.id) : en.o.key;
+            const idxOf = (en) => { const i = ord.indexOf(tok(en)); return i === -1 ? 1e9 : i; };
+            entries.sort((a, b) => idxOf(a) - idxOf(b));
+        }
         entries.forEach(en => {
             try {
-                if (en.kind === "folder") { const t = _subFolderTile(en.sf, () => openSub(en.sf)); t.appendChild(removeBtn("Elimina cartella", () => removeFolderInline(en.sf))); add(t); }
-                else { const t = titleRow(en.o, { noReorder: true }); t.appendChild(removeBtn("Rimuovi dalla cartella", () => removeTitleInline(en.o))); add(t); }
+                let t;
+                if (en.kind === "folder") { t = _subFolderTile(en.sf, () => openSub(en.sf)); t.dataset.token = "f:" + en.sf.id; t.appendChild(removeBtn("Elimina cartella", () => removeFolderInline(en.sf))); }
+                else { t = titleRow(en.o, { noReorder: true }); t.dataset.token = en.o.key; t.appendChild(removeBtn("Rimuovi dalla cartella", () => removeTitleInline(en.o))); }
+                _makeDraggable(t);
+                add(t);
             } catch (e) {}
         });
         const addT = document.createElement("div");
@@ -5516,6 +5555,7 @@ function setupDragScroll() {
     document.addEventListener("mousedown", (e) => {
         moved = false;
         const r = e.target.closest(".disney-row"); if (!r) return;
+        if (e.target.closest(".drill-tile")) return;
         if (e.target.closest("button, input, select, option, a, label, .cw-x")) return;
         down = true; row = r; startX = e.pageX; startScroll = r.scrollLeft;
     });

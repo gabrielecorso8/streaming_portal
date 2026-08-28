@@ -2500,3 +2500,7 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 .cm-season { display: inline-flex; align-items: center; gap: 5px; font-size: .82rem; color: var(--text-primary);
     background: rgba(120,175,255,.06); border: 1px solid var(--border-color); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
 .cm-season input { margin: 0; }
+
+/* Trascinamento locandine/sottocartelle dentro una cartella (ordine personalizzato) */
+.drill-tile.dragging { opacity: .45; }
+.disney-row.dragging .drill-tile { cursor: grabbing; }

@@ -176,7 +176,7 @@ async function init() {
     });
     el.closeModalBtn.addEventListener("click", closeModal);
     if (el.favModalBtn) el.favModalBtn.addEventListener("click", toggleModalFavorite);
-    el.closePlayerBtn.addEventListener("click", closePlayer);
+    el.closePlayerBtn.addEventListener("click", closePlayerAndReturn);
     
     // Setup detail actions
     if (el.streamMovieBtn) el.streamMovieBtn.addEventListener("click", () => startStream(currentTitle.id, currentTitle.name));
@@ -188,7 +188,7 @@ async function init() {
     if (el.addSourceDomainBtn) el.addSourceDomainBtn.addEventListener("click", addSourceDomain);
     if (el.sourceDomainInput) el.sourceDomainInput.addEventListener("keypress", (e) => { if (e.key === "Enter") addSourceDomain(); });
     document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && el.playerSection && !el.playerSection.classList.contains("hidden")) closePlayer();
+        if (e.key === "Escape" && el.playerSection && !el.playerSection.classList.contains("hidden")) closePlayerAndReturn();
     });
     if (el.refreshDownloadsBtn) el.refreshDownloadsBtn.addEventListener("click", refreshDownloads);
     if (el.castBtn) el.castBtn.addEventListener("click", castToTV);
@@ -721,6 +721,7 @@ async function openBulkFolderPicker(items) {
 }
 
 function openSearchResult(item) {
+    _rememberReturnScroll();
     if (!item || !item.id_and_slug) {
         showToast("Risultato non apribile");
         return;
@@ -1479,6 +1480,7 @@ async function cloneEpisodeDownload(season, episode, label, hold) {
 
 function closeModal() {
     el.detailsModal.classList.add("hidden");
+    _restoreReturnScroll();
 }
 
 // 5. Streaming Player ---------------------------------------------------------
@@ -1682,6 +1684,10 @@ function playIframe(url) {
     }
 }
 
+let _returnScrollY = null;
+function _rememberReturnScroll() { _returnScrollY = window.scrollY; }
+function _restoreReturnScroll() { if (_returnScrollY != null) { const y = _returnScrollY; _returnScrollY = null; requestAnimationFrame(() => window.scrollTo(0, y)); } }
+function closePlayerAndReturn() { closePlayer(); _restoreReturnScroll(); }
 function closePlayer() {
     if (activeHls) { try { activeHls.destroy(); } catch (e) {} activeHls = null; }
     el.videoPlayer.pause();
@@ -3240,6 +3246,7 @@ async function downloadAdjEpisode(series, season, episode, direction) {
 }
 
 function playLibraryTitle(item) {
+    _rememberReturnScroll();
     const pid = getPlayableId(item);
     if (pid) playDownloaded(pid, item.name, item.key);
     else openFromLibrary(item);
@@ -4603,6 +4610,7 @@ function _attachSeasonUI(label, it, selSeasons, updCount) {
     });
 }
 function openFromLibrary(item) {
+    _rememberReturnScroll();
     showToast(`Apertura: ${item.name || "titolo"}…`);
     _pendingSeason = (item && item.season) ? String(item.season) : "";
     resolveDirectUrl(item.url, item.name || "");

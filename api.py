@@ -1863,8 +1863,11 @@ def _library_map():
 def _title_view(e):
     url = e.get("url", "")
     key = e.get("key") or ""
+    base = e.get("base_key") or ""
     if re.match(r"^\d+-[\w-]+$", key):
         url = f"{get_base_url()}/it/titles/{key}"
+    elif base and re.match(r"^\d+-[\w-]+$", base):
+        url = f"{get_base_url()}/it/titles/{base}"
     return {
         "key": e.get("key"),
         "name": e.get("name") or "Senza titolo",
@@ -1874,6 +1877,8 @@ def _title_view(e):
         "is_clone": bool(e.get("is_clone", False)),
         "url": url,
         "favorite": bool(e.get("favorite", False)),
+        "base_key": base,
+        "season": e.get("season", ""),
     }
 
 
@@ -3575,6 +3580,8 @@ class LibraryEntry(BaseModel):
     type: Optional[str] = ""           # "movie" | "tv" | ""
     release_date: Optional[str] = ""   # year/date of release (for recency sort)
     is_clone: Optional[bool] = False
+    base_key: Optional[str] = ""       # per le voci-stagione: id-slug della serie madre
+    season: Optional[str] = ""         # numero stagione (voce che punta a UNA sola stagione)
 
 
 class LibraryKey(BaseModel):
@@ -3621,6 +3628,8 @@ def add_library(entry: LibraryEntry):
             "type": entry.type or "",
             "release_date": entry.release_date or "",
             "is_clone": bool(entry.is_clone),
+            "base_key": entry.base_key or "",
+            "season": entry.season or "",
             "favorite": False,
         })
     LIB_STATE[key] = now          # cronologia nel file di stato separato

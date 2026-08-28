@@ -1181,7 +1181,8 @@ function renderCloneDetails(data, libKey) {
         });
 
         if ((data.seasons || []).length > 0) {
-            el.seasonSelect.value = data.seasons[0].number;
+            const _ps = _pendingSeason && (data.seasons || []).some(s => String(s.number) === _pendingSeason) ? _pendingSeason : String(data.seasons[0].number);
+            el.seasonSelect.value = _ps; _pendingSeason = "";
             loadSeasonEpisodes();
         }
     } else {
@@ -1254,7 +1255,8 @@ async function loadDetails(idAndSlug, sourceUrl) {
             });
             
             if (details.seasons.length > 0) {
-                el.seasonSelect.value = details.seasons[0].number;
+                const _ps = _pendingSeason && details.seasons.some(s => String(s.number) === _pendingSeason) ? _pendingSeason : String(details.seasons[0].number);
+                el.seasonSelect.value = _ps; _pendingSeason = "";
                 loadSeasonEpisodes();
             }
         }
@@ -4483,8 +4485,51 @@ function _hbRender(host, animate) {
     if (_next) _next.addEventListener("click", () => { _hbIdx = (_hbIdx + 1) % _hbItems.length; _hbRender(host, true); _hbRestart(host); });
 }
 
+let _pendingSeason = "";
+async function _fetchSeasons(idAndSlug) {
+    try { const r = await fetch("/api/details/" + encodeURIComponent(idAndSlug)); if (!r.ok) return []; const d = await r.json(); return (d.seasons || []).map(s => s.number).filter(n => n != null); } catch (e) { return []; }
+}
+async function saveSeasonEntry(s) {
+    const key = s.base_key + "@s" + s.season;
+    try {
+        await fetch("/api/library", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+            key, url: s.url || s.base_key, name: (s.name || "") + " — Stagione " + s.season,
+            cover: s.cover || "", type: "tv", release_date: s.release_date || "", is_clone: false,
+            base_key: s.base_key, season: String(s.season)
+        }) });
+        return key;
+    } catch (e) { return null; }
+}
+function _attachSeasonUI(label, it, selSeasons, updCount) {
+    if ((it.type || "") !== "tv" || !it.id_and_slug || String(it.id_and_slug).includes("@s")) return;
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "cm-seasons-btn"; btn.textContent = "Stagioni ▾";
+    const box = document.createElement("div"); box.className = "cm-seasons hidden";
+    label.appendChild(btn);
+    label.insertAdjacentElement("afterend", box);
+    let loaded = false;
+    btn.addEventListener("click", async (e) => {
+        e.preventDefault(); e.stopPropagation();
+        box.classList.toggle("hidden");
+        if (loaded) return; loaded = true;
+        box.innerHTML = "<span class='cm-seasons-load'>Carico…</span>";
+        const seasons = await _fetchSeasons(it.id_and_slug);
+        if (!seasons.length) { box.innerHTML = "<span class='cm-seasons-load'>Nessuna stagione</span>"; return; }
+        box.innerHTML = seasons.map(n => {
+            const sk = it.id_and_slug + "@s" + n;
+            return `<label class="cm-season"><input type="checkbox" data-sk="${escapeHtml(sk)}" data-season="${n}" ${selSeasons.has(sk) ? "checked" : ""}> Stagione ${n}</label>`;
+        }).join("");
+        box.querySelectorAll("input[type=checkbox]").forEach(cb => cb.addEventListener("change", () => {
+            const sk = cb.dataset.sk;
+            if (cb.checked) selSeasons.set(sk, { base_key: it.id_and_slug, name: it.name || "", cover: it.cover || "", url: it.url || "", season: cb.dataset.season, release_date: it.release_date || "" });
+            else selSeasons.delete(sk);
+            updCount();
+        }));
+    });
+}
 function openFromLibrary(item) {
     showToast(`Apertura: ${item.name || "titolo"}…`);
+    _pendingSeason = (item && item.season) ? String(item.season) : "";
     resolveDirectUrl(item.url, item.name || "");
 }
 
@@ -4764,8 +4809,8 @@ async function openAddTitlesToCategory(kind, label) {
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
     const srcTog = _srcToggle();
     { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
-    const selLib = new Map(), selExt = new Map(); let cmExt = [];
-    const updCount = () => { const n = selLib.size + selExt.size; ov.querySelector(".cm-selcount").textContent = n ? (n + " selezionati") : ""; };
+    const selLib = new Map(), selExt = new Map(); let cmExt = []; const selSeasons = new Map();
+    const updCount = () => { const n = selLib.size + selExt.size + selSeasons.size; ov.querySelector(".cm-selcount").textContent = n ? (n + " selezionati") : ""; };
     const resultsEl = ov.querySelector(".cm-results");
     const already = new Set(_catTitles()[kind] || []);
     const renderRes = (libM, extM) => {
@@ -4780,6 +4825,13 @@ async function openAddTitlesToCategory(kind, label) {
             else { const it = cmExt.find(x => x.id_and_slug === cb.dataset.id); if (cb.checked && it) selExt.set(it.id_and_slug, it); else selExt.delete(cb.dataset.id); }
             updCount();
         }));
+        resultsEl.querySelectorAll(".cm-item").forEach(lbl => {
+            const cb = lbl.querySelector("input[type=checkbox]"); if (!cb) return;
+            let it2 = null;
+            if (cb.dataset.src === "lib") { const li = (libraryCache || []).find(x => x.key === cb.dataset.key); if (li) it2 = { type: li.type, id_and_slug: li.key, name: li.name, cover: li.cover, url: li.url, release_date: li.release_date }; }
+            else { it2 = cmExt.find(x => x.id_and_slug === cb.dataset.id) || null; }
+            if (it2) _attachSeasonUI(lbl, it2, selSeasons, updCount);
+        });
     };
     let tmr;
     const doSearch = () => {
@@ -4804,6 +4856,7 @@ async function openAddTitlesToCategory(kind, label) {
         const keys = [...selLib.keys()];
         let needRefresh = false;
         for (const it of selExt.values()) { try { if (await saveSearchItem(it) && it.id_and_slug) { keys.push(it.id_and_slug); needRefresh = true; } } catch (e) {} }
+        for (const s of (typeof selSeasons !== "undefined" ? selSeasons.values() : [])) { try { const sk = await saveSeasonEntry(s); if (sk) { keys.push(sk); needRefresh = true; } } catch (e) {} }
         if (!keys.length) { showToast("Nessun titolo selezionato"); return; }
         _addCatTitles(kind, keys);
         showToast("Aggiunti " + keys.length + " titoli");
@@ -4846,8 +4899,8 @@ async function openAddTitlesToFolder(folder) {
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
     const srcTog = _srcToggle();
     { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
-    const selLib = new Map(), selExt = new Map(); let cmExt = [];
-    const updCount = () => { const n = selLib.size + selExt.size; ov.querySelector(".cm-selcount").textContent = n ? (n + " selezionati") : ""; };
+    const selLib = new Map(), selExt = new Map(); let cmExt = []; const selSeasons = new Map();
+    const updCount = () => { const n = selLib.size + selExt.size + selSeasons.size; ov.querySelector(".cm-selcount").textContent = n ? (n + " selezionati") : ""; };
     const resultsEl = ov.querySelector(".cm-results");
     const already = new Set((folder.items || []).map(x => (x && x.key) || x));
     const renderRes = (libM, extM) => {
@@ -4862,6 +4915,13 @@ async function openAddTitlesToFolder(folder) {
             else { const it = cmExt.find(x => x.id_and_slug === cb.dataset.id); if (cb.checked && it) selExt.set(it.id_and_slug, it); else selExt.delete(cb.dataset.id); }
             updCount();
         }));
+        resultsEl.querySelectorAll(".cm-item").forEach(lbl => {
+            const cb = lbl.querySelector("input[type=checkbox]"); if (!cb) return;
+            let it2 = null;
+            if (cb.dataset.src === "lib") { const li = (libraryCache || []).find(x => x.key === cb.dataset.key); if (li) it2 = { type: li.type, id_and_slug: li.key, name: li.name, cover: li.cover, url: li.url, release_date: li.release_date }; }
+            else { it2 = cmExt.find(x => x.id_and_slug === cb.dataset.id) || null; }
+            if (it2) _attachSeasonUI(lbl, it2, selSeasons, updCount);
+        });
     };
     let tmr;
     const doSearch = () => {
@@ -4885,6 +4945,7 @@ async function openAddTitlesToFolder(folder) {
     ov.querySelector(".cm-add").addEventListener("click", async () => {
         const keys = [...selLib.keys()];
         for (const it of selExt.values()) { try { if (await saveSearchItem(it) && it.id_and_slug) keys.push(it.id_and_slug); } catch (e) {} }
+        for (const s of (typeof selSeasons !== "undefined" ? selSeasons.values() : [])) { try { const sk = await saveSeasonEntry(s); if (sk) keys.push(sk); } catch (e) {} }
         if (!keys.length) { showToast("Nessun titolo selezionato"); return; }
         try {
             await fetch("/api/folders/add-items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: folder.id, keys }) });
@@ -4919,7 +4980,7 @@ function openCreateFolderModal(kind, opts) {
     const srcTog = _srcToggle();
     { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
 
-    const selLib = new Map(), selExt = new Map();
+    const selLib = new Map(), selExt = new Map(); const selSeasons = new Map();
     let cmExt = [];
     const coverInput = ov.querySelector(".cm-cover-input");
     const coverBox = ov.querySelector(".cm-cover-box");
@@ -4927,7 +4988,7 @@ function openCreateFolderModal(kind, opts) {
         const fl = coverInput.files && coverInput.files[0];
         if (fl) { coverBox.style.backgroundImage = "url('" + URL.createObjectURL(fl) + "')"; coverBox.classList.add("has"); }
     });
-    const updCount = () => { const n = selLib.size + selExt.size; ov.querySelector(".cm-selcount").textContent = n ? (n + " selezionati") : ""; };
+    const updCount = () => { const n = selLib.size + selExt.size + selSeasons.size; ov.querySelector(".cm-selcount").textContent = n ? (n + " selezionati") : ""; };
     const resultsEl = ov.querySelector(".cm-results");
     const renderRes = (libM, extM) => {
         let html = "";
@@ -4941,6 +5002,13 @@ function openCreateFolderModal(kind, opts) {
             else { const it = cmExt.find(x => x.id_and_slug === cb.dataset.id); if (cb.checked && it) selExt.set(it.id_and_slug, it); else selExt.delete(cb.dataset.id); }
             updCount();
         }));
+        resultsEl.querySelectorAll(".cm-item").forEach(lbl => {
+            const cb = lbl.querySelector("input[type=checkbox]"); if (!cb) return;
+            let it2 = null;
+            if (cb.dataset.src === "lib") { const li = (libraryCache || []).find(x => x.key === cb.dataset.key); if (li) it2 = { type: li.type, id_and_slug: li.key, name: li.name, cover: li.cover, url: li.url, release_date: li.release_date }; }
+            else { it2 = cmExt.find(x => x.id_and_slug === cb.dataset.id) || null; }
+            if (it2) _attachSeasonUI(lbl, it2, selSeasons, updCount);
+        });
     };
     let tmr;
     const doSearch = () => {
@@ -4976,6 +5044,8 @@ function openCreateFolderModal(kind, opts) {
             if (coverInput.files && coverInput.files[0]) { try { await uploadFolderCover(created.id, coverInput); } catch (e) {} }
             const keys = [...selLib.keys()];
             for (const it of selExt.values()) { try { if (await saveSearchItem(it) && it.id_and_slug) keys.push(it.id_and_slug); } catch (e) {} }
+            for (const s of (typeof selSeasons !== "undefined" ? selSeasons.values() : [])) { try { const sk = await saveSeasonEntry(s); if (sk) keys.push(sk); } catch (e) {} }
+        for (const s of (typeof selSeasons !== "undefined" ? selSeasons.values() : [])) { try { const sk = await saveSeasonEntry(s); if (sk) keys.push(sk); } catch (e) {} }
             if (keys.length) { try { await fetch("/api/folders/add-items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: created.id, keys }) }); } catch (e) {} }
             if (opts.parentId) {
                 try {

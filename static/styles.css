@@ -2488,3 +2488,15 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
     transition: border-color .15s, background .15s, color .15s; }
 .src-toggle .src-opt:hover { border-color: var(--accent); color: var(--text-primary); }
 .src-toggle .src-opt.active { background: var(--accent); border-color: var(--accent); color: #041018; font-weight: 700; }
+
+/* Selettore stagione singola nei modali "aggiungi titoli" */
+.cm-item { position: relative; }
+.cm-seasons-btn { margin-left: auto; padding: 3px 8px; border-radius: 8px; border: 1px solid var(--border-color);
+    background: rgba(120,175,255,.08); color: var(--text-secondary); font-size: .78rem; cursor: pointer; white-space: nowrap; }
+.cm-seasons-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cm-seasons { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 8px 10px 36px; }
+.cm-seasons.hidden { display: none; }
+.cm-seasons-load { color: var(--text-secondary); font-size: .8rem; }
+.cm-season { display: inline-flex; align-items: center; gap: 5px; font-size: .82rem; color: var(--text-primary);
+    background: rgba(120,175,255,.06); border: 1px solid var(--border-color); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
+.cm-season input { margin: 0; }

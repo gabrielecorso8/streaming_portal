@@ -4437,6 +4437,37 @@ function openFolderInline(anchorEl, folder) {
         if (lastLibraryData) { const nf = lastLibraryData.folders.find(x => x.id === current.id); if (nf) current = nf; }
         renderContent(curMode, false);
     };
+    const extractToken = async (token) => {
+        const up = current.parent || "";
+        try {
+            if (token && token.indexOf("f:") === 0) {
+                const childId = token.slice(2);
+                const r = await fetch("/api/folders/parent", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: childId, parent: up }) });
+                if (r.ok) { const pl = await r.json(); if (lastLibraryData) lastLibraryData.folders = (pl && pl.folders) || lastLibraryData.folders; showToast(up ? "Spostata al livello superiore" : "Estratta dalla cartella"); }
+                else { const d = await r.json().catch(() => ({})); showToast((d && d.detail) || "Spostamento non valido"); }
+            } else if (token) {
+                if (up) { try { await fetch("/api/folders/add-items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: up, keys: [token] }) }); } catch (e) {} }
+                const r = await fetch("/api/folders/remove-item", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: current.id, key: token }) });
+                if (r.ok) { const pl = await r.json(); if (lastLibraryData) lastLibraryData.folders = (pl && pl.folders) || lastLibraryData.folders; }
+                current.items = (current.items || []).filter(it => ((it && it.key) || it) !== token);
+                showToast(up ? "Spostato al livello superiore" : "Estratto dalla cartella");
+            }
+        } catch (e) { showToast("Errore"); }
+        if (lastLibraryData) { const nf = lastLibraryData.folders.find(x => x.id === current.id); if (nf) current = nf; }
+        renderContent(curMode, false);
+    };
+    back.title = "Indietro — trascina qui una locandina per estrarla di un livello";
+    back.addEventListener("dragover", (e) => { if (draggedEl) { e.preventDefault(); e.stopPropagation(); back.classList.add("extract-over"); } });
+    back.addEventListener("dragleave", () => back.classList.remove("extract-over"));
+    back.addEventListener("drop", async (e) => {
+        if (!draggedEl) return;
+        e.preventDefault(); e.stopPropagation();
+        back.classList.remove("extract-over");
+        const token = draggedEl.dataset.token;
+        _nestHandled = true;
+        const dl = draggedEl; draggedEl = null; if (dl) dl.classList.remove("dragging");
+        await extractToken(token);
+    });
     const _makeDraggable = (t) => {
         t.classList.add("drill-tile");
         t.setAttribute("draggable", "true");

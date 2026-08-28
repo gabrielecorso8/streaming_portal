@@ -2508,3 +2508,7 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 /* Evidenzia la sottocartella quando ci trascini sopra qualcosa da annidare */
 .drill-tile.nest-over { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 12px; }
 .drill-tile.nest-over .folder-cover { box-shadow: 0 0 0 2px var(--accent) inset; }
+
+/* "Indietro" come zona di estrazione: trascinaci sopra per spostare di un livello */
+.inline-back.extract-over { outline: 2px solid var(--accent); outline-offset: 2px;
+    background: rgba(34,166,255,.22); color: var(--accent); }

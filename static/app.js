@@ -4360,11 +4360,11 @@ function openFolderInline(anchorEl, folder) {
     // Indietro: se dentro una sottocartella torna al livello superiore, altrimenti chiude il drill.
     back.addEventListener("click", (e) => {
         e.stopPropagation();
-        if (stack.length) { current = stack.pop(); title.textContent = current.name; sortSel.value = "score"; renderContent("score", true); }
+        if (stack.length) { current = stack.pop(); title.textContent = current.name; renderContent(_getFolderSort(current.id), true); }
         else restore();
     });
     // Entra in una sottocartella (in-place, senza chiudere il drill).
-    const openSub = (sf) => { stack.push(current); current = sf; title.textContent = sf.name; sortSel.value = "score"; renderContent("score", true); row.scrollLeft = 0; };
+    const openSub = (sf) => { stack.push(current); current = sf; title.textContent = sf.name; renderContent(_getFolderSort(sf.id), true); row.scrollLeft = 0; };
 
     const num = (v) => { const n = parseFloat(v); return isNaN(n) ? -1 : n; };
     const dOf = (x) => String((x && x.release_date) || "");
@@ -4399,6 +4399,7 @@ function openFolderInline(anchorEl, folder) {
     const removeBtn = (title, fn) => { const b = document.createElement("button"); b.className = "tile-remove"; b.title = title; b.textContent = "✕"; b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); return b; };
     const renderContent = (mode, animate) => {
         curMode = mode;
+        sortSel.value = mode;
         row.innerHTML = "";
         let idx = 0;
         const add = (el2) => { if (!el2) return; if (animate) el2.style.animation = "drill-fade .4s " + Math.min(idx * 0.035, 0.6) + "s ease both"; row.appendChild(el2); idx++; };
@@ -4426,8 +4427,8 @@ function openFolderInline(anchorEl, folder) {
         addT.addEventListener("click", (e) => { e.stopPropagation(); openFolderAddModal(current, () => renderContent(curMode, false)); });
         row.appendChild(addT);
     };
-    sortSel.addEventListener("change", () => renderContent(sortSel.value, true));
-    renderContent("score", true);
+    sortSel.addEventListener("change", () => { _setFolderSort(current.id, sortSel.value); renderContent(sortSel.value, true); });
+    renderContent(_getFolderSort(folder.id), true);
     row.dataset.drilled = folder.id;
     row.scrollLeft = 0;
 }
@@ -4553,6 +4554,9 @@ function normalizeCustomFilterName(value) {
     return String(value || "").trim().toLowerCase().replace(/\s+/g, " ").replace(/[<>]/g, "").slice(0, 40);
 }
 
+function _folderSorts() { try { return JSON.parse(localStorage.getItem("scp_foldersort") || "{}"); } catch (e) { return {}; } }
+function _getFolderSort(id) { const m = _folderSorts(); return (id && m[id]) || "score"; }
+function _setFolderSort(id, mode) { if (!id) return; const m = _folderSorts(); if (mode && mode !== "score") m[id] = mode; else delete m[id]; try { localStorage.setItem("scp_foldersort", JSON.stringify(m)); } catch (e) {} }
 function _catTitles() { try { return JSON.parse(localStorage.getItem("scp_cattitles") || "{}"); } catch (e) { return {}; } }
 function _addCatTitles(kind, keys) { const m = _catTitles(); const cur = new Set(m[kind] || []); (keys || []).forEach(k => k && cur.add(k)); m[kind] = [...cur]; try { localStorage.setItem("scp_cattitles", JSON.stringify(m)); } catch (e) {} }
 function _removeCatTitle(kind, key) { const m = _catTitles(); m[kind] = (m[kind] || []).filter(k => k !== key); if (!m[kind].length) delete m[kind]; try { localStorage.setItem("scp_cattitles", JSON.stringify(m)); } catch (e) {} }

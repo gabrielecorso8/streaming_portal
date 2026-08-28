@@ -4410,11 +4410,31 @@ function openFolderInline(anchorEl, folder) {
         } catch (e) {}
         showToast("Ordine personalizzato salvato");
     };
+    let _nestHandled = false;
+    const nestTokenInto = async (token, targetId) => {
+        try {
+            if (token && token.indexOf("f:") === 0) {
+                const childId = token.slice(2);
+                if (childId === targetId) return;
+                const r = await fetch("/api/folders/parent", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: childId, parent: targetId }) });
+                if (r.ok) { const pl = await r.json(); if (lastLibraryData) lastLibraryData.folders = (pl && pl.folders) || lastLibraryData.folders; showToast("Cartella spostata"); }
+                else { const d = await r.json().catch(() => ({})); showToast((d && d.detail) || "Spostamento non valido"); }
+            } else if (token) {
+                await fetch("/api/folders/add-items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: targetId, keys: [token] }) });
+                const r = await fetch("/api/folders/remove-item", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: current.id, key: token }) });
+                if (r.ok) { const pl = await r.json(); if (lastLibraryData) lastLibraryData.folders = (pl && pl.folders) || lastLibraryData.folders; }
+                current.items = (current.items || []).filter(it => ((it && it.key) || it) !== token);
+                showToast("Titolo spostato");
+            }
+        } catch (e) { showToast("Errore spostamento"); }
+        if (lastLibraryData) { const nf = lastLibraryData.folders.find(x => x.id === current.id); if (nf) current = nf; }
+        renderContent(curMode, false);
+    };
     const _makeDraggable = (t) => {
         t.classList.add("drill-tile");
         t.setAttribute("draggable", "true");
         t.addEventListener("dragstart", (e) => { draggedEl = t; t.classList.add("dragging"); try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", t.dataset.token || ""); } catch (_) {} });
-        t.addEventListener("dragend", async () => { t.classList.remove("dragging"); if (draggedEl) { draggedEl = null; await saveDrillOrder(); } });
+        t.addEventListener("dragend", async () => { t.classList.remove("dragging"); if (_nestHandled) { _nestHandled = false; draggedEl = null; return; } if (draggedEl) { draggedEl = null; await saveDrillOrder(); } });
     };
     const _dragAfter = (x) => {
         const tiles = [...row.querySelectorAll(".drill-tile:not(.dragging)")];
@@ -4456,7 +4476,23 @@ function openFolderInline(anchorEl, folder) {
         entries.forEach(en => {
             try {
                 let t;
-                if (en.kind === "folder") { t = _subFolderTile(en.sf, () => openSub(en.sf)); t.dataset.token = "f:" + en.sf.id; t.appendChild(removeBtn("Elimina cartella", () => removeFolderInline(en.sf))); }
+                if (en.kind === "folder") {
+                    t = _subFolderTile(en.sf, () => openSub(en.sf));
+                    t.dataset.token = "f:" + en.sf.id;
+                    t.appendChild(removeBtn("Elimina cartella", () => removeFolderInline(en.sf)));
+                    const _tid = en.sf.id;
+                    t.addEventListener("dragover", (e) => { if (draggedEl && draggedEl !== t) { e.preventDefault(); e.stopPropagation(); t.classList.add("nest-over"); } });
+                    t.addEventListener("dragleave", () => t.classList.remove("nest-over"));
+                    t.addEventListener("drop", async (e) => {
+                        if (!draggedEl || draggedEl === t) return;
+                        e.preventDefault(); e.stopPropagation();
+                        t.classList.remove("nest-over");
+                        const token = draggedEl.dataset.token;
+                        _nestHandled = true;
+                        const dl = draggedEl; draggedEl = null; if (dl) dl.classList.remove("dragging");
+                        await nestTokenInto(token, _tid);
+                    });
+                }
                 else { t = titleRow(en.o, { noReorder: true }); t.dataset.token = en.o.key; t.appendChild(removeBtn("Rimuovi dalla cartella", () => removeTitleInline(en.o))); }
                 _makeDraggable(t);
                 add(t);

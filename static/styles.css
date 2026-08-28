@@ -2504,3 +2504,7 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 /* Trascinamento locandine/sottocartelle dentro una cartella (ordine personalizzato) */
 .drill-tile.dragging { opacity: .45; }
 .disney-row.dragging .drill-tile { cursor: grabbing; }
+
+/* Evidenzia la sottocartella quando ci trascini sopra qualcosa da annidare */
+.drill-tile.nest-over { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 12px; }
+.drill-tile.nest-over .folder-cover { box-shadow: 0 0 0 2px var(--accent) inset; }

@@ -335,7 +335,7 @@ def _fetch_maybe_cloudflare(url, headers=None, timeout=15, proxies=None):
     """GET che, se prende 403/503 (tipico di Cloudflare), riprova con cloudscraper
     per risolvere la challenge JS. Ritorna la Response migliore ottenuta."""
     try:
-        r = session.get(url, headers=headers, timeout=timeout, proxies=proxies, verify=False)
+        r = session.get(url, headers=headers, timeout=timeout, proxies=proxies, verify=_verify())
     except Exception:
         r = None
     if r is not None and r.status_code == 200:
@@ -401,6 +401,9 @@ def _browser_get_html(url, referer=None, timeout_ms=180000):
                   "--disable-client-side-phishing-detection",
                   "--disable-component-update",
                   "--no-pings",
+                  # Anti-leak WebRTC: impedisce a STUN/UDP non-proxied di rivelare
+                  # l'IP reale/locale anche dietro VPN.
+                  "--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
                   "--metrics-recording-only",
                   "--disable-breakpad",
                   "--safebrowsing-disable-auto-update",
@@ -410,7 +413,7 @@ def _browser_get_html(url, referer=None, timeout_ms=180000):
             locale="it-IT",
             timezone_id="Europe/Rome",
             color_scheme="light",
-            ignore_https_errors=True,
+            ignore_https_errors=(not _verify()),
             extra_http_headers=({"Referer": referer} if referer else {}))
         # Prova col CHROME/EDGE REALE del sistema (Cloudflare "managed" lascia passare
         # un browser vero, mentre blocca il Chromium di Playwright). Fallback: chromium.
@@ -660,7 +663,7 @@ def test_domain_alive(domain):
     }
     try:
         resp = requests.get(f"https://{base}/it/search?q=a", headers=headers,
-                            timeout=6, verify=False)
+                            timeout=6, verify=_verify())
         if resp.status_code != 200:
             return False
         if any(m in resp.text.lower() for m in BLOCK_MARKERS):
@@ -861,7 +864,7 @@ def detect_active_domain():
         try:
             # The definitive test: does the real Inertia API answer with JSON?
             resp = requests.get(f"{base}/it/search?q=a", headers=headers,
-                                timeout=6, verify=False)
+                                timeout=6, verify=_verify())
             if resp.status_code != 200:
                 return None
             text_low = resp.text.lower()
@@ -905,6 +908,13 @@ if not (SETTINGS.get("access_token") or "").strip():
     except Exception:
         pass
 SETTINGS.setdefault("lan_enabled", False)
+SETTINGS.setdefault("tls_verify", True)   # verifica certificati TLS: ON di default (sicuro)
+
+
+def _verify():
+    """True = verifica i certificati TLS (default, sicuro). Impostabile a False in
+    settings.json ('tls_verify') solo se un CDN specifico rompe l'handshake."""
+    return bool(SETTINGS.get("tls_verify", True))
 
 
 def _prune_library():
@@ -988,11 +998,11 @@ def _current_public_ip():
     download: proxy se configurato, altrimenti diretto => riflette lo stato VPN).
     Cache 30s per non fare una richiesta a ogni chiamata."""
     now = time.time()
-    if _IP_CACHE["ip"] and (now - _IP_CACHE["ts"] < 30):
+    if _IP_CACHE["ip"] and (now - _IP_CACHE["ts"] < 8):
         return _IP_CACHE["ip"]
     for u in ("https://api.ipify.org", "https://icanhazip.com", "https://ifconfig.me/ip"):
         try:
-            r = requests.get(u, timeout=5, proxies=get_proxies(), verify=False)
+            r = requests.get(u, timeout=5, proxies=get_proxies(), verify=_verify())
             ip = (r.text or "").strip()
             if r.status_code == 200 and ip and len(ip) < 64 and ("." in ip or ":" in ip):
                 _IP_CACHE["ip"] = ip
@@ -1011,15 +1021,30 @@ def _mask_ip(ip):
     return (parts[0] + "." + parts[1] + ".x.x") if len(parts) == 4 else ip
 
 def _require_protected_egress():
-    """Se il kill-switch e' attivo e l'IP pubblico corrente = IP di casa (VPN
-    spenta), BLOCCA l'operazione online invece di esporre l'IP reale."""
+    """Kill-switch FAIL-CLOSED: con kill-switch attivo, un'operazione online e'
+    permessa SOLO se possiamo verificare che l'IP pubblico corrente NON e' quello
+    di casa (cioe' la VPN e' su). In ogni caso dubbio si blocca, per non esporre
+    mai l'IP reale."""
     if not SETTINGS.get("kill_switch"):
         return
     home = (SETTINGS.get("home_ip") or "").strip()
     if not home:
-        return  # nessun riferimento registrato: non possiamo decidere
+        # kill-switch attivo ma nessun IP di casa registrato: non possiamo
+        # verificare lo stato VPN -> blocco (fail-closed) e chiedo di registrarlo.
+        raise HTTPException(
+            status_code=428,
+            detail="Kill-switch attivo ma IP di casa non registrato: non posso "
+                   "verificare la VPN. Registra il tuo IP di casa (VPN spenta) una "
+                   "volta, oppure disattiva il kill-switch.")
     cur = _current_public_ip()
-    if cur and cur == home:
+    if cur is None:
+        # impossibile determinare l'IP pubblico -> fail-closed
+        raise HTTPException(
+            status_code=423,
+            detail="Kill-switch attivo: impossibile verificare l'IP pubblico "
+                   "(rete/servizi non raggiungibili). Operazione bloccata per "
+                   "sicurezza.")
+    if cur == home:
         raise HTTPException(
             status_code=423,
             detail="Kill-switch attivo: la VPN sembra spenta (rilevato il tuo IP "
@@ -1220,7 +1245,7 @@ def proxy_image(u: str):
     if not _is_safe_remote_url(u):
         raise HTTPException(status_code=400, detail="URL non consentito")
     try:
-        r = session.get(u, headers=get_headers(), timeout=12, verify=False, proxies=get_proxies())
+        r = session.get(u, headers=get_headers(), timeout=12, verify=_verify(), proxies=get_proxies())
     except Exception:
         raise HTTPException(status_code=502, detail="Immagine non disponibile")
     if r.status_code != 200:
@@ -1269,7 +1294,7 @@ def cache_cover_local(key: str, cover_url: str) -> str:
     except OSError:
         pass
     try:
-        r = session.get(remote, headers=get_headers(), timeout=12, verify=False, proxies=get_proxies())
+        r = session.get(remote, headers=get_headers(), timeout=12, verify=_verify(), proxies=get_proxies())
     except Exception:
         return ""
     if r.status_code != 200 or len(r.content) > 8 * 1024 * 1024:
@@ -1302,7 +1327,7 @@ def ip_check():
     l'IP di uscita della VPN). Cloudflare 'trace' riporta anche lo stato WARP."""
     try:
         r = session.get("https://www.cloudflare.com/cdn-cgi/trace",
-                        headers=get_headers(), timeout=8, verify=False, proxies=get_proxies())
+                        headers=get_headers(), timeout=8, verify=_verify(), proxies=get_proxies())
         if r.status_code == 200 and "ip=" in (r.text or ""):
             d = {}
             for line in r.text.splitlines():
@@ -1316,7 +1341,7 @@ def ip_check():
     # fallback: solo IP
     try:
         r = session.get("https://api.ipify.org?format=json",
-                        headers=get_headers(), timeout=8, verify=False, proxies=get_proxies())
+                        headers=get_headers(), timeout=8, verify=_verify(), proxies=get_proxies())
         j = r.json()
         if j.get("ip"):
             return {"ip": j["ip"], "country": "", "warp": "", "colo": ""}
@@ -1771,6 +1796,10 @@ def privacy_ip_status():
         "protected": bool(cur and home and cur != home),
         "detected": bool(cur),
         "incognito": bool(INCOGNITO),
+        # esposto = kill-switch SPENTO e ti vedono con l'IP di casa
+        "exposed": (not ks) and bool(cur and home and cur == home),
+        # bloccato = kill-switch attivo ma non possiamo garantire la VPN
+        "blocked": ks and (not home or cur is None or bool(home and cur == home)),
     }
 
 
@@ -2267,7 +2296,7 @@ def search_source_domain(domain, q, limit=12):
     out, seen = [], set()
     for url in candidates:
         try:
-            resp = session.get(url, headers=get_headers(), timeout=8, verify=False)
+            resp = session.get(url, headers=get_headers(), timeout=8, verify=_verify())
             if resp.status_code != 200 or any(m in resp.text.lower() for m in BLOCK_MARKERS):
                 continue
             soup = BeautifulSoup(resp.text, "lxml")
@@ -2461,6 +2490,7 @@ def search_list(q: str, sources: Optional[str] = "sc"):
 
 @app.get("/api/details/{id_and_slug}")
 def get_details(id_and_slug: str):
+    _require_protected_egress()
     if id_and_slug.startswith("clone-"):
         # For clone contents, details are loaded directly during URL resolution
         raise HTTPException(status_code=400, detail="Cannot load details directly for clone titles")
@@ -2646,6 +2676,7 @@ def _aw_resolve_mp4(url="", ep_id="", host="www.animeworld.ac"):
 
 @app.get("/api/animeworld/resolve")
 def animeworld_resolve(url: str):
+    _require_protected_egress()
     """Serie AnimeWorld con la lista episodi (per il frontend)."""
     try:
         return animeworld.get_series(url, proxies=get_proxies())
@@ -2689,6 +2720,7 @@ def animeworld_download(payload: AWEpisode):
 
 @app.get("/api/clone/episodes")
 def clone_episodes(tmdb_tv_id: int, season: int, iframe_url: str):
+    _require_protected_egress()
     """List episodes (names/plots) for a vidxgo series season."""
     try:
         return vidxgo.list_episodes(tmdb_tv_id, season, iframe_url)
@@ -2741,6 +2773,7 @@ def clone_download(payload: CloneDownloadRequest):
 
 @app.post("/api/resolve-url")
 def resolve_url(payload: ResolveUrlRequest):
+    _require_protected_egress()
     url = payload.url.strip()
     parsed = urllib.parse.urlparse(url)
     path = parsed.path
@@ -3198,7 +3231,7 @@ def get_sub_playlist(url: str, video_id: int, t: Optional[str] = None):
     if not _is_safe_remote_url(url):
         raise HTTPException(status_code=400, detail="URL non consentito")
     try:
-        resp = requests.get(url, headers=get_headers(), timeout=10, verify=False, proxies=get_proxies())
+        resp = requests.get(url, headers=get_headers(), timeout=10, verify=_verify(), proxies=get_proxies())
         if resp.status_code != 200:
             return Response(status_code=resp.status_code, content="Sub-playlist request failed")
             
@@ -3254,7 +3287,7 @@ def get_stream_segment(url: str, referer: str):
         "Referer": referer,
     }
     try:
-        resp = requests.get(url, headers=headers, timeout=20, verify=False, proxies=get_proxies())
+        resp = requests.get(url, headers=headers, timeout=20, verify=_verify(), proxies=get_proxies())
         if resp.status_code != 200:
             return Response(status_code=resp.status_code, content="Segment request failed")
         content_type = resp.headers.get("content-type") or "video/mp2t"
@@ -3271,7 +3304,7 @@ def get_stream_key(url: str, referer: str):
         "Referer": referer
     }
     try:
-        resp = requests.get(url, headers=headers, timeout=10, verify=False, proxies=get_proxies())
+        resp = requests.get(url, headers=headers, timeout=10, verify=_verify(), proxies=get_proxies())
         if resp.status_code == 200:
             return Response(content=resp.content, media_type="application/octet-stream")
         else:
@@ -3327,6 +3360,7 @@ class DownloadTitle(BaseModel):
 
 @app.post("/api/download/title")
 def download_title(payload: DownloadTitle):
+    _require_protected_egress()
     """Risolve lo stream e avvia il download di un titolo della libreria (usato
     dal player per scaricare i titoli connessi: precedente/successivo)."""
     info = resolve_stream_info(payload.id, payload.episode_id)

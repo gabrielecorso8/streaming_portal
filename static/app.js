@@ -5666,12 +5666,50 @@ function openVpnReminder() {
 
 // ─── Trascinamento orizzontale (drag-scroll) delle righe .disney-row ───
 let _vpnPrevIp = null;
+function _renderVpnBanner(d) {
+    let bar = document.getElementById("vpn-guard-banner");
+    const need = d && (d.blocked || d.exposed);
+    if (!need) { if (bar) bar.remove(); return; }
+    if (!bar) {
+        bar = document.createElement("div");
+        bar.id = "vpn-guard-banner";
+        document.body.appendChild(bar);
+    }
+    let msg, cls, actions = "";
+    if (d.blocked) {
+        cls = "vgb-block";
+        let why = d.exposed ? "VPN spenta (IP di casa rilevato)"
+            : (!d.have_home ? "IP di casa non registrato"
+                : (!d.detected ? "IP non verificabile (rete non raggiungibile)"
+                    : "VPN spenta (IP di casa rilevato)"));
+        msg = "🔒 Kill-switch attivo — operazioni online BLOCCATE: " + why + ".";
+        if (!d.have_home) actions = '<button class="vgb-btn" data-a="home">Registra IP di casa (VPN spenta)</button>';
+        actions += '<button class="vgb-btn vgb-ghost" data-a="ks-off">Disattiva kill-switch</button>';
+    } else {
+        cls = "vgb-warn";
+        msg = "⚠️ VPN spenta e kill-switch OFF: il tuo IP di casa è visibile ai siti. Attiva la VPN, oppure attiva il kill-switch per bloccare tutto quando la VPN cade.";
+        actions = '<button class="vgb-btn" data-a="ks-on">Attiva kill-switch</button>';
+    }
+    bar.className = cls;
+    bar.innerHTML = '<span class="vgb-msg">' + msg + '</span><span class="vgb-actions">' + actions + '</span>';
+    bar.querySelectorAll(".vgb-btn").forEach(b => b.addEventListener("click", async () => {
+        const a = b.dataset.a;
+        try {
+            if (a === "home") { const r = await fetch(withLanToken("/api/privacy/set-home-ip"), { method: "POST" }); showToast(r.ok ? "IP di casa registrato" : "Rilevamento IP fallito", 4000); }
+            else if (a === "ks-off") { await fetch(withLanToken("/api/privacy/kill-switch"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: false }) }); showToast("Kill-switch disattivato", 3000); }
+            else if (a === "ks-on") { await fetch(withLanToken("/api/privacy/kill-switch"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: true }) }); showToast("Kill-switch attivato", 3000); }
+        } catch (e) {}
+        _vpnCheckNow();
+    }));
+}
+let _vpnCheckNow = () => {};
 function setupVpnAutoRefresh() {
     const check = async () => {
         try {
             const r = await fetch(withLanToken("/api/privacy/ip-status"), { cache: "no-store" });
             if (!r.ok) return;
             const d = await r.json();
+            _renderVpnBanner(d);
             const ip = d.current_ip_masked || "";
             if (!ip) return;
             if (_vpnPrevIp !== null && ip !== _vpnPrevIp) {
@@ -5683,8 +5721,9 @@ function setupVpnAutoRefresh() {
             _vpnPrevIp = ip;
         } catch (e) {}
     };
+    _vpnCheckNow = check;
     check();
-    setInterval(check, 20000);
+    setInterval(check, 12000);
 }
 
 function setupDragScroll() {

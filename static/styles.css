@@ -2516,3 +2516,14 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 /* "Indietro" come zona di estrazione: trascinaci sopra per spostare di un livello */
 .inline-back.extract-over { outline: 2px solid var(--accent); outline-offset: 2px;
     background: rgba(34,166,255,.22); color: var(--accent); }
+
+/* Banner di sicurezza VPN/kill-switch (bloccato/esposto) */
+#vpn-guard-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; padding: 10px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    font-size: .9rem; box-shadow: 0 2px 14px rgba(0,0,0,.45); }
+#vpn-guard-banner.vgb-block { background: #7a1420; color: #fff; border-bottom: 1px solid #d24b4b; }
+#vpn-guard-banner.vgb-warn { background: #7a5210; color: #fff; border-bottom: 1px solid #e0a400; }
+#vpn-guard-banner .vgb-msg { flex: 1 1 auto; min-width: 200px; }
+#vpn-guard-banner .vgb-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+#vpn-guard-banner .vgb-btn { padding: 5px 12px; border-radius: 8px; border: none; background: #fff; color: #111; font-weight: 700; cursor: pointer; font-size: .82rem; }
+#vpn-guard-banner .vgb-btn.vgb-ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.6); }

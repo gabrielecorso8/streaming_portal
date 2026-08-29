@@ -4169,16 +4169,40 @@ function renderLibrary(data) {
         const dispLabel = _catLabel(kindKey, label);
         const delBtn = options.custom ? '<button class="icon-btn cat-del-btn" title="Elimina categoria" type="button">✕</button>' : "";
         head.innerHTML = `<span class="cat-title">${escapeHtml(dispLabel)}</span>`
-            + `${delBtn}<span class="cat-chevron">▾</span>`;
+            + `${delBtn}`
+            + `<select class="cat-sort custom-select" title="Ordina"><option value="custom">Personalizzato</option><option value="score">Rilevanza</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option></select>`
+            + `<span class="cat-chevron">▾</span>`;
         const body = document.createElement("div");
         body.className = "cat-body" + (open ? "" : " hidden");
-        if (!list.length) {
+        const _catMode = _getCatSort(kindKey);
+        const _loose = (_catTitles()[kindKey] || []).map(k => (libraryCache || []).find(x => x && x.key === k)).filter(Boolean);
+        const _addLoose = (it) => {
+            const tile = titleRow(it, { noReorder: true });
+            const rm = document.createElement("button");
+            rm.className = "cat-loose-remove"; rm.title = "Rimuovi dalla categoria"; rm.textContent = "✕";
+            rm.addEventListener("click", (e) => { e.stopPropagation(); _removeCatTitle(kindKey, it.key); if (lastLibraryData) renderLibrary(lastLibraryData); });
+            tile.appendChild(rm);
+            body.appendChild(tile);
+        };
+        if (!list.length && !_loose.length) {
             const none = document.createElement("div");
             none.className = "no-downloads";
             none.textContent = "Nessuna cartella qui. Imposta il tipo di una cartella per raccoglierla in questo gruppo.";
             body.appendChild(none);
-        } else {
+        } else if (_catMode === "custom") {
             list.forEach((f, i) => body.appendChild(buildFolderCard(f, true, { root: true, list, index: i })));
+            _loose.forEach(_addLoose);
+        } else {
+            const _oldestDeep = (fld) => { let best = ""; const seen = new Set(); const walk = (x) => { if (!x || seen.has(x.id)) return; seen.add(x.id); (x.items || []).forEach(it => { const d = String((it && it.release_date) || ""); if (d && (best === "" || d < best)) best = d; }); allFolders.filter(cc => (cc.parent || "") === x.id).forEach(walk); }; walk(fld); return best; };
+            const _num = (v) => { const n = parseFloat(v); return isNaN(n) ? -1 : n; };
+            const ents = [];
+            list.forEach(fo => ents.push({ t: "f", fo, name: String(fo.name || ""), d: _oldestDeep(fo), s: -1 }));
+            _loose.forEach(it => ents.push({ t: "i", it, name: String(it.name || ""), d: String(it.release_date || ""), s: _num(it.score) }));
+            const byName = (a, b) => a.name.localeCompare(b.name, "it");
+            if (_catMode === "score") ents.sort((a, b) => (b.s - a.s) || byName(a, b));
+            else if (_catMode === "recent") ents.sort((a, b) => String(b.d).localeCompare(String(a.d)) || byName(a, b));
+            else if (_catMode === "oldest") ents.sort((a, b) => String(a.d).localeCompare(String(b.d)) || byName(a, b));
+            ents.forEach(en => { if (en.t === "f") body.appendChild(buildFolderCard(en.fo, true)); else _addLoose(en.it); });
         }
         head.addEventListener("click", () => {
             const hidden = body.classList.toggle("hidden");
@@ -4218,6 +4242,13 @@ function renderLibrary(data) {
             renameCustomFilter(kindKey);
         });
         head.addEventListener("dblclick", (e) => { e.stopPropagation(); editCategoryTitle(kindKey, !!options.custom, dispLabel); });
+        const catSort = head.querySelector(".cat-sort");
+        if (catSort) {
+            catSort.value = _getCatSort(kindKey);
+            ["click", "mousedown", "dblclick"].forEach(ev => catSort.addEventListener(ev, (e) => e.stopPropagation()));
+            catSort.addEventListener("dragstart", (e) => { e.preventDefault(); e.stopPropagation(); });
+            catSort.addEventListener("change", (e) => { e.stopPropagation(); _setCatSort(kindKey, catSort.value); if (lastLibraryData) renderLibrary(lastLibraryData); });
+        }
         head.setAttribute("draggable", "true");
         head.addEventListener("dragstart", (e) => { e.dataTransfer.setData("application/json", JSON.stringify({ src: "cat", key: kindKey })); e.dataTransfer.effectAllowed = "move"; wrap.classList.add("cat-dragging"); });
         head.addEventListener("dragend", () => wrap.classList.remove("cat-dragging"));
@@ -4230,17 +4261,6 @@ function renderLibrary(data) {
         if (coverLbl) coverLbl.addEventListener("click", (e) => e.stopPropagation());
         const coverInput = head.querySelector(".cat-cover-input");
         if (coverInput) coverInput.addEventListener("change", (e) => { e.stopPropagation(); uploadFilterCover(kindKey, e.target); });
-        // Titoli aggiunti direttamente nella categoria (senza cartella)
-        (_catTitles()[kindKey] || []).forEach(key => {
-            const it = (libraryCache || []).find(x => x && x.key === key);
-            if (!it) return;
-            const tile = titleRow(it, { noReorder: true });
-            const rm = document.createElement("button");
-            rm.className = "cat-loose-remove"; rm.title = "Rimuovi dalla categoria"; rm.textContent = "✕";
-            rm.addEventListener("click", (e) => { e.stopPropagation(); _removeCatTitle(kindKey, key); if (lastLibraryData) renderLibrary(lastLibraryData); });
-            tile.appendChild(rm);
-            body.appendChild(tile);
-        });
         // Tile "+" in fondo alla categoria: scegli se aggiungere titoli o una cartella.
         const addTile = document.createElement("div");
         addTile.className = "folder-card add-tile";
@@ -4859,6 +4879,9 @@ function normalizeCustomFilterName(value) {
     return String(value || "").trim().toLowerCase().replace(/\s+/g, " ").replace(/[<>]/g, "").slice(0, 40);
 }
 
+function _catSorts() { try { return JSON.parse(localStorage.getItem("scp_catsort") || "{}"); } catch (e) { return {}; } }
+function _getCatSort(k) { const m = _catSorts(); return (k && m[k]) || "custom"; }
+function _setCatSort(k, v) { const m = _catSorts(); if (v && v !== "custom") m[k] = v; else delete m[k]; try { localStorage.setItem("scp_catsort", JSON.stringify(m)); } catch (e) {} }
 function _catOrder() { try { return JSON.parse(localStorage.getItem("scp_catorder") || "[]"); } catch (e) { return []; } }
 function _setCatOrder(list) { try { localStorage.setItem("scp_catorder", JSON.stringify(list || [])); } catch (e) {} }
 function _folderSorts() { try { return JSON.parse(localStorage.getItem("scp_foldersort") || "{}"); } catch (e) { return {}; } }

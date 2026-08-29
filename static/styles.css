@@ -2536,3 +2536,10 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 .cat-group.cat-dragging { opacity: .5; }
 .cat-head { cursor: grab; }
 .cat-head:active { cursor: grabbing; }
+
+/* Filtro d'ordinamento nell'intestazione di categoria */
+.cat-head .cat-sort { max-width: 150px; margin-left: 8px; font-size: .8rem; padding: 3px 8px;
+    background: rgba(120,175,255,.10); color: var(--text-primary); border: 1px solid var(--border-color);
+    border-radius: 8px; cursor: pointer; }
+.cat-head .cat-sort:hover { border-color: var(--accent); }
+.cat-head .cat-sort option { background: #0b1426; color: #fff; }

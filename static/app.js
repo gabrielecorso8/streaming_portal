@@ -4312,6 +4312,19 @@ function _hbBuildList() {
     if (out.length < 2) (libraryCache || []).forEach(t => { if (out.length < 8) push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); });
     return out.slice(0, 12);
 }
+function _countTitlesDeep(fld) {
+    const folders = (lastLibraryData && lastLibraryData.folders) || [];
+    const keys = new Set();
+    const visited = new Set();
+    const walk = (x) => {
+        if (!x || visited.has(x.id)) return;
+        visited.add(x.id);
+        (x.items || []).forEach(it => { const k = it && (it.key || (typeof it === "string" ? it : "")); if (k) keys.add(k); });
+        folders.filter(c => (c.parent || "") === x.id).forEach(walk);
+    };
+    walk(fld);
+    return keys.size;
+}
 function _subFolderTile(sf, onOpen) {
     const card = document.createElement("div");
     card.className = "folder-card";
@@ -4320,7 +4333,7 @@ function _subFolderTile(sf, onOpen) {
         '<div class="folder-head">' +
         (cover ? `<div class="folder-cover" style="background-image:url('${cover}')"></div>` : '<div class="folder-cover placeholder"></div>') +
         `<div class="folder-meta"><span class="folder-name">${escapeHtml(sf.name || "")}</span>` +
-        `<span class="folder-count">${(sf.items || []).length} titoli</span></div></div>`;
+        `<span class="folder-count">${_countTitlesDeep(sf)} titoli</span></div></div>`;
     card.querySelector(".folder-head").addEventListener("click", (e) => { e.stopPropagation(); if (typeof onOpen === "function") onOpen(); else openFolderInline(card, sf); });
     return card;
 }

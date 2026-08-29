@@ -3363,7 +3363,7 @@ function titleRow(item, ctx) {
             <label class="icon-btn libcover-lbl" title="Cambia locandina">🖼️<input type="file" accept="image/*" class="libcover-input" hidden></label>
             <button class="icon-btn ren-title-btn" title="Rinomina titolo">✎</button>
             <button class="icon-btn fav-btn" title="${item.favorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}">${item.favorite ? "★" : "☆"}</button>
-            <button class="icon-btn like-btn${_isLiked(item.key) ? " liked" : ""}" title="Mi piace — forma i tuoi gusti">${_isLiked(item.key) ? "\u2665" : "\u2661"}</button>
+            <button class="icon-btn like-btn${_isLiked(item.key) ? " liked" : ""}" data-key="${escapeHtml(item.key)}" title="Mi piace — forma i tuoi gusti">${_isLiked(item.key) ? "\u2665" : "\u2661"}</button>
             <button class="icon-btn del-btn" title="Rimuovi dalla libreria">✕</button>
         </div>`;
     row.addEventListener("click", (e) => { if (e.target.closest(".library-actions") || e.target.closest(".lib-select")) return; openFromLibrary(item); });
@@ -3382,7 +3382,7 @@ function titleRow(item, ctx) {
     row.querySelector(".libcover-input").addEventListener("change", (e) => { e.stopPropagation(); uploadTitleCover(item.key, e.target); });
     row.querySelector(".ren-title-btn").addEventListener("click", (e) => { e.stopPropagation(); if (ctx && ctx.folderId) renameInFolder(ctx.folderId, item.key, item.name); else renameTitle(item.key, item.name); });
     row.querySelector(".fav-btn").addEventListener("click", (e) => { e.stopPropagation(); toggleFavorite(item.key); });
-    { const lb = row.querySelector(".like-btn"); if (lb) lb.addEventListener("click", async (e) => { e.stopPropagation(); await toggleLike(item.key, item); const on = _isLiked(item.key); lb.classList.toggle("liked", on); lb.textContent = on ? "\u2665" : "\u2661"; }); }
+    { const lb = row.querySelector(".like-btn"); if (lb) lb.addEventListener("click", async (e) => { e.stopPropagation(); await toggleLike(item.key, item); _refreshLikeButtons(item.key); }); }
     row.querySelector(".del-btn").addEventListener("click", (e) => { e.stopPropagation(); removeFromLibrary(item.key, item.name); });
     if (ctx && !ctx.noReorder) {
         const up = row.querySelector(".moveup-btn");
@@ -3721,7 +3721,18 @@ async function handleFolderAdd(folderId, data) {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: folderId, keys })
         });
-        if (r.ok) { openFolders.add(folderId); renderLibrary(await r.json()); showToast("Aggiunto alla cartella"); }
+        if (r.ok) {
+            let payload = await r.json();
+            let moved = false;
+            if (data.fromFolder && data.fromFolder !== folderId && keys.length) {
+                try {
+                    const rr = await fetch("/api/folders/remove-item", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: data.fromFolder, key: keys[0] }) });
+                    if (rr.ok) { payload = await rr.json(); moved = true; }
+                } catch (e) {}
+            }
+            openFolders.add(folderId); renderLibrary(payload);
+            showToast(moved ? "Spostato nella cartella" : "Aggiunto alla cartella");
+        }
         else showToast("Errore aggiunta alla cartella");
     } catch (e) { showToast("Errore aggiunta alla cartella"); }
 }
@@ -4349,16 +4360,31 @@ function _tasteGenres() {
     });
     return cnt;
 }
+function _refreshLikeButtons(key) {
+    const on = _isLiked(key);
+    document.querySelectorAll(".like-btn").forEach(b => {
+        if (b.dataset.key === key) { b.classList.toggle("liked", on); b.textContent = on ? "\u2665" : "\u2661"; }
+    });
+}
 async function toggleLike(key, item) {
     const m = _likes();
-    if (m[key]) { delete m[key]; _setLikes(m); showToast("Rimosso dai «mi piace»"); }
-    else {
-        let g = _genreCache()[key];
-        if (g == null) { g = await _fetchGenres(key); _cacheGenres(key, g); }
-        m[key] = { genres: g || [], name: (item && item.name) || "", cover: (item && item.cover) || "", type: (item && item.type) || "" };
-        _setLikes(m); showToast("Aggiunto ai «mi piace» — miglioro i suggerimenti");
-        try { const miss = (libraryCache || []).filter(t => t && _isScKey(t.key) && _genreCache()[t.key] == null && !t.favorite).map(t => t.key); await _ensureGenres(miss, 6); } catch (e) {}
+    if (m[key]) {
+        delete m[key]; _setLikes(m); showToast("Rimosso dai «mi piace»");
+    } else {
+        // Stato SUBITO (il cuore si riempie all'istante): i generi si recuperano dopo, in background.
+        m[key] = { genres: _genreCache()[key] || [], name: (item && item.name) || "", cover: (item && item.cover) || "", type: (item && item.type) || "" };
+        _setLikes(m); showToast("Aggiunto ai «mi piace»");
+        (async () => {
+            try {
+                let g = _genreCache()[key];
+                if (g == null) { g = await _fetchGenres(key); _cacheGenres(key, g); const mm = _likes(); if (mm[key]) { mm[key].genres = g; _setLikes(mm); } }
+                const miss = (libraryCache || []).filter(t => t && _isScKey(t.key) && _genreCache()[t.key] == null && !t.favorite).map(t => t.key);
+                await _ensureGenres(miss, 6);
+                renderHeroBillboard();
+            } catch (e) {}
+        })();
     }
+    _refreshLikeButtons(key);
     try { renderHeroBillboard(); } catch (e) {}
 }
 
@@ -4367,25 +4393,40 @@ function _hbBuildList() {
     const push = (name, cover, type, rd, open) => {
         const ep = (typeof parseEpisode === "function") ? parseEpisode(name || "") : null;
         const disp = (ep && ep.series) ? ep.series : (name || "");
-        const k = normName(disp); if (!disp || !cover || seen.has(k)) return;
-        seen.add(k); out.push({ name: disp, cover: cover, type: (ep ? "tv" : (type || "")), rd: rd || "", open: open });
+        const k = normName(disp); if (!disp || !cover || seen.has(k)) return null;
+        seen.add(k); const o = { name: disp, cover: cover, type: (ep ? "tv" : (type || "")), rd: rd || "", open: open }; out.push(o); return o;
     };
+    // Costruisco TRE bacini e li mescolo a rotazione (ibrido: preferiti / mi piace / affini).
+    const mk = (t) => { const r = push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); return r; };
+    const likesMap = _likes();
+    const favs = [], liked = [], affine = [];
     // 1) Preferiti (stellina)
-    (libraryCache || []).forEach(t => { if (t.favorite) push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); });
-    // 2) Titoli AFFINI per genere ai "mi piace" (cuore)
+    (libraryCache || []).forEach(t => { if (t && t.favorite && t.cover) { const e = mk(t); if (e) favs.push(e); } });
+    // 2) "Mi piace" (cuore) — anche se non preferiti; solo quelli presenti in libreria
+    Object.keys(likesMap).forEach(key => {
+        const t = (libraryCache || []).find(x => x.key === key);
+        if (t && t.cover) { const e = mk(t); if (e) liked.push(e); }
+    });
+    // 3) Titoli AFFINI per genere ai "mi piace"
     const taste = _tasteGenres();
     if (Object.keys(taste).length) {
-        const cache = _genreCache(), likes = _likes();
+        const cache = _genreCache();
         (libraryCache || [])
-            .filter(t => t && t.cover && !t.favorite && !likes[t.key])
+            .filter(t => t && t.cover && !t.favorite && !likesMap[t.key])
             .map(t => { const g = cache[t.key] || []; let s = 0; g.forEach(x => { if (taste[x]) s += taste[x]; }); return { t, s }; })
             .filter(o => o.s > 0)
             .sort((a, b) => b.s - a.s)
-            .forEach(o => push(o.t.name, o.t.cover, o.t.type, o.t.release_date, () => openFromLibrary(o.t)));
+            .forEach(o => { const e = mk(o.t); if (e) affine.push(e); });
     }
-    // 3) Fallback: se non ci sono preferiti nè affini, mostra qualche titolo con locandina
-    if (out.length < 2) (libraryCache || []).forEach(t => { if (out.length < 8 && t.cover) push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); });
-    return out.slice(0, 12);
+    // Mescolo a rotazione: un preferito, un mi piace, un affine, e via.
+    out.length = 0;
+    const pools = [favs, liked, affine].filter(p => p.length);
+    while (pools.some(p => p.length) && out.length < 16) {
+        for (const p of pools) { if (p.length) out.push(p.shift()); if (out.length >= 16) break; }
+    }
+    // Fallback: niente preferiti/mi piace/affini -> qualche locandina della libreria
+    if (out.length < 2) (libraryCache || []).forEach(t => { if (out.length < 8 && t && t.cover) { const e = push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); if (e) {} } });
+    return out.slice(0, 16);
 }
 function _countTitlesDeep(fld) {
     const folders = (lastLibraryData && lastLibraryData.folders) || [];
@@ -4619,7 +4660,7 @@ function openFolderInline(anchorEl, folder) {
                         await nestTokenInto(token, _tid);
                     });
                 }
-                else { t = titleRow(en.o, { noReorder: true }); t.dataset.token = en.o.key; t.appendChild(removeBtn("Rimuovi dalla cartella", () => removeTitleInline(en.o))); }
+                else { t = titleRow(en.o, { noReorder: true, folderId: current.id }); t.dataset.token = en.o.key; t.appendChild(removeBtn("Rimuovi dalla cartella", () => removeTitleInline(en.o))); }
                 _makeDraggable(t);
                 add(t);
             } catch (e) {}
@@ -4653,7 +4694,7 @@ function renderHeroBillboard() {
 }
 function _hbRestart(host) {
     if (_hbTimer) { clearInterval(_hbTimer); _hbTimer = null; }
-    if (_hbItems.length > 1) _hbTimer = setInterval(() => { _hbIdx = (_hbIdx + 1) % _hbItems.length; _hbRender(host, true); }, 4500);
+    if (_hbItems.length > 1) _hbTimer = setInterval(() => { _hbIdx = (_hbIdx + 1) % _hbItems.length; _hbRender(host, true); }, 3500);
 }
 function _hbRender(host, animate) {
     const feat = _hbItems[_hbIdx]; if (!feat) return;

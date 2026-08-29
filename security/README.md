@@ -6,19 +6,25 @@ Con Proton **free** manca il kill-switch "permanent": all'avvio del PC o quando 
 VPN cade, per qualche secondo il traffico può uscire in chiaro. Questo strumento
 lo risolve a livello di **firewall di Windows**, per l'intero sistema.
 
-### Come si usa
-1. Connetti Proton VPN **almeno una volta** (così Windows crea l'adattatore del tunnel).
-2. Fai doppio clic su **`Proton-KillSwitch.bat`** (chiede i permessi di Amministratore).
-3. Scegli **1 = Attiva**.
+### Uso semplice: un solo interruttore
+Fai doppio clic su **`Sicurezza.bat`** (chiede i permessi di Amministratore):
+- se la sicurezza è spenta → la **ACCENDE** e apre Proton (tu connettiti a un server);
+- se è accesa → la **SPEGNE** e torni alla navigazione normale.
 
-Da quel momento, se la VPN non è attiva, esce solo: LAN locale (l'app SC Portal su
-`127.0.0.1`, TV/telefono di casa), DHCP e i processi di Proton (per potersi
-connettere). Tutto il resto è bloccato finché il tunnel non è su.
+Lo stesso file fa accendi/spegni: **un doppio clic per andare in sicurezza quando
+vuoi guardare qualcosa, un altro doppio clic per tornare all'uso normale.** Nessuna
+riconfigurazione: è già tutto impostato, è solo un interruttore.
 
-Per tornare alla normalità: **2 = Disattiva**. Per controllare: **3 = Stato**.
+Quando è ACCESA: naviga **solo con Proton connesso**; senza VPN la rete resta
+bloccata (è lo scopo). Ricorda che dopo un riavvio del PC, se lasci la sicurezza
+accesa, dovrai riconnettere Proton per tornare online.
 
-> In alternativa, da PowerShell (Amministratore):
-> `.\proton-killswitch.ps1 enable | disable | status`
+> Menu completo (attiva/disattiva/stato) opzionale: **`Proton-KillSwitch.bat`**.
+> Da PowerShell (Amministratore): `.\proton-killswitch.ps1 toggle | enable | disable | status`
+
+Nota: con questo firewall attivo, il **kill-switch dell'app diventa ridondante**
+(il firewall è più forte perché vale per tutto il sistema). Puoi lasciarlo attivo
+come doppia rete di sicurezza, o ignorarlo.
 
 ### Se resti senza internet
 È il comportamento voluto quando la VPN è giù. Se succede anche con la VPN su

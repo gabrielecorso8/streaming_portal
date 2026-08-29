@@ -16,7 +16,7 @@
 
 param(
   [Parameter(Position = 0)]
-  [ValidateSet("enable", "disable", "status")]
+  [ValidateSet("enable", "disable", "status", "toggle")]
   [string]$Action = "status"
 )
 
@@ -63,6 +63,34 @@ function Get-ProtonPrograms {
     catch {}
   }
   $found | Select-Object -Unique
+}
+
+function Test-KillSwitchActive {
+  $rules = @(Get-NetFirewallRule -Group $Group -ErrorAction SilentlyContinue)
+  $profs = Get-NetFirewallProfile -ErrorAction SilentlyContinue
+  $anyBlock = @($profs | Where-Object { $_.DefaultOutboundAction -eq "Block" }).Count -gt 0
+  return (($rules.Count -gt 0) -and $anyBlock)
+}
+
+function Launch-Proton {
+  # Best-effort: prova ad avviare l'app Proton VPN cosi' puoi connetterti.
+  $exe = @(
+    "$env:ProgramFiles\Proton\VPN\ProtonVPN.exe",
+    "${env:ProgramFiles(x86)}\Proton\VPN\ProtonVPN.exe",
+    "$env:ProgramFiles\Proton VPN\ProtonVPN.exe",
+    "${env:ProgramFiles(x86)}\Proton VPN\ProtonVPN.exe",
+    "$env:LOCALAPPDATA\Programs\Proton VPN\ProtonVPN.exe"
+  ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+  if (-not $exe) {
+    $exe = (Get-ChildItem "$env:ProgramFiles", "${env:ProgramFiles(x86)}" -Filter "ProtonVPN.exe" -Recurse -ErrorAction SilentlyContinue -Depth 3 | Select-Object -First 1).FullName
+  }
+  if ($exe) {
+    try { Start-Process $exe | Out-Null; Write-Host "Avvio Proton VPN: connettiti a un server." -ForegroundColor Cyan }
+    catch { Write-Host "Apri Proton VPN e connettiti a un server." -ForegroundColor Cyan }
+  }
+  else {
+    Write-Host "Apri Proton VPN e connettiti a un server." -ForegroundColor Cyan
+  }
 }
 
 function Disable-KillSwitch {
@@ -145,6 +173,18 @@ try {
     "enable" { Enable-KillSwitch }
     "disable" { Disable-KillSwitch }
     "status" { Status-KillSwitch }
+    "toggle" {
+      Require-Admin
+      if (Test-KillSwitchActive) {
+        Write-Host "Sicurezza era ATTIVA -> la spengo (navigazione normale)." -ForegroundColor Yellow
+        Disable-KillSwitch
+      }
+      else {
+        Write-Host "Sicurezza era spenta -> la ATTIVO." -ForegroundColor Green
+        Launch-Proton
+        Enable-KillSwitch
+      }
+    }
   }
 }
 catch {

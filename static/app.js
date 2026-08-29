@@ -4150,6 +4150,7 @@ function renderLibrary(data) {
     const buildCategoryGroup = (label, kindKey, list, icon, options = {}) => {
         const wrap = document.createElement("div");
         wrap.className = "cat-group";
+        wrap.dataset.kind = kindKey;
         const open = !closedGroups.has(kindKey);
         const head = document.createElement("div");
         head.className = "cat-head" + (open ? " open" : "");
@@ -4189,6 +4190,15 @@ function renderLibrary(data) {
             e.preventDefault(); e.stopPropagation();
             head.classList.remove("cat-drop-over"); body.classList.remove("cat-drop-over");
             let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
+            if (data && data.src === "cat" && data.key && data.key !== kindKey) {
+                const groups = Array.from(el.libraryList.querySelectorAll(".cat-group")).map(g => g.dataset.kind).filter(Boolean);
+                const arr = groups.filter(k => k !== data.key);
+                const idx = arr.indexOf(kindKey);
+                arr.splice(idx < 0 ? arr.length : idx, 0, data.key);
+                _setCatOrder(arr);
+                if (lastLibraryData) renderLibrary(lastLibraryData);
+                return;
+            }
             if (data && data.src === "folder" && data.id) {
                 const dragged = allFolders.find(x => x.id === data.id);
                 if (dragged && (dragged.kind || "") !== (kindKey || "")) await setFolderKind(data.id, kindKey);
@@ -4208,6 +4218,9 @@ function renderLibrary(data) {
             renameCustomFilter(kindKey);
         });
         head.addEventListener("dblclick", (e) => { e.stopPropagation(); editCategoryTitle(kindKey, !!options.custom, dispLabel); });
+        head.setAttribute("draggable", "true");
+        head.addEventListener("dragstart", (e) => { e.dataTransfer.setData("application/json", JSON.stringify({ src: "cat", key: kindKey })); e.dataTransfer.effectAllowed = "move"; wrap.classList.add("cat-dragging"); });
+        head.addEventListener("dragend", () => wrap.classList.remove("cat-dragging"));
         const del = head.querySelector(".cat-del-btn");
         if (del) del.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -4240,13 +4253,17 @@ function renderLibrary(data) {
     };
 
     const byKind = (k) => rootFolders.filter(f => (f.kind || "") === k);
+    const cats = [];
     [["Saghe", "saga", "🎬"], ["Registi", "regista", "🎥"], ["Generi", "genere", "🏷️"]]
-        .forEach(([label, key, icon]) => el.libraryList.appendChild(buildCategoryGroup(label, key, byKind(key), icon)));
-    // Filtri personalizzati: subito SOTTO i tre gruppi predefiniti (come 4°, 5°…).
+        .forEach(([label, key, icon]) => cats.push({ label, key, icon, options: {} }));
     [...new Set([...(customFilters || []), ...rootFolders.map(f => f.kind || "")]
         .filter(k => k && !["saga", "regista", "genere"].includes(k)))]
         .sort()
-        .forEach(k => el.libraryList.appendChild(buildCategoryGroup(k.charAt(0).toUpperCase() + k.slice(1), k, byKind(k), "▣", { custom: true, cover: filterCovers[k] || "" })));
+        .forEach(k => cats.push({ label: k.charAt(0).toUpperCase() + k.slice(1), key: k, icon: "▣", options: { custom: true, cover: filterCovers[k] || "" } }));
+    // Ordine scelto dall'utente (drag sull'intestazione); le categorie non elencate restano in coda.
+    const _ord = _catOrder();
+    cats.sort((a, b) => { let ia = _ord.indexOf(a.key), ib = _ord.indexOf(b.key); if (ia < 0) ia = 1e9; if (ib < 0) ib = 1e9; return ia - ib; });
+    cats.forEach(cd => el.libraryList.appendChild(buildCategoryGroup(cd.label, cd.key, byKind(cd.key), cd.icon, cd.options)));
     const newCat = document.createElement("div");
     newCat.className = "cat-newcategory";
     newCat.textContent = "\uFF0B Nuova Categoria";
@@ -4842,6 +4859,8 @@ function normalizeCustomFilterName(value) {
     return String(value || "").trim().toLowerCase().replace(/\s+/g, " ").replace(/[<>]/g, "").slice(0, 40);
 }
 
+function _catOrder() { try { return JSON.parse(localStorage.getItem("scp_catorder") || "[]"); } catch (e) { return []; } }
+function _setCatOrder(list) { try { localStorage.setItem("scp_catorder", JSON.stringify(list || [])); } catch (e) {} }
 function _folderSorts() { try { return JSON.parse(localStorage.getItem("scp_foldersort") || "{}"); } catch (e) { return {}; } }
 function _getFolderSort(id) { const m = _folderSorts(); return (id && m[id]) || "score"; }
 function _setFolderSort(id, mode) { if (!id) return; const m = _folderSorts(); if (mode && mode !== "score") m[id] = mode; else delete m[id]; try { localStorage.setItem("scp_foldersort", JSON.stringify(m)); } catch (e) {} }

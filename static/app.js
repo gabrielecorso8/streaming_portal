@@ -1229,6 +1229,7 @@ async function loadDetails(idAndSlug, sourceUrl) {
         el.detailScore.textContent = details.score ? `★ ${details.score}` : "★ N/D";
         el.detailRuntime.textContent = details.runtime ? `${details.runtime} min` : "N/D";
         
+        try { _cacheGenres(idAndSlug, details.genres || []); } catch (e) {}
         // Genres
         el.detailGenres.innerHTML = "";
         details.genres.forEach(g => {
@@ -3362,6 +3363,7 @@ function titleRow(item, ctx) {
             <label class="icon-btn libcover-lbl" title="Cambia locandina">🖼️<input type="file" accept="image/*" class="libcover-input" hidden></label>
             <button class="icon-btn ren-title-btn" title="Rinomina titolo">✎</button>
             <button class="icon-btn fav-btn" title="${item.favorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}">${item.favorite ? "★" : "☆"}</button>
+            <button class="icon-btn like-btn${_isLiked(item.key) ? " liked" : ""}" title="Mi piace — forma i tuoi gusti">${_isLiked(item.key) ? "\u2665" : "\u2661"}</button>
             <button class="icon-btn del-btn" title="Rimuovi dalla libreria">✕</button>
         </div>`;
     row.addEventListener("click", (e) => { if (e.target.closest(".library-actions") || e.target.closest(".lib-select")) return; openFromLibrary(item); });
@@ -3380,6 +3382,7 @@ function titleRow(item, ctx) {
     row.querySelector(".libcover-input").addEventListener("change", (e) => { e.stopPropagation(); uploadTitleCover(item.key, e.target); });
     row.querySelector(".ren-title-btn").addEventListener("click", (e) => { e.stopPropagation(); if (ctx && ctx.folderId) renameInFolder(ctx.folderId, item.key, item.name); else renameTitle(item.key, item.name); });
     row.querySelector(".fav-btn").addEventListener("click", (e) => { e.stopPropagation(); toggleFavorite(item.key); });
+    { const lb = row.querySelector(".like-btn"); if (lb) lb.addEventListener("click", async (e) => { e.stopPropagation(); await toggleLike(item.key, item); const on = _isLiked(item.key); lb.classList.toggle("liked", on); lb.textContent = on ? "\u2665" : "\u2661"; }); }
     row.querySelector(".del-btn").addEventListener("click", (e) => { e.stopPropagation(); removeFromLibrary(item.key, item.name); });
     if (ctx && !ctx.noReorder) {
         const up = row.querySelector(".moveup-btn");
@@ -4295,21 +4298,67 @@ function carouselizeDownloads() {
 }
 
 let _hbItems = [], _hbIdx = 0, _hbTimer = null, _hbSig = "";
+// --- "Mi piace" (cuore): forma il profilo di gusto per genere -------------
+function _likes() { try { return JSON.parse(localStorage.getItem("scp_likes") || "{}"); } catch (e) { return {}; } }
+function _setLikes(m) { try { localStorage.setItem("scp_likes", JSON.stringify(m)); } catch (e) {} }
+function _isLiked(key) { return !!_likes()[key]; }
+function _isScKey(k) { return /^\d+-[\w-]+$/.test(String(k || "")); }
+function _genreCache() { try { return JSON.parse(localStorage.getItem("scp_genres") || "{}"); } catch (e) { return {}; } }
+function _cacheGenres(key, genres) { if (!key) return; const m = _genreCache(); m[key] = (genres || []).filter(Boolean); try { localStorage.setItem("scp_genres", JSON.stringify(m)); } catch (e) {} }
+async function _fetchGenres(key) {
+    if (!_isScKey(key)) return [];
+    try { const r = await fetch("/api/details/" + encodeURIComponent(key)); if (!r.ok) return []; const d = await r.json(); return (d.genres || []).filter(Boolean); } catch (e) { return []; }
+}
+async function _ensureGenres(keys, limit) {
+    const m = _genreCache(); let n = 0, changed = false;
+    for (const k of keys) { if (n >= limit) break; if (m[k] != null) continue; const g = await _fetchGenres(k); m[k] = g; changed = true; n++; }
+    if (changed) { try { localStorage.setItem("scp_genres", JSON.stringify(m)); } catch (e) {} }
+    return changed;
+}
+function _tasteGenres() {
+    const likes = _likes(), cache = _genreCache(), cnt = {};
+    Object.keys(likes).forEach(k => {
+        const g = (likes[k] && likes[k].genres && likes[k].genres.length) ? likes[k].genres : (cache[k] || []);
+        (g || []).forEach(x => { cnt[x] = (cnt[x] || 0) + 1; });
+    });
+    return cnt;
+}
+async function toggleLike(key, item) {
+    const m = _likes();
+    if (m[key]) { delete m[key]; _setLikes(m); showToast("Rimosso dai «mi piace»"); }
+    else {
+        let g = _genreCache()[key];
+        if (g == null) { g = await _fetchGenres(key); _cacheGenres(key, g); }
+        m[key] = { genres: g || [], name: (item && item.name) || "", cover: (item && item.cover) || "", type: (item && item.type) || "" };
+        _setLikes(m); showToast("Aggiunto ai «mi piace» — miglioro i suggerimenti");
+        try { const miss = (libraryCache || []).filter(t => t && _isScKey(t.key) && _genreCache()[t.key] == null && !t.favorite).map(t => t.key); await _ensureGenres(miss, 6); } catch (e) {}
+    }
+    try { renderHeroBillboard(); } catch (e) {}
+}
+
 function _hbBuildList() {
     const out = [], seen = new Set();
     const push = (name, cover, type, rd, open) => {
-        // Serie: mostra SOLO la serie (non i singoli episodi).
         const ep = (typeof parseEpisode === "function") ? parseEpisode(name || "") : null;
         const disp = (ep && ep.series) ? ep.series : (name || "");
         const k = normName(disp); if (!disp || !cover || seen.has(k)) return;
         seen.add(k); out.push({ name: disp, cover: cover, type: (ep ? "tv" : (type || "")), rd: rd || "", open: open });
     };
-    // Preferiti in evidenza
+    // 1) Preferiti (stellina)
     (libraryCache || []).forEach(t => { if (t.favorite) push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); });
-    // Download completati
-    (localDownloads || []).forEach(d => { if (d.cover) push(d.title, d.cover, "", "", () => playDownloaded(d.id, d.title, d.key)); });
-    // Fallback: se non ci sono preferiti, mostra i primi titoli con locandina
-    if (out.length < 2) (libraryCache || []).forEach(t => { if (out.length < 8) push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); });
+    // 2) Titoli AFFINI per genere ai "mi piace" (cuore)
+    const taste = _tasteGenres();
+    if (Object.keys(taste).length) {
+        const cache = _genreCache(), likes = _likes();
+        (libraryCache || [])
+            .filter(t => t && t.cover && !t.favorite && !likes[t.key])
+            .map(t => { const g = cache[t.key] || []; let s = 0; g.forEach(x => { if (taste[x]) s += taste[x]; }); return { t, s }; })
+            .filter(o => o.s > 0)
+            .sort((a, b) => b.s - a.s)
+            .forEach(o => push(o.t.name, o.t.cover, o.t.type, o.t.release_date, () => openFromLibrary(o.t)));
+    }
+    // 3) Fallback: se non ci sono preferiti nè affini, mostra qualche titolo con locandina
+    if (out.length < 2) (libraryCache || []).forEach(t => { if (out.length < 8 && t.cover) push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); });
     return out.slice(0, 12);
 }
 function _countTitlesDeep(fld) {

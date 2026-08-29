@@ -2436,10 +2436,14 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
     justify-content: space-between !important; align-items: flex-start !important;
     left: 6px; right: 6px; gap: 4px;
 }
-#library-list .disney-row .library-item .library-actions > *:not(.moveup-btn):not(.movedown-btn):not(.fav-btn),
+#library-list .disney-row .library-item .library-actions > *:not(.moveup-btn):not(.movedown-btn):not(.fav-btn):not(.like-btn),
 #library-list .disney-row .folder-card .folder-actions > *:not(.folder-moveup):not(.folder-movedown):not(.folderfav-btn) {
     display: none !important;
 }
+/* Cuore "mi piace": accanto alla stella, non ingombrante */
+#library-list .disney-row .library-item .library-actions .fav-btn { margin-left: auto; }
+.library-item .like-btn { color: rgba(255,255,255,.85); }
+.library-item .like-btn.liked { color: #ff4d6d; }
 /* frecce a sinistra, stella a destra */
 #library-list .disney-row .library-item .library-actions .fav-btn,
 #library-list .disney-row .folder-card .folder-actions .folderfav-btn { margin-left: auto; }

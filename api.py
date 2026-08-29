@@ -1800,6 +1800,7 @@ def privacy_ip_status():
         "exposed": (not ks) and bool(cur and home and cur == home),
         # bloccato = kill-switch attivo ma non possiamo garantire la VPN
         "blocked": ks and (not home or cur is None or bool(home and cur == home)),
+        "tls_verify": _verify(),
     }
 
 

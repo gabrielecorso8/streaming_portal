@@ -5666,6 +5666,7 @@ function openVpnReminder() {
 
 // ─── Trascinamento orizzontale (drag-scroll) delle righe .disney-row ───
 let _vpnPrevIp = null;
+let _secSelfTestDone = false;
 function _renderVpnBanner(d) {
     let bar = document.getElementById("vpn-guard-banner");
     const need = d && (d.blocked || d.exposed);
@@ -5710,6 +5711,13 @@ function setupVpnAutoRefresh() {
             if (!r.ok) return;
             const d = await r.json();
             _renderVpnBanner(d);
+            if (!_secSelfTestDone) {
+                _secSelfTestDone = true;
+                if (d.blocked) showToast("🔒 Controllo sicurezza: operazioni online bloccate (vedi banner in alto).", 6000);
+                else if (d.exposed) showToast("⚠️ Controllo sicurezza: VPN spenta, il tuo IP è visibile. Attiva la VPN.", 7000);
+                else if (!d.tls_verify) showToast("⚠️ Verifica certificati TLS disattivata (tls_verify=false): riattivala per sicurezza piena.", 7000);
+                else if (d.protected) showToast(d.kill_switch ? "✅ Controllo sicurezza: protetto (VPN attiva, IP mascherato, kill-switch on)." : "✅ VPN attiva, IP mascherato. Consiglio: attiva il kill-switch dell'app per il blocco automatico.", 6000);
+            }
             const ip = d.current_ip_masked || "";
             if (!ip) return;
             if (_vpnPrevIp !== null && ip !== _vpnPrevIp) {

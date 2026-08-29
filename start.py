@@ -24,8 +24,18 @@ def _ensure_streams():
         needs = True
     if not needs:
         return
+    # Opzione "nessuna traccia": se settings.json ha write_log=false, non scriviamo
+    # affatto server.log (log su /dev/null). Default: log attivo ma redatto.
+    def _log_enabled():
+        try:
+            import json
+            with open(os.path.join(PROJECT_DIR, "settings.json"), encoding="utf-8") as sf:
+                return bool(json.load(sf).get("write_log", True))
+        except Exception:
+            return True
     try:
-        f = open(LOG_FILE, "a", buffering=1, encoding="utf-8", errors="replace")
+        f = open(LOG_FILE, "a", buffering=1, encoding="utf-8", errors="replace") if _log_enabled() \
+            else open(os.devnull, "w")
     except Exception:
         f = open(os.devnull, "w")
     # Oscura segreti (token, cookie cf_clearance, URL firmati, IP) prima di

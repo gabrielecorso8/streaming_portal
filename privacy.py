@@ -31,6 +31,8 @@ _KV_RE = re.compile(
 )
 # indirizzi IPv4 (LAN o pubblici) che possono comparire nei log
 _IP_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+# host delle URL esterne (QUALE sito stai aprendo): mascherato, loopback esclusi
+_URL_HOST_RE = re.compile(r"(?i)(https?://)(?!(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?:[:/]|\b))([^/\s\"'<>]+)")
 # lascia stare i loopback: sono innocui e utili per il debug
 _KEEP_IPS = {"127.0.0.1", "0.0.0.0", "255.255.255.255"}
 
@@ -39,6 +41,7 @@ def redact(text):
     """Restituisce il testo con segreti e dati identificativi oscurati."""
     if not text or not isinstance(text, str):
         return text
+    text = _URL_HOST_RE.sub(lambda m: m.group(1) + "[host]", text)
     text = _QS_RE.sub("?…", text)
     text = _KV_RE.sub(lambda m: m.group(1) + "=[REDACTED]", text)
 

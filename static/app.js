@@ -4169,8 +4169,9 @@ function renderLibrary(data) {
         const dispLabel = _catLabel(kindKey, label);
         const delBtn = options.custom ? '<button class="icon-btn cat-del-btn" title="Elimina categoria" type="button">✕</button>' : "";
         head.innerHTML = `<span class="cat-title">${escapeHtml(dispLabel)}</span>`
-            + `${delBtn}`
             + `<select class="cat-sort custom-select" title="Ordina"><option value="custom">Personalizzato</option><option value="score">Rilevanza</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option></select>`
+            + `<span class="cat-spacer"></span>`
+            + `${delBtn}`
             + `<span class="cat-chevron">▾</span>`;
         const body = document.createElement("div");
         body.className = "cat-body" + (open ? "" : " hidden");

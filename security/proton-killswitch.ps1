@@ -1,24 +1,17 @@
 <#
   Proton Kill-Switch (firewall di Windows) — kill-switch permanente "fai-da-te".
 
-  Cosa fa:
-    - Blocca TUTTO il traffico in uscita del PC per default...
-    - ...tranne: il tunnel Proton (adattatore VPN), i processi di Proton (per
-      poter STABILIRE la connessione), la LAN locale (così l'app SC Portal su
-      127.0.0.1 e i dispositivi in casa continuano a funzionare) e il DHCP.
+  Blocca TUTTO il traffico in uscita del PC tranne: il tunnel Proton (adattatore
+  VPN), i processi di Proton (per potersi connettere), la LAN locale (app SC Portal
+  su 127.0.0.1 + TV/telefono di casa) e il DHCP. Se la VPN cade o non e' ancora su
+  (anche all'avvio), niente esce in chiaro.
 
-  Effetto: se la VPN cade o non è ancora connessa (anche all'avvio del PC),
-  niente esce in chiaro. È l'equivalente del kill-switch "permanent" a pagamento,
-  ma a livello di Windows Firewall, quindi vale per l'INTERO sistema, non solo
-  per l'app.
-
-  Uso (PowerShell come Amministratore):
+  Uso (PowerShell come Amministratore, nella cartella dello script):
     .\proton-killswitch.ps1 enable     # attiva
     .\proton-killswitch.ps1 disable    # disattiva e ripristina
     .\proton-killswitch.ps1 status     # mostra lo stato
 
-  SICUREZZA: se qualcosa va storto (niente internet nemmeno con VPN su),
-  esegui  .\proton-killswitch.ps1 disable  per tornare subito alla normalità.
+  SICUREZZA: se resti senza rete, esegui 'disable' per tornare subito normale.
 #>
 
 param(
@@ -27,7 +20,9 @@ param(
   [string]$Action = "status"
 )
 
+$ErrorActionPreference = "Stop"
 $Group = "ProtonKillSwitch"
+$Profiles = @("Domain", "Private", "Public")
 
 function Require-Admin {
   $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -39,7 +34,6 @@ function Require-Admin {
 }
 
 function Get-ProtonAdapters {
-  # Cerca gli adattatori del tunnel Proton (app ufficiale, WireGuard, OpenVPN/TAP).
   Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {
     $_.InterfaceDescription -match "Proton|WireGuard|TAP-ProtonVPN|OpenVPN|WINTUN" -or
     $_.Name -match "Proton|WireGuard|VPN"
@@ -47,12 +41,23 @@ function Get-ProtonAdapters {
 }
 
 function Get-ProtonPrograms {
+  # Ricerca MIRATA (niente scansione di tutto Program Files: sarebbe lentissima).
+  $dirs = @(
+    "$env:ProgramFiles\Proton\VPN",
+    "${env:ProgramFiles(x86)}\Proton\VPN",
+    "$env:ProgramFiles\Proton VPN",
+    "${env:ProgramFiles(x86)}\Proton VPN",
+    "$env:ProgramFiles\Proton Technologies",
+    "$env:LOCALAPPDATA\Programs\Proton VPN",
+    "$env:ProgramFiles\WireGuard",
+    "$env:ProgramFiles\OpenVPN\bin"
+  ) | Where-Object { $_ -and (Test-Path $_) }
+
   $found = @()
-  $bases = @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:LOCALAPPDATA) | Where-Object { $_ }
-  foreach ($base in $bases) {
+  foreach ($d in $dirs) {
     try {
-      Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue `
-        -Include "ProtonVPN*.exe", "*Proton*Service*.exe", "openvpn.exe", "wireguard.exe" |
+      Get-ChildItem -Path $d -Recurse -Filter *.exe -ErrorAction SilentlyContinue |
+      Where-Object { $_.Name -match "Proton|VPN|openvpn|wireguard|wg" } |
       ForEach-Object { $found += $_.FullName }
     }
     catch {}
@@ -63,8 +68,7 @@ function Get-ProtonPrograms {
 function Disable-KillSwitch {
   param([switch]$Quiet)
   Require-Admin
-  # Ripristina il comportamento normale (uscita consentita) e rimuove le regole.
-  Set-NetFirewallProfile -All -DefaultOutboundAction Allow -ErrorAction SilentlyContinue
+  Set-NetFirewallProfile -Name $Profiles -DefaultOutboundAction Allow -ErrorAction SilentlyContinue
   Get-NetFirewallRule -Group $Group -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction SilentlyContinue
   if (-not $Quiet) {
     Write-Host "Kill-switch DISATTIVATO. Traffico di rete normale ripristinato." -ForegroundColor Yellow
@@ -73,32 +77,30 @@ function Disable-KillSwitch {
 
 function Enable-KillSwitch {
   Require-Admin
-  Disable-KillSwitch -Quiet   # parte pulito
+  Write-Host "[1/5] Pulizia regole precedenti..." -ForegroundColor DarkGray
+  Disable-KillSwitch -Quiet
 
+  Write-Host "[2/5] Rilevo l'adattatore Proton..." -ForegroundColor DarkGray
   $adapters = Get-ProtonAdapters
   if (-not $adapters) {
-    Write-Host "Nessun adattatore Proton/VPN trovato." -ForegroundColor Yellow
-    Write-Host "Connetti Proton VPN almeno una volta (così Windows crea l'adattatore), poi rilancia 'enable'." -ForegroundColor Yellow
-    exit 1
+    Write-Host "Nessun adattatore Proton/VPN trovato. Connetti Proton almeno una volta, poi riprova." -ForegroundColor Yellow
+    return
   }
+  Write-Host ("      trovato: " + ($adapters.Name -join ", ")) -ForegroundColor DarkGray
 
-  # 1) Consenti loopback + LAN locale: l'app su 127.0.0.1 e i dispositivi di casa
-  #    (TV/telefono) devono continuare a funzionare anche col kill-switch attivo.
+  Write-Host "[3/5] Consento LAN, DHCP e il tunnel Proton..." -ForegroundColor DarkGray
   New-NetFirewallRule -DisplayName "$Group - Loopback e LAN" -Group $Group -Direction Outbound `
     -Action Allow -RemoteAddress LocalSubnet, 127.0.0.1 -Profile Any | Out-Null
-  # 2) Consenti DHCP (ottenere l'IP locale) e DNS verso la LAN (router)
   New-NetFirewallRule -DisplayName "$Group - DHCP" -Group $Group -Direction Outbound `
     -Action Allow -Protocol UDP -RemotePort 67, 68 -Profile Any | Out-Null
-
-  # 3) Consenti TUTTO ciò che passa dal tunnel Proton
   foreach ($a in $adapters) {
     New-NetFirewallRule -DisplayName "$Group - Tunnel ($($a.Name))" -Group $Group -Direction Outbound `
       -Action Allow -InterfaceAlias $a.Name -Profile Any | Out-Null
   }
 
-  # 4) Consenti ai processi di Proton di raggiungere i server VPN sull'adattatore
-  #    fisico (altrimenti la VPN non riuscirebbe nemmeno a connettersi).
-  $progs = Get-ProtonPrograms
+  Write-Host "[4/5] Consento i processi di Proton (per connettersi)..." -ForegroundColor DarkGray
+  $progs = @()
+  try { $progs = Get-ProtonPrograms } catch {}
   foreach ($p in $progs) {
     try {
       New-NetFirewallRule -DisplayName "$Group - App $(Split-Path $p -Leaf)" -Group $Group `
@@ -106,26 +108,29 @@ function Enable-KillSwitch {
     }
     catch {}
   }
+  if (-not $progs) {
+    Write-Host "      (nessun eseguibile Proton trovato: ok se usi l'app ufficiale gia' connessa; la riconnessione potrebbe richiedere di ri-consentire)" -ForegroundColor DarkGray
+  }
 
-  # 5) Blocca per default tutto il resto in uscita = KILL SWITCH
-  Set-NetFirewallProfile -All -DefaultOutboundAction Block
+  Write-Host "[5/5] Attivo il BLOCCO predefinito in uscita..." -ForegroundColor DarkGray
+  Set-NetFirewallProfile -Name $Profiles -DefaultOutboundAction Block
 
-  Write-Host "Kill-switch ATTIVO." -ForegroundColor Green
-  Write-Host ("  Adattatori tunnel consentiti: " + ($adapters.Name -join ", "))
-  Write-Host ("  Processi Proton consentiti:   " + ($(if ($progs) { ($progs | ForEach-Object { Split-Path $_ -Leaf }) -join ", " } else { "nessuno trovato (ok se usi l'app Proton di default)" })))
-  Write-Host "  Fuori dal tunnel esce solo: LAN locale + DHCP + processi Proton." -ForegroundColor Green
-  Write-Host "  Per annullare: .\proton-killswitch.ps1 disable" -ForegroundColor DarkGray
+  Write-Host ""
+  Write-Host "KILL-SWITCH ATTIVO." -ForegroundColor Green
+  Write-Host ("  Tunnel consentito: " + ($adapters.Name -join ", "))
+  Write-Host "  Fuori dal tunnel esce solo: LAN locale + DHCP + processi Proton."
+  Write-Host "  Per annullare:  .\proton-killswitch.ps1 disable" -ForegroundColor DarkGray
 }
 
 function Status-KillSwitch {
-  $rules = Get-NetFirewallRule -Group $Group -ErrorAction SilentlyContinue
-  $active = [bool]$rules
-  $profiles = Get-NetFirewallProfile -ErrorAction SilentlyContinue
-  $anyBlock = $profiles | Where-Object { $_.DefaultOutboundAction -eq "Block" }
-  Write-Host ("Kill-switch: " + $(if ($active -and $anyBlock) { "ATTIVO" } else { "non attivo" })) `
-    -ForegroundColor $(if ($active -and $anyBlock) { "Green" } else { "Yellow" })
-  Write-Host ("  Regole '$Group' presenti: " + $(if ($rules) { $rules.Count } else { 0 }))
-  foreach ($p in $profiles) {
+  $rules = @(Get-NetFirewallRule -Group $Group -ErrorAction SilentlyContinue)
+  $profs = Get-NetFirewallProfile -ErrorAction SilentlyContinue
+  $anyBlock = @($profs | Where-Object { $_.DefaultOutboundAction -eq "Block" }).Count -gt 0
+  $active = ($rules.Count -gt 0) -and $anyBlock
+  Write-Host ("Kill-switch: " + $(if ($active) { "ATTIVO" } else { "non attivo" })) `
+    -ForegroundColor $(if ($active) { "Green" } else { "Yellow" })
+  Write-Host ("  Regole '$Group' presenti: " + $rules.Count)
+  foreach ($p in $profs) {
     Write-Host ("  Profilo {0}: DefaultOutbound = {1}" -f $p.Name, $p.DefaultOutboundAction)
   }
   Write-Host ""
@@ -135,8 +140,16 @@ function Status-KillSwitch {
   else { Write-Host "  (nessuno: connetti Proton almeno una volta)" -ForegroundColor Yellow }
 }
 
-switch ($Action) {
-  "enable" { Enable-KillSwitch }
-  "disable" { Disable-KillSwitch }
-  "status" { Status-KillSwitch }
+try {
+  switch ($Action) {
+    "enable" { Enable-KillSwitch }
+    "disable" { Disable-KillSwitch }
+    "status" { Status-KillSwitch }
+  }
+}
+catch {
+  Write-Host ""
+  Write-Host ("ERRORE: " + $_.Exception.Message) -ForegroundColor Red
+  Write-Host "Se la rete e' bloccata, esegui:  .\proton-killswitch.ps1 disable" -ForegroundColor Yellow
+  exit 1
 }

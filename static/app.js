@@ -4053,8 +4053,16 @@ function renderLibrary(data) {
             if (data.src === "folder") {
                 if (data.id && data.id !== f.id) {
                     const dragged = allFolders.find(x => x.id === data.id);
-                    if (dragged && (dragged.parent || "") === (f.parent || "")) await reorderFolder(data.id, f.id);
-                    else await nestFolder(data.id, f.id);
+                    const sameParent = dragged && (dragged.parent || "") === (f.parent || "");
+                    if (sameParent && (f.parent || "") === "" && (dragged.kind || "") !== (f.kind || "")) {
+                        // trascinata su una cartella di UN'ALTRA categoria -> spostala in quella categoria, davanti al target
+                        await setFolderKind(data.id, f.kind || "");
+                        await reorderFolder(data.id, f.id);
+                    } else if (sameParent) {
+                        await reorderFolder(data.id, f.id);
+                    } else {
+                        await nestFolder(data.id, f.id);
+                    }
                 }
             } else {
                 await handleFolderAdd(f.id, data);
@@ -4164,6 +4172,24 @@ function renderLibrary(data) {
             const hidden = body.classList.toggle("hidden");
             head.classList.toggle("open", !hidden);
             if (hidden) closedGroups.add(kindKey); else closedGroups.delete(kindKey);
+        });
+        // Trascina una cartella sull'intestazione (o nell'area) della categoria per spostarcela.
+        const _catDrop = async (e) => {
+            e.preventDefault(); e.stopPropagation();
+            head.classList.remove("cat-drop-over"); body.classList.remove("cat-drop-over");
+            let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
+            if (data && data.src === "folder" && data.id) {
+                const dragged = allFolders.find(x => x.id === data.id);
+                if (dragged && (dragged.kind || "") !== (kindKey || "")) await setFolderKind(data.id, kindKey);
+            }
+        };
+        [head, body].forEach(elx => {
+            elx.addEventListener("dragover", (e) => {
+                if (!(e.dataTransfer && (e.dataTransfer.types || []).includes("application/json"))) return;
+                e.preventDefault(); e.dataTransfer.dropEffect = "move"; elx.classList.add("cat-drop-over");
+            });
+            elx.addEventListener("dragleave", (e) => { if (!elx.contains(e.relatedTarget)) elx.classList.remove("cat-drop-over"); });
+            elx.addEventListener("drop", _catDrop);
         });
         const edit = head.querySelector(".cat-edit-btn");
         if (edit) edit.addEventListener("click", (e) => {

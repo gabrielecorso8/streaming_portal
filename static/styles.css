@@ -2527,3 +2527,7 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 #vpn-guard-banner .vgb-actions { display: flex; gap: 8px; flex: 0 0 auto; }
 #vpn-guard-banner .vgb-btn { padding: 5px 12px; border-radius: 8px; border: none; background: #fff; color: #111; font-weight: 700; cursor: pointer; font-size: .82rem; }
 #vpn-guard-banner .vgb-btn.vgb-ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.6); }
+
+/* Trascina una cartella su una categoria per spostarcela */
+.cat-head.cat-drop-over { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 10px; background: rgba(34,166,255,.14); }
+.cat-body.cat-drop-over { outline: 2px dashed rgba(34,166,255,.5); outline-offset: -4px; border-radius: 10px; }

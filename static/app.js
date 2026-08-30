@@ -4323,7 +4323,7 @@ function renderLibrary(data) {
         const cc = node.querySelector(".wheel-node-covers");
         node._covers = covers; node._ci = covers.length ? Math.floor(Math.random() * covers.length) : 0;
         if (covers.length) cc.style.backgroundImage = `url('${covers[node._ci]}')`; else cc.classList.add("placeholder");
-        node.addEventListener("click", (e) => { e.preventDefault(); if (!(wheelEl._dragMoved && wheelEl._dragMoved())) openCategoryMosaic(cd); });
+        node._open = () => openCategoryMosaic(cd);
         wheelEl.appendChild(node);
     });
     wheelWrap.appendChild(wheelHint); wheelWrap.appendChild(wheelEl);
@@ -5892,7 +5892,7 @@ let _wheelStop = null;
 function setupWheel(wheelEl, nodes) {
     if (_wheelStop) { try { _wheelStop(); } catch (e) {} _wheelStop = null; }
     const N = nodes.length; if (!N || !wheelEl) return;
-    let angle = -Math.PI / 2, dragging = false, lastAng = 0, moved = false, vel = 0, hovering = false;
+    let angle = -Math.PI / 2, dragging = false, lastAng = 0, moved = false, vel = 0, pressed = false, downNode = null, downX = 0, downY = 0;
     const AUTO = 0.0016;
     let raf = null, coverTimer = null;
     const layout = () => {
@@ -5911,9 +5911,7 @@ function setupWheel(wheelEl, nodes) {
             nd.style.opacity = (0.55 + 0.45 * depth).toFixed(3);
         }
     };
-    const frame = () => { if (!dragging && !hovering) { angle += AUTO + vel; vel *= 0.93; } layout(); raf = requestAnimationFrame(frame); };
-    wheelEl.addEventListener("pointerenter", () => { hovering = true; });
-    wheelEl.addEventListener("pointerleave", () => { hovering = false; });
+    const frame = () => { if (!pressed) { angle += AUTO + vel; vel *= 0.93; } layout(); raf = requestAnimationFrame(frame); };
     coverTimer = setInterval(() => {
         nodes.forEach(nd => {
             const cov = nd._covers; if (!cov || cov.length < 2) return;
@@ -5924,9 +5922,21 @@ function setupWheel(wheelEl, nodes) {
     }, 1700);
     const center = () => { const r = wheelEl.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
     const angOf = (e) => { const c = center(); return Math.atan2(e.clientY - c.y, e.clientX - c.x); };
-    const onDown = (e) => { dragging = true; moved = false; vel = 0; lastAng = angOf(e); try { wheelEl.setPointerCapture(e.pointerId); } catch (_) {} };
-    const onMove = (e) => { if (!dragging) return; const a = angOf(e); let d = a - lastAng; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI; angle += d; vel = d * 0.5; if (Math.abs(d) > 0.008) moved = true; lastAng = a; };
-    const onUp = () => { dragging = false; };
+    const onDown = (e) => {
+        pressed = true; dragging = false; moved = false; vel = 0;
+        downNode = (e.target && e.target.closest) ? e.target.closest(".wheel-node") : null;
+        downX = e.clientX; downY = e.clientY; lastAng = angOf(e);
+        try { wheelEl.setPointerCapture(e.pointerId); } catch (_) {}
+    };
+    const onMove = (e) => {
+        if (!pressed) return;
+        if (!dragging) { const dx = e.clientX - downX, dy = e.clientY - downY; if (dx * dx + dy * dy > 49) { dragging = true; moved = true; } }
+        if (dragging) { const a = angOf(e); let d = a - lastAng; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI; angle += d; vel = d * 0.5; lastAng = a; }
+    };
+    const onUp = () => {
+        if (pressed && !dragging && downNode && typeof downNode._open === "function") downNode._open();
+        pressed = false; downNode = null;
+    };
     wheelEl.addEventListener("pointerdown", onDown);
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);

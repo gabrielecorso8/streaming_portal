@@ -4302,18 +4302,34 @@ function renderLibrary(data) {
         sortSel.value = _getCatSort(cd.key);
         const editBtn = document.createElement("button"); editBtn.className = "icon-btn cat-mosaic-edit"; editBtn.title = "Rinomina categoria"; editBtn.textContent = "\u270E";
         bar.appendChild(back); bar.appendChild(ttl); bar.appendChild(editBtn); bar.appendChild(sortSel);
-        const grid = document.createElement("div"); grid.className = "disney-row cat-mosaic-grid";
+        const foldersGrid = document.createElement("div"); foldersGrid.className = "disney-row cat-folders-grid";
+        const mosaicGrid = document.createElement("div"); mosaicGrid.className = "disney-row cat-mosaic-grid nonames";
         const group = buildCategoryGroup(cd.label, cd.key, byKind(cd.key), cd.icon, cd.options);
         const gbody = group.querySelector(".cat-body");
-        while (gbody && gbody.firstChild) grid.appendChild(gbody.firstChild);
-        let _bn = 0;
-        Array.from(grid.children).forEach(t => {
-            if (!(t.classList.contains("folder-card") || t.classList.contains("library-item")) || t.classList.contains("add-tile")) return;
-            _bn++; if (_bn % 6 === 2) t.classList.add("mosaic-big");
+        Array.from(gbody ? gbody.children : []).forEach(t => {
+            if (t.classList.contains("add-tile")) mosaicGrid.appendChild(t);
+            else if (t.classList.contains("folder-card")) foldersGrid.appendChild(t);
+            else mosaicGrid.appendChild(t);
         });
-        ov.appendChild(bar); ov.appendChild(grid);
+        // Dimensioni diverse nel mosaico (senza nomi -> altezze deterministiche): alcune tessere piu' grandi
+        let _bn = 0;
+        Array.from(mosaicGrid.children).forEach(t => { if (t.classList.contains("add-tile")) return; _bn++; if (_bn % 7 === 3 || _bn % 7 === 5) t.classList.add("mosaic-lg"); });
+        const foldersLabel = document.createElement("div"); foldersLabel.className = "cat-section-label"; foldersLabel.textContent = "Cartelle";
+        ov.appendChild(bar);
+        if (foldersGrid.children.length) { ov.appendChild(foldersLabel); ov.appendChild(foldersGrid); }
+        ov.appendChild(mosaicGrid);
         document.body.appendChild(ov);
-        const close = () => { document.removeEventListener("keydown", esc); ov.remove(); };
+        const relayout = () => _layoutMosaic(mosaicGrid);
+        requestAnimationFrame(relayout); setTimeout(relayout, 320);
+        mosaicGrid.querySelectorAll("img").forEach(im => im.addEventListener("load", relayout));
+        window.addEventListener("resize", relayout);
+        // Entrando in una cartella (drill nella griglia cartelle) -> mostra i contenuti come mosaico senza nomi
+        const foldersObs = new MutationObserver(() => {
+            if (foldersGrid.dataset.drilled != null) { foldersGrid.classList.add("nonames", "as-mosaic"); requestAnimationFrame(() => _layoutMosaic(foldersGrid)); }
+            else { foldersGrid.classList.remove("nonames", "as-mosaic"); Array.from(foldersGrid.children).forEach(x => { x.style.gridRowEnd = ""; }); }
+        });
+        foldersObs.observe(foldersGrid, { attributes: true, attributeFilter: ["data-drilled"], childList: true });
+        const close = () => { try { foldersObs.disconnect(); } catch (e) {} window.removeEventListener("resize", relayout); document.removeEventListener("keydown", esc); ov.remove(); };
         const esc = (e) => { if (e.key === "Escape") close(); };
         back.addEventListener("click", close);
         editBtn.addEventListener("click", () => { editCategoryTitle(cd.key, !!(cd.options && cd.options.custom), cd.label); close(); });
@@ -5926,7 +5942,7 @@ function _layoutMosaic(grid) {
         tile.style.gridRowEnd = "auto";
         const h = tile.getBoundingClientRect().height;
         if (!h) return;
-        tile.style.gridRowEnd = "span " + Math.max(1, Math.round((h + gap) / (rowUnit + gap)));
+        tile.style.gridRowEnd = "span " + Math.max(1, Math.ceil((h + gap) / (rowUnit + gap)));
     });
 }
 function setupWheel(wheelEl, nodes) {

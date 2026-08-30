@@ -2571,9 +2571,19 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 .cat-mosaic-sort { max-width: 160px; }
 
 /* Masonry: griglia densa che riempie lo schermo, con tile piu' grandi e piu' piccole */
-.cat-mosaic-ov .disney-row.cat-mosaic-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-    column-gap: 14px; row-gap: 18px; overflow: visible !important; padding: 0; align-items: start; }
+.cat-mosaic-ov .disney-row.cat-mosaic-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-auto-flow: row dense; column-gap: 14px; row-gap: 18px; overflow: visible !important; padding: 0; align-items: start; }
 .cat-mosaic-ov .cat-mosaic-grid > * { width: auto !important; max-width: none !important; min-width: 0 !important; margin: 0 !important; flex: none !important; box-sizing: border-box; }
+/* tessere piu' grandi: occupano 2 colonne (locandina piu' grande, sempre intera col titolo) */
+.cat-mosaic-ov .cat-mosaic-grid > .mosaic-big { grid-column: span 2; }
+/* niente etichette/badge accanto ai titoli dentro le categorie */
+.cat-mosaic-ov .folder-kind-badge, .cat-mosaic-ov .folder-domains,
+.cat-mosaic-ov .folder-kind-select, .cat-mosaic-ov .folder-parent-select,
+.cat-mosaic-ov .lib-below { display: none !important; }
+/* evidenziazioni drag: Indietro come drop-zone, nodo ruota come destinazione */
+.cat-mosaic-bar .secondary-btn.cat-drop-over { outline: 2px solid var(--accent); outline-offset: 2px; background: rgba(34,166,255,.22); }
+.cat-mosaic-edit { padding: 4px 8px; }
+.wheel-node.wheel-node-drop .wheel-node-covers { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent), 0 10px 30px rgba(34,166,255,.5); }
 
 /* Tile stile "riga": locandina in alto, nome sotto, funzioni sopra (in hover) */
 .cat-mosaic-ov .folder-card, .cat-mosaic-ov .library-item { position: relative; display: flex; flex-direction: column;

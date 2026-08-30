@@ -4300,16 +4300,36 @@ function renderLibrary(data) {
         const sortSel = document.createElement("select"); sortSel.className = "cat-sort custom-select cat-mosaic-sort";
         sortSel.innerHTML = '<option value="custom">Personalizzato</option><option value="score">Rilevanza</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option>';
         sortSel.value = _getCatSort(cd.key);
-        bar.appendChild(back); bar.appendChild(ttl); bar.appendChild(sortSel);
+        const editBtn = document.createElement("button"); editBtn.className = "icon-btn cat-mosaic-edit"; editBtn.title = "Rinomina categoria"; editBtn.textContent = "\u270E";
+        bar.appendChild(back); bar.appendChild(ttl); bar.appendChild(editBtn); bar.appendChild(sortSel);
         const grid = document.createElement("div"); grid.className = "disney-row cat-mosaic-grid";
         const group = buildCategoryGroup(cd.label, cd.key, byKind(cd.key), cd.icon, cd.options);
         const gbody = group.querySelector(".cat-body");
         while (gbody && gbody.firstChild) grid.appendChild(gbody.firstChild);
+        let _bn = 0;
+        Array.from(grid.children).forEach(t => {
+            if (!(t.classList.contains("folder-card") || t.classList.contains("library-item")) || t.classList.contains("add-tile")) return;
+            _bn++; if (_bn % 6 === 2) t.classList.add("mosaic-big");
+        });
         ov.appendChild(bar); ov.appendChild(grid);
         document.body.appendChild(ov);
         const close = () => { document.removeEventListener("keydown", esc); ov.remove(); };
         const esc = (e) => { if (e.key === "Escape") close(); };
         back.addEventListener("click", close);
+        editBtn.addEventListener("click", () => { editCategoryTitle(cd.key, !!(cd.options && cd.options.custom), cd.label); close(); });
+        // Trascina su "Indietro" a livello categoria = togli dalla categoria (senza cartella)
+        back.addEventListener("dragover", (e) => { if (e.dataTransfer && (e.dataTransfer.types || []).indexOf("application/json") >= 0) { e.preventDefault(); back.classList.add("cat-drop-over"); } });
+        back.addEventListener("dragleave", () => back.classList.remove("cat-drop-over"));
+        back.addEventListener("drop", async (e) => {
+            e.preventDefault(); e.stopPropagation(); back.classList.remove("cat-drop-over");
+            let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
+            if (data && data.src === "folder" && data.id) { await setFolderKind(data.id, ""); close(); }
+            else if (data && data.src === "lib" && data.key) {
+                _removeCatTitle(cd.key, data.key);
+                if (data.fromFolder) { try { await fetch("/api/folders/remove-item", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: data.fromFolder, key: data.key }) }); } catch (er) {} }
+                openCategoryMosaic(cd);
+            }
+        });
         document.addEventListener("keydown", esc);
         sortSel.addEventListener("change", () => { _setCatSort(cd.key, sortSel.value); close(); openCategoryMosaic(cd); });
     };
@@ -4325,6 +4345,13 @@ function renderLibrary(data) {
         node._covers = covers; node._ci = covers.length ? Math.floor(Math.random() * covers.length) : 0;
         if (covers.length) cc.style.backgroundImage = `url('${covers[node._ci]}')`; else cc.classList.add("placeholder");
         node._open = () => openCategoryMosaic(cd);
+        node.addEventListener("dragover", (e) => { if (e.dataTransfer && (e.dataTransfer.types || []).indexOf("application/json") >= 0) { e.preventDefault(); e.stopPropagation(); node.classList.add("wheel-node-drop"); } });
+        node.addEventListener("dragleave", () => node.classList.remove("wheel-node-drop"));
+        node.addEventListener("drop", async (e) => {
+            e.preventDefault(); e.stopPropagation(); node.classList.remove("wheel-node-drop");
+            let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
+            if (data && data.src === "folder" && data.id) await setFolderKind(data.id, cd.key);
+        });
         wheelEl.appendChild(node);
     });
     wheelWrap.appendChild(wheelHint); wheelWrap.appendChild(wheelEl);
@@ -5905,7 +5932,7 @@ function _layoutMosaic(grid) {
 function setupWheel(wheelEl, nodes) {
     if (_wheelStop) { try { _wheelStop(); } catch (e) {} _wheelStop = null; }
     const N = nodes.length; if (!N || !wheelEl) return;
-    let angle = -Math.PI / 2, dragging = false, lastAng = 0, moved = false, vel = 0, pressed = false, downNode = null, downX = 0, downY = 0;
+    let angle = -Math.PI / 2, dragging = false, lastAng = 0, moved = false, vel = 0, pressed = false, downNode = null, downX = 0, downY = 0, dragOver = false;
     const AUTO = 0.0016;
     let raf = null, coverTimer = null;
     const layout = () => {
@@ -5924,7 +5951,10 @@ function setupWheel(wheelEl, nodes) {
             nd.style.opacity = (0.55 + 0.45 * depth).toFixed(3);
         }
     };
-    const frame = () => { if (!pressed) { angle += AUTO + vel; vel *= 0.93; } layout(); raf = requestAnimationFrame(frame); };
+    const frame = () => { if (!pressed && !dragOver) { angle += AUTO + vel; vel *= 0.93; } layout(); raf = requestAnimationFrame(frame); };
+    wheelEl.addEventListener("dragover", () => { dragOver = true; });
+    wheelEl.addEventListener("dragleave", (e) => { if (!wheelEl.contains(e.relatedTarget)) dragOver = false; });
+    wheelEl.addEventListener("drop", () => { dragOver = false; });
     coverTimer = setInterval(() => {
         nodes.forEach(nd => {
             const cov = nd._covers; if (!cov || cov.length < 2) return;

@@ -4319,9 +4319,10 @@ function renderLibrary(data) {
         const node = document.createElement("button"); node.type = "button"; node.className = "wheel-node";
         node.innerHTML = `<div class="wheel-node-covers"></div><div class="wheel-node-title">${escapeHtml(cd.label)}</div>`;
         const covers = gatherCovers(cd.key);
+        for (let _i = covers.length - 1; _i > 0; _i--) { const _j = Math.floor(Math.random() * (_i + 1)); const _t = covers[_i]; covers[_i] = covers[_j]; covers[_j] = _t; }
         const cc = node.querySelector(".wheel-node-covers");
-        if (covers.length) cc.style.backgroundImage = `url('${covers[0]}')`; else cc.classList.add("placeholder");
-        node._covers = covers; node._ci = 0;
+        node._covers = covers; node._ci = covers.length ? Math.floor(Math.random() * covers.length) : 0;
+        if (covers.length) cc.style.backgroundImage = `url('${covers[node._ci]}')`; else cc.classList.add("placeholder");
         node.addEventListener("click", (e) => { e.preventDefault(); if (!(wheelEl._dragMoved && wheelEl._dragMoved())) openCategoryMosaic(cd); });
         wheelEl.appendChild(node);
     });
@@ -5891,7 +5892,7 @@ let _wheelStop = null;
 function setupWheel(wheelEl, nodes) {
     if (_wheelStop) { try { _wheelStop(); } catch (e) {} _wheelStop = null; }
     const N = nodes.length; if (!N || !wheelEl) return;
-    let angle = -Math.PI / 2, dragging = false, lastAng = 0, moved = false, vel = 0;
+    let angle = -Math.PI / 2, dragging = false, lastAng = 0, moved = false, vel = 0, hovering = false;
     const AUTO = 0.0016;
     let raf = null, coverTimer = null;
     const layout = () => {
@@ -5904,13 +5905,15 @@ function setupWheel(wheelEl, nodes) {
             const x = cx + R * Math.cos(a), y = cy + R * Math.sin(a);
             const nd = nodes[i];
             const depth = (Math.sin(a) + 1) / 2;                // 0 (alto) .. 1 (basso)
-            const sc = 0.72 + 0.4 * depth;                      // in basso/avanti piu' grande
+            const sc = 0.82 + 0.26 * depth;                     // in basso/avanti piu' grande
             nd.style.transform = `translate(${x - nd.offsetWidth / 2}px, ${y - nd.offsetHeight / 2}px) scale(${sc.toFixed(3)})`;
             nd.style.zIndex = String(100 + Math.round(100 * depth));
             nd.style.opacity = (0.55 + 0.45 * depth).toFixed(3);
         }
     };
-    const frame = () => { if (!dragging) { angle += AUTO + vel; vel *= 0.93; } layout(); raf = requestAnimationFrame(frame); };
+    const frame = () => { if (!dragging && !hovering) { angle += AUTO + vel; vel *= 0.93; } layout(); raf = requestAnimationFrame(frame); };
+    wheelEl.addEventListener("pointerenter", () => { hovering = true; });
+    wheelEl.addEventListener("pointerleave", () => { hovering = false; });
     coverTimer = setInterval(() => {
         nodes.forEach(nd => {
             const cov = nd._covers; if (!cov || cov.length < 2) return;

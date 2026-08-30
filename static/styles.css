@@ -2615,7 +2615,7 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 .cat-mosaic-ov .cat-folders-grid > * { width: auto !important; min-width: 0 !important; max-width: none !important; margin: 0 !important; box-sizing: border-box; }
 /* MOSAICO senza nomi (sottocartelle/singoli): dimensioni diverse, incastrate, SOLO locandine */
 .cat-mosaic-ov .cat-mosaic-grid.nonames, .cat-mosaic-ov .cat-folders-grid.as-mosaic {
-    grid-auto-rows: 8px !important; row-gap: 0 !important; column-gap: 12px !important; }
-.cat-mosaic-ov .cat-mosaic-grid.nonames > .mosaic-lg, .cat-mosaic-ov .cat-folders-grid.as-mosaic > .mosaic-lg { grid-column: span 2; }
+    display: block !important; position: relative; overflow: visible !important; padding: 0; }
+.cat-mosaic-ov .cat-mosaic-grid.nonames > *, .cat-mosaic-ov .cat-folders-grid.as-mosaic > * { box-sizing: border-box; }
 .cat-mosaic-ov .nonames .folder-meta, .cat-mosaic-ov .nonames .library-meta,
 .cat-mosaic-ov .as-mosaic .folder-meta, .cat-mosaic-ov .as-mosaic .library-meta { display: none !important; }

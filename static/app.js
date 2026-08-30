@@ -5934,16 +5934,39 @@ function setupVpnAutoRefresh() {
 
 let _wheelStop = null;
 function _layoutMosaic(grid) {
+    // Masonry a posizionamento ASSOLUTO: misura l'altezza reale di ogni locandina
+    // e la mette nella colonna piu' corta -> incastro perfetto, zero sovrapposizioni.
     if (!grid) return;
-    const cs = getComputedStyle(grid);
-    const rowUnit = 8;
-    const gap = parseFloat(cs.rowGap || cs.gap) || 12;
-    Array.from(grid.children).forEach(tile => {
-        tile.style.gridRowEnd = "auto";
-        const h = tile.getBoundingClientRect().height;
-        if (!h) return;
-        tile.style.gridRowEnd = "span " + Math.max(1, Math.ceil((h + gap) / (rowUnit + gap)));
+    const cw = grid.clientWidth; if (!cw) return;
+    const gap = 12, target = 150;
+    const tiles = Array.from(grid.children);
+    if (!tiles.length) { grid.style.height = ""; return; }
+    const cols = Math.max(1, Math.floor((cw + gap) / (target + gap)));
+    const colW = (cw - gap * (cols - 1)) / cols;
+    grid.style.position = "relative";
+    // pass 1: larghezze (1 o 2 colonne)
+    tiles.forEach(t => {
+        const span = t.classList.contains("mosaic-lg") ? Math.min(2, cols) : 1;
+        t._span = span;
+        t.style.position = "absolute";
+        t.style.margin = "0";
+        t.style.width = (colW * span + gap * (span - 1)) + "px";
     });
+    // pass 2: misura altezza reale e posiziona nella colonna piu' corta
+    const colH = new Array(cols).fill(0);
+    tiles.forEach(t => {
+        const span = t._span;
+        const h = t.getBoundingClientRect().height || (colW * span * 1.5);
+        let bestCol = 0, bestY = Infinity;
+        for (let cs = 0; cs + span <= cols; cs++) {
+            let y = 0; for (let k = 0; k < span; k++) y = Math.max(y, colH[cs + k]);
+            if (y < bestY) { bestY = y; bestCol = cs; }
+        }
+        t.style.left = (bestCol * (colW + gap)) + "px";
+        t.style.top = bestY + "px";
+        for (let k = 0; k < span; k++) colH[bestCol + k] = bestY + h + gap;
+    });
+    grid.style.height = (Math.max(0, ...colH)) + "px";
 }
 function setupWheel(wheelEl, nodes) {
     if (_wheelStop) { try { _wheelStop(); } catch (e) {} _wheelStop = null; }

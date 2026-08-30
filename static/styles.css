@@ -2619,3 +2619,17 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 .cat-mosaic-ov .cat-mosaic-grid.nonames > *, .cat-mosaic-ov .cat-folders-grid.as-mosaic > * { box-sizing: border-box; }
 .cat-mosaic-ov .nonames .folder-meta, .cat-mosaic-ov .nonames .library-meta,
 .cat-mosaic-ov .as-mosaic .folder-meta, .cat-mosaic-ov .as-mosaic .library-meta { display: none !important; }
+
+/* Animazione "a scomparsa": locandine in dissolvenza scorrendo */
+.cat-mosaic-ov .reveal-tile { opacity: 0; transform: translateY(26px) scale(.965); transition: opacity .5s ease, transform .5s ease; }
+.cat-mosaic-ov .reveal-tile.revealed { opacity: 1; transform: none; }
+/* Griglie senza nomi ora UNIFORMI (niente masonry): solo locandine */
+.cat-mosaic-ov .cat-titles-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(134px, 1fr));
+    column-gap: 14px; row-gap: 16px; overflow: visible !important; padding: 0; align-items: start; }
+.cat-mosaic-ov .cat-titles-grid > * { width: auto !important; min-width: 0 !important; max-width: none !important; margin: 0 !important; box-sizing: border-box; }
+.cat-mosaic-ov .cat-folders-grid.nonames .folder-meta,
+.cat-mosaic-ov .cat-titles-grid.nonames .folder-meta,
+.cat-mosaic-ov .cat-titles-grid.nonames .library-meta { display: none !important; }
+
+/* Nodi speciali della ruota (Preferiti / Titoli scaricati) */
+.wheel-node.wheel-node-special .wheel-node-covers { border-color: #ffc400; box-shadow: 0 10px 30px rgba(255,196,0,.35); }

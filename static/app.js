@@ -3401,9 +3401,9 @@ function titleRow(item, ctx) {
             item: { id_and_slug: item.key, key: item.key, name: item.name, cover: item.cover, type: item.type, url: item.url, release_date: item.release_date }
         }));
         e.dataTransfer.effectAllowed = "move";
-        row.classList.add("dragging");
+        row.classList.add("dragging"); _dragTileEl = row;
     });
-    row.addEventListener("dragend", () => row.classList.remove("dragging"));
+    row.addEventListener("dragend", () => { row.classList.remove("dragging"); _dragTileEl = null; });
     if (ctx && !ctx.noReorder) {
         row.addEventListener("dragover", (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; row.classList.add("drop-target"); });
         row.addEventListener("dragleave", () => row.classList.remove("drop-target"));
@@ -3591,7 +3591,8 @@ async function nestFolder(childId, parentId) {
         });
         if (r.ok) {
             if (parentId) openFolders.add(parentId);
-            renderLibrary(await r.json());
+            const pl = await r.json();
+            if (!_applyFoldersResult(pl)) renderLibrary(pl);
             showToast(parentId ? "Cartella annidata" : "Cartella portata in radice");
         } else {
             const d = await r.json().catch(() => ({}));
@@ -3730,7 +3731,7 @@ async function handleFolderAdd(folderId, data) {
                     if (rr.ok) { payload = await rr.json(); moved = true; }
                 } catch (e) {}
             }
-            openFolders.add(folderId); renderLibrary(payload);
+            openFolders.add(folderId); if (!_applyFoldersResult(payload)) renderLibrary(payload);
             showToast(moved ? "Spostato nella cartella" : "Aggiunto alla cartella");
         }
         else showToast("Errore aggiunta alla cartella");
@@ -4050,9 +4051,9 @@ function renderLibrary(data) {
             e.stopPropagation();
             e.dataTransfer.setData("application/json", JSON.stringify({ src: "folder", id: f.id }));
             e.dataTransfer.effectAllowed = "move";
-            card.classList.add("dragging");
+            card.classList.add("dragging"); _dragTileEl = card;
         });
-        card.addEventListener("dragend", () => card.classList.remove("dragging"));
+        card.addEventListener("dragend", () => { card.classList.remove("dragging"); _dragTileEl = null; });
         card.addEventListener("dragover", (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; card.classList.add("folder-drag-over"); });
         card.addEventListener("dragleave", (e) => { if (!card.contains(e.relatedTarget)) card.classList.remove("folder-drag-over"); });
         card.addEventListener("drop", async (e) => {
@@ -4287,86 +4288,121 @@ function renderLibrary(data) {
     // ---- RUOTA DELLE CATEGORIE (sostituisce le righe categoria) ----
     const gatherCovers = (kindKey) => {
         const out = [];
-        byKind(kindKey).forEach(fo => { if (fo.cover) out.push(fo.cover); (fo.items || []).forEach(it => { if (it && it.cover) out.push(it.cover); }); });
-        (_catTitles()[kindKey] || []).forEach(k => { const it = (libraryCache || []).find(x => x && x.key === k); if (it && it.cover) out.push(it.cover); });
+        if (kindKey === "__fav__") {
+            (libraryCache || []).forEach(t => { if (t.favorite && t.cover) out.push(t.cover); });
+            (allFolders || []).forEach(fo => { if (fo.favorite && fo.cover) out.push(fo.cover); });
+        } else if (kindKey === "__dl__") {
+            (localDownloads || []).forEach(d => { if (d.cover) out.push(d.cover); });
+        } else {
+            byKind(kindKey).forEach(fo => { if (fo.cover) out.push(fo.cover); (fo.items || []).forEach(it => { if (it && it.cover) out.push(it.cover); }); });
+            (_catTitles()[kindKey] || []).forEach(k => { const it = (libraryCache || []).find(x => x && x.key === k); if (it && it.cover) out.push(it.cover); });
+        }
         return [...new Set(out)].slice(0, 12);
+    };
+    const buildSpecialContent = (cd, foldersGrid, titlesGrid) => {
+        if (cd.special === "fav") {
+            (allFolders || []).filter(fo => fo.favorite).forEach(fo => { try { foldersGrid.appendChild(buildFolderCard(fo, true)); } catch (e) {} });
+            (libraryCache || []).filter(t => t.favorite).forEach(t => { try { titlesGrid.appendChild(titleRow(t, { noReorder: true })); } catch (e) {} });
+        } else if (cd.special === "dl") {
+            (localDownloads || []).forEach(d => {
+                if (!d.cover) return;
+                const tile = document.createElement("div"); tile.className = "library-item";
+                tile.innerHTML = '<img class="library-cover" src="' + escapeHtml(d.cover) + '" alt="" loading="lazy"><div class="library-meta"><span class="library-name">' + escapeHtml(d.title || "") + '</span></div>';
+                tile.addEventListener("click", () => playDownloaded(d.id, d.title, d.key));
+                titlesGrid.appendChild(tile);
+            });
+        }
     };
     const openCategoryMosaic = (cd) => {
         const ex = document.querySelector(".cat-mosaic-ov"); if (ex) ex.remove();
         const ov = document.createElement("div"); ov.className = "cat-mosaic-ov";
         const bar = document.createElement("div"); bar.className = "cat-mosaic-bar";
-        const back = document.createElement("button"); back.className = "secondary-btn small-btn"; back.textContent = "\u2039 Indietro";
+        const back = document.createElement("button"); back.className = "secondary-btn small-btn"; back.textContent = "‹ Indietro";
         const ttl = document.createElement("div"); ttl.className = "cat-mosaic-title"; ttl.textContent = cd.label;
-        const sortSel = document.createElement("select"); sortSel.className = "cat-sort custom-select cat-mosaic-sort";
-        sortSel.innerHTML = '<option value="custom">Personalizzato</option><option value="score">Rilevanza</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option>';
-        sortSel.value = _getCatSort(cd.key);
-        const editBtn = document.createElement("button"); editBtn.className = "icon-btn cat-mosaic-edit"; editBtn.title = "Rinomina categoria"; editBtn.textContent = "\u270E";
-        bar.appendChild(back); bar.appendChild(ttl); bar.appendChild(editBtn); bar.appendChild(sortSel);
+        bar.appendChild(back); bar.appendChild(ttl);
+        let sortSel = null, editBtn = null;
+        if (!cd.special) {
+            editBtn = document.createElement("button"); editBtn.className = "icon-btn cat-mosaic-edit"; editBtn.title = "Rinomina categoria"; editBtn.textContent = "✎";
+            sortSel = document.createElement("select"); sortSel.className = "cat-sort custom-select cat-mosaic-sort";
+            sortSel.innerHTML = '<option value="custom">Personalizzato</option><option value="score">Rilevanza</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option>';
+            sortSel.value = _getCatSort(cd.key);
+            bar.appendChild(editBtn); bar.appendChild(sortSel);
+        }
         const foldersGrid = document.createElement("div"); foldersGrid.className = "disney-row cat-folders-grid";
-        const mosaicGrid = document.createElement("div"); mosaicGrid.className = "disney-row cat-mosaic-grid nonames";
-        const group = buildCategoryGroup(cd.label, cd.key, byKind(cd.key), cd.icon, cd.options);
-        const gbody = group.querySelector(".cat-body");
-        Array.from(gbody ? gbody.children : []).forEach(t => {
-            if (t.classList.contains("add-tile")) mosaicGrid.appendChild(t);
-            else if (t.classList.contains("folder-card")) foldersGrid.appendChild(t);
-            else mosaicGrid.appendChild(t);
-        });
-        // Dimensioni diverse nel mosaico (senza nomi -> altezze deterministiche): alcune tessere piu' grandi
-        let _bn = 0;
-        Array.from(mosaicGrid.children).forEach(t => { if (t.classList.contains("add-tile")) return; _bn++; if (_bn % 7 === 3 || _bn % 7 === 5) t.classList.add("mosaic-lg"); });
-        const foldersLabel = document.createElement("div"); foldersLabel.className = "cat-section-label"; foldersLabel.textContent = "Cartelle";
+        const titlesGrid = document.createElement("div"); titlesGrid.className = "disney-row cat-titles-grid nonames";
+        if (cd.special) {
+            buildSpecialContent(cd, foldersGrid, titlesGrid);
+        } else {
+            const group = buildCategoryGroup(cd.label, cd.key, byKind(cd.key), cd.icon, cd.options);
+            const gbody = group.querySelector(".cat-body");
+            Array.from(gbody ? gbody.children : []).forEach(t => {
+                if (t.classList.contains("add-tile")) titlesGrid.appendChild(t);
+                else if (t.classList.contains("folder-card")) foldersGrid.appendChild(t);
+                else titlesGrid.appendChild(t);
+            });
+        }
+        [foldersGrid, titlesGrid].forEach(g => g.querySelectorAll(".folder-card, .library-item").forEach(t => t.classList.add("reveal-tile")));
         ov.appendChild(bar);
-        if (foldersGrid.children.length) { ov.appendChild(foldersLabel); ov.appendChild(foldersGrid); }
-        ov.appendChild(mosaicGrid);
+        if (foldersGrid.children.length) { const fl = document.createElement("div"); fl.className = "cat-section-label"; fl.textContent = "Cartelle"; ov.appendChild(fl); ov.appendChild(foldersGrid); }
+        ov.appendChild(titlesGrid);
         document.body.appendChild(ov);
-        const relayout = () => _layoutMosaic(mosaicGrid);
-        requestAnimationFrame(relayout); setTimeout(relayout, 320);
-        mosaicGrid.querySelectorAll("img").forEach(im => im.addEventListener("load", relayout));
-        window.addEventListener("resize", relayout);
-        // Entrando in una cartella (drill nella griglia cartelle) -> mostra i contenuti come mosaico senza nomi
+        const rev = _attachReveal(ov);
         const foldersObs = new MutationObserver(() => {
-            if (foldersGrid.dataset.drilled != null) { foldersGrid.classList.add("nonames", "as-mosaic"); requestAnimationFrame(() => _layoutMosaic(foldersGrid)); }
-            else { foldersGrid.classList.remove("nonames", "as-mosaic"); Array.from(foldersGrid.children).forEach(x => { x.style.gridRowEnd = ""; }); }
+            if (foldersGrid.dataset.drilled != null) foldersGrid.classList.add("nonames"); else foldersGrid.classList.remove("nonames");
+            foldersGrid.querySelectorAll(".folder-card, .library-item").forEach(t => t.classList.add("reveal-tile"));
+            rev.scan();
         });
         foldersObs.observe(foldersGrid, { attributes: true, attributeFilter: ["data-drilled"], childList: true });
-        const close = () => { try { foldersObs.disconnect(); } catch (e) {} window.removeEventListener("resize", relayout); document.removeEventListener("keydown", esc); ov.remove(); };
+        const close = () => { try { foldersObs.disconnect(); } catch (e) {} try { rev.io && rev.io.disconnect(); } catch (e) {} document.removeEventListener("keydown", esc); ov.remove(); };
         const esc = (e) => { if (e.key === "Escape") close(); };
         back.addEventListener("click", close);
-        editBtn.addEventListener("click", () => { editCategoryTitle(cd.key, !!(cd.options && cd.options.custom), cd.label); close(); });
-        // Trascina su "Indietro" a livello categoria = togli dalla categoria (senza cartella)
-        back.addEventListener("dragover", (e) => { if (e.dataTransfer && (e.dataTransfer.types || []).indexOf("application/json") >= 0) { e.preventDefault(); back.classList.add("cat-drop-over"); } });
-        back.addEventListener("dragleave", () => back.classList.remove("cat-drop-over"));
-        back.addEventListener("drop", async (e) => {
-            e.preventDefault(); e.stopPropagation(); back.classList.remove("cat-drop-over");
-            let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
-            if (data && data.src === "folder" && data.id) { await setFolderKind(data.id, ""); close(); }
-            else if (data && data.src === "lib" && data.key) {
-                _removeCatTitle(cd.key, data.key);
-                if (data.fromFolder) { try { await fetch("/api/folders/remove-item", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: data.fromFolder, key: data.key }) }); } catch (er) {} }
-                openCategoryMosaic(cd);
-            }
-        });
+        if (editBtn) editBtn.addEventListener("click", () => { editCategoryTitle(cd.key, !!(cd.options && cd.options.custom), cd.label); close(); });
+        if (!cd.special) {
+            // Trascina su "Indietro" a livello categoria = togli dalla categoria (senza cartella) - ISTANTANEO
+            back.addEventListener("dragover", (e) => { if (e.dataTransfer && (e.dataTransfer.types || []).indexOf("application/json") >= 0) { e.preventDefault(); back.classList.add("cat-drop-over"); } });
+            back.addEventListener("dragleave", () => back.classList.remove("cat-drop-over"));
+            back.addEventListener("drop", async (e) => {
+                e.preventDefault(); e.stopPropagation(); back.classList.remove("cat-drop-over");
+                let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
+                if (_dragTileEl) { try { _dragTileEl.remove(); } catch (er) {} }
+                if (data && data.src === "folder" && data.id) {
+                    try { const r = await fetch("/api/folders/kind", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: data.id, kind: "" }) }); if (r.ok) { const pl = await r.json(); if (lastLibraryData && pl && pl.folders) lastLibraryData.folders = pl.folders; } } catch (er) {}
+                } else if (data && data.src === "lib" && data.key) {
+                    _removeCatTitle(cd.key, data.key);
+                    if (data.fromFolder) { try { await fetch("/api/folders/remove-item", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: data.fromFolder, key: data.key }) }); } catch (er) {} }
+                }
+                _dragTileEl = null;
+            });
+            sortSel.addEventListener("change", () => { _setCatSort(cd.key, sortSel.value); close(); openCategoryMosaic(cd); });
+        }
         document.addEventListener("keydown", esc);
-        sortSel.addEventListener("change", () => { _setCatSort(cd.key, sortSel.value); close(); openCategoryMosaic(cd); });
     };
+    // Aggiungo Preferiti e Titoli scaricati come categorie della ruota
+    if ((libraryCache || []).some(t => t.favorite) || (allFolders || []).some(fo => fo.favorite)) cats.unshift({ label: "Preferiti", key: "__fav__", special: "fav", icon: "★", options: {} });
+    if ((localDownloads || []).some(d => d.cover)) cats.unshift({ label: "Titoli scaricati", key: "__dl__", special: "dl", icon: "⤓", options: {} });
     const wheelWrap = document.createElement("div"); wheelWrap.className = "cat-wheel-wrap";
-    const wheelHint = document.createElement("div"); wheelHint.className = "cat-wheel-hint"; wheelHint.textContent = "Categorie \u00b7 trascina per ruotare, clicca per aprire";
+    const wheelHint = document.createElement("div"); wheelHint.className = "cat-wheel-hint"; wheelHint.textContent = "Categorie · trascina per ruotare, clicca per aprire";
     const wheelEl = document.createElement("div"); wheelEl.className = "cat-wheel";
     cats.forEach(cd => {
-        const node = document.createElement("button"); node.type = "button"; node.className = "wheel-node";
-        node.innerHTML = `<div class="wheel-node-covers"></div><div class="wheel-node-title">${escapeHtml(cd.label)}</div>`;
+        const node = document.createElement("button"); node.type = "button"; node.className = "wheel-node" + (cd.special ? " wheel-node-special" : "");
+        node.innerHTML = '<div class="wheel-node-covers"></div><div class="wheel-node-title">' + escapeHtml(cd.label) + '</div>';
         const covers = gatherCovers(cd.key);
         for (let _i = covers.length - 1; _i > 0; _i--) { const _j = Math.floor(Math.random() * (_i + 1)); const _t = covers[_i]; covers[_i] = covers[_j]; covers[_j] = _t; }
         const cc = node.querySelector(".wheel-node-covers");
         node._covers = covers; node._ci = covers.length ? Math.floor(Math.random() * covers.length) : 0;
-        if (covers.length) cc.style.backgroundImage = `url('${covers[node._ci]}')`; else cc.classList.add("placeholder");
+        if (covers.length) cc.style.backgroundImage = "url('" + covers[node._ci] + "')"; else cc.classList.add("placeholder");
         node._open = () => openCategoryMosaic(cd);
         node.addEventListener("dragover", (e) => { if (e.dataTransfer && (e.dataTransfer.types || []).indexOf("application/json") >= 0) { e.preventDefault(); e.stopPropagation(); node.classList.add("wheel-node-drop"); } });
         node.addEventListener("dragleave", () => node.classList.remove("wheel-node-drop"));
         node.addEventListener("drop", async (e) => {
             e.preventDefault(); e.stopPropagation(); node.classList.remove("wheel-node-drop");
             let data; try { data = JSON.parse(e.dataTransfer.getData("application/json")); } catch (err) { return; }
-            if (data && data.src === "folder" && data.id) await setFolderKind(data.id, cd.key);
+            if (!(data && data.src === "folder" && data.id)) return;
+            if (_dragTileEl) { try { _dragTileEl.remove(); } catch (er) {} _dragTileEl = null; }
+            try {
+                if (cd.special === "fav") { await fetch("/api/folders/favorite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: data.id }) }); }
+                else if (!cd.special) { const r = await fetch("/api/folders/kind", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: data.id, kind: cd.key }) }); if (r.ok) { const pl = await r.json(); if (lastLibraryData && pl && pl.folders) lastLibraryData.folders = pl.folders; } }
+            } catch (er) {}
         });
         wheelEl.appendChild(node);
     });
@@ -5454,7 +5490,7 @@ async function addFolderToCategory(kind) {
 async function setFolderKind(id, kind) {
     try {
         const r = await fetch("/api/folders/kind", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, kind }) });
-        if (r.ok) renderLibrary(await r.json());
+        if (r.ok) { const pl = await r.json(); if (!_applyFoldersResult(pl)) renderLibrary(pl); }
     } catch (e) { showToast("Errore tipologia cartella"); }
 }
 
@@ -5933,6 +5969,27 @@ function setupVpnAutoRefresh() {
 }
 
 let _wheelStop = null;
+let _dragTileEl = null;                        // tile trascinata (per spostamento locale istantaneo)
+function _overlayOpen() { return !!document.querySelector(".cat-mosaic-ov"); }
+function _applyFoldersResult(pl) {
+    // Aggiorna lo stato locale e, se c'e' una tile trascinata, la sposta SUL POSTO
+    // (istantaneo, niente ricarica della pagina). Ritorna true se gestito localmente.
+    if (lastLibraryData && pl && pl.folders) lastLibraryData.folders = pl.folders;
+    if (_dragTileEl) { try { _dragTileEl.remove(); } catch (e) {} _dragTileEl = null; return true; }
+    return false;
+}
+function _attachReveal(rootEl) {
+    // Animazione "a scomparsa": le locandine entrano in dissolvenza scorrendo ed escono quando lasciano la vista.
+    let io = null;
+    try {
+        io = new IntersectionObserver((entries) => {
+            entries.forEach(en => { en.target.classList.toggle("revealed", en.isIntersecting); });
+        }, { root: rootEl, threshold: 0.04 });
+    } catch (e) {}
+    const scan = () => { if (!io) return; rootEl.querySelectorAll(".reveal-tile:not([data-rev])").forEach(t => { t.dataset.rev = "1"; io.observe(t); }); };
+    scan();
+    return { io, scan };
+}
 function _layoutMosaic(grid) {
     // Masonry a posizionamento ASSOLUTO: misura l'altezza reale di ogni locandina
     // e la mette nella colonna piu' corta -> incastro perfetto, zero sovrapposizioni.

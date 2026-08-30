@@ -4284,7 +4284,50 @@ function renderLibrary(data) {
     // Ordine scelto dall'utente (drag sull'intestazione); le categorie non elencate restano in coda.
     const _ord = _catOrder();
     cats.sort((a, b) => { let ia = _ord.indexOf(a.key), ib = _ord.indexOf(b.key); if (ia < 0) ia = 1e9; if (ib < 0) ib = 1e9; return ia - ib; });
-    cats.forEach(cd => el.libraryList.appendChild(buildCategoryGroup(cd.label, cd.key, byKind(cd.key), cd.icon, cd.options)));
+    // ---- RUOTA DELLE CATEGORIE (sostituisce le righe categoria) ----
+    const gatherCovers = (kindKey) => {
+        const out = [];
+        byKind(kindKey).forEach(fo => { if (fo.cover) out.push(fo.cover); (fo.items || []).forEach(it => { if (it && it.cover) out.push(it.cover); }); });
+        (_catTitles()[kindKey] || []).forEach(k => { const it = (libraryCache || []).find(x => x && x.key === k); if (it && it.cover) out.push(it.cover); });
+        return [...new Set(out)].slice(0, 12);
+    };
+    const openCategoryMosaic = (cd) => {
+        const ex = document.querySelector(".cat-mosaic-ov"); if (ex) ex.remove();
+        const ov = document.createElement("div"); ov.className = "cat-mosaic-ov";
+        const bar = document.createElement("div"); bar.className = "cat-mosaic-bar";
+        const back = document.createElement("button"); back.className = "secondary-btn small-btn"; back.textContent = "\u2039 Indietro";
+        back.addEventListener("click", () => ov.remove());
+        const ttl = document.createElement("div"); ttl.className = "cat-mosaic-title"; ttl.textContent = cd.label;
+        const sortSel = document.createElement("select"); sortSel.className = "cat-sort custom-select cat-mosaic-sort";
+        sortSel.innerHTML = '<option value="custom">Personalizzato</option><option value="score">Rilevanza</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option>';
+        sortSel.value = _getCatSort(cd.key);
+        sortSel.addEventListener("change", () => { _setCatSort(cd.key, sortSel.value); openCategoryMosaic(cd); });
+        bar.appendChild(back); bar.appendChild(ttl); bar.appendChild(sortSel);
+        const grid = document.createElement("div"); grid.className = "disney-row cat-mosaic-grid";
+        const group = buildCategoryGroup(cd.label, cd.key, byKind(cd.key), cd.icon, cd.options);
+        const gbody = group.querySelector(".cat-body");
+        while (gbody && gbody.firstChild) grid.appendChild(gbody.firstChild);
+        ov.appendChild(bar); ov.appendChild(grid);
+        document.body.appendChild(ov);
+        const esc = (e) => { if (e.key === "Escape") { ov.remove(); document.removeEventListener("keydown", esc); } };
+        document.addEventListener("keydown", esc);
+    };
+    const wheelWrap = document.createElement("div"); wheelWrap.className = "cat-wheel-wrap";
+    const wheelHint = document.createElement("div"); wheelHint.className = "cat-wheel-hint"; wheelHint.textContent = "Categorie \u00b7 trascina per ruotare, clicca per aprire";
+    const wheelEl = document.createElement("div"); wheelEl.className = "cat-wheel";
+    cats.forEach(cd => {
+        const node = document.createElement("button"); node.type = "button"; node.className = "wheel-node";
+        node.innerHTML = `<div class="wheel-node-covers"></div><div class="wheel-node-title">${escapeHtml(cd.label)}</div>`;
+        const covers = gatherCovers(cd.key);
+        const cc = node.querySelector(".wheel-node-covers");
+        if (covers.length) cc.style.backgroundImage = `url('${covers[0]}')`; else cc.classList.add("placeholder");
+        node._covers = covers; node._ci = 0;
+        node.addEventListener("click", (e) => { e.preventDefault(); if (!(wheelEl._dragMoved && wheelEl._dragMoved())) openCategoryMosaic(cd); });
+        wheelEl.appendChild(node);
+    });
+    wheelWrap.appendChild(wheelHint); wheelWrap.appendChild(wheelEl);
+    el.libraryList.appendChild(wheelWrap);
+    requestAnimationFrame(() => setupWheel(wheelEl, Array.from(wheelEl.querySelectorAll(".wheel-node"))));
     const newCat = document.createElement("div");
     newCat.className = "cat-newcategory";
     newCat.textContent = "\uFF0B Nuova Categoria";
@@ -5844,6 +5887,50 @@ function setupVpnAutoRefresh() {
     setInterval(check, 12000);
 }
 
+let _wheelStop = null;
+function setupWheel(wheelEl, nodes) {
+    if (_wheelStop) { try { _wheelStop(); } catch (e) {} _wheelStop = null; }
+    const N = nodes.length; if (!N || !wheelEl) return;
+    let angle = -Math.PI / 2, dragging = false, lastAng = 0, moved = false, vel = 0;
+    const AUTO = 0.0016;
+    let raf = null, coverTimer = null;
+    const layout = () => {
+        const w = wheelEl.clientWidth || 440, h = wheelEl.clientHeight || w;
+        const cx = w / 2, cy = h / 2;
+        const ns = nodes[0] ? (nodes[0].offsetWidth || 110) : 110;
+        const R = Math.max(50, Math.min(cx, cy) - ns / 2 - 4);
+        for (let i = 0; i < N; i++) {
+            const a = angle + i * (2 * Math.PI / N);
+            const x = cx + R * Math.cos(a), y = cy + R * Math.sin(a);
+            const nd = nodes[i];
+            const depth = (Math.sin(a) + 1) / 2;                // 0 (alto) .. 1 (basso)
+            const sc = 0.72 + 0.4 * depth;                      // in basso/avanti piu' grande
+            nd.style.transform = `translate(${x - nd.offsetWidth / 2}px, ${y - nd.offsetHeight / 2}px) scale(${sc.toFixed(3)})`;
+            nd.style.zIndex = String(100 + Math.round(100 * depth));
+            nd.style.opacity = (0.55 + 0.45 * depth).toFixed(3);
+        }
+    };
+    const frame = () => { if (!dragging) { angle += AUTO + vel; vel *= 0.93; } layout(); raf = requestAnimationFrame(frame); };
+    coverTimer = setInterval(() => {
+        nodes.forEach(nd => {
+            const cov = nd._covers; if (!cov || cov.length < 2) return;
+            nd._ci = (nd._ci + 1) % cov.length;
+            const cc = nd.querySelector(".wheel-node-covers");
+            if (cc) cc.style.backgroundImage = `url('${cov[nd._ci]}')`;
+        });
+    }, 1700);
+    const center = () => { const r = wheelEl.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+    const angOf = (e) => { const c = center(); return Math.atan2(e.clientY - c.y, e.clientX - c.x); };
+    const onDown = (e) => { dragging = true; moved = false; vel = 0; lastAng = angOf(e); try { wheelEl.setPointerCapture(e.pointerId); } catch (_) {} };
+    const onMove = (e) => { if (!dragging) return; const a = angOf(e); let d = a - lastAng; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI; angle += d; vel = d * 0.5; if (Math.abs(d) > 0.008) moved = true; lastAng = a; };
+    const onUp = () => { dragging = false; };
+    wheelEl.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    wheelEl._dragMoved = () => moved;
+    layout(); frame();
+    _wheelStop = () => { if (raf) cancelAnimationFrame(raf); if (coverTimer) clearInterval(coverTimer); wheelEl.removeEventListener("pointerdown", onDown); window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); };
+}
 function setupDragScroll() {
     let down = false, startX = 0, startScroll = 0, row = null, moved = false;
     document.addEventListener("mousedown", (e) => {

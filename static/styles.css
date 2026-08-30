@@ -2633,3 +2633,8 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 
 /* Nodi speciali della ruota (Preferiti / Titoli scaricati) */
 .wheel-node.wheel-node-special .wheel-node-covers { border-color: #ffc400; box-shadow: 0 10px 30px rgba(255,196,0,.35); }
+
+/* Pulsante Scarica per i video YouTube (nel player) */
+.yt-dl-fab { position: fixed; right: 20px; bottom: 20px; z-index: 3500; padding: 10px 16px; border-radius: 10px; border: none;
+    background: #ff2d55; color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.yt-dl-fab:hover { filter: brightness(1.08); }

@@ -81,6 +81,7 @@ from downloader import (
 )
 import vidxgo
 import animeworld
+import youtube
 import subprocess
 import sys
 
@@ -2444,6 +2445,11 @@ def search(q: str, sort: Optional[str] = None, genre: Optional[str] = None,
                         print(f"[animeworld] search merge failed: {_e}")
                 else:
                     extra.extend(search_source_domain(d, q))
+        if "yt" in srcs:
+            try:
+                extra.extend(youtube.search(q, limit=20, proxies=get_proxies()))
+            except Exception as _e:
+                print(f"[youtube] search merge failed: {_e}")
         return results + extra
     except HTTPException:
         raise
@@ -2717,6 +2723,35 @@ def animeworld_download(payload: AWEpisode):
         proxies=get_proxies(),
     )
     return {"download_id": download_id}
+
+
+class YTDownload(BaseModel):
+    url: str
+    title: Optional[str] = ""
+
+
+@app.get("/api/youtube/resolve")
+def youtube_resolve(url: str):
+    _require_protected_egress()
+    try:
+        return youtube.resolve_stream(url, proxies=get_proxies())
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"YouTube non risolvibile: {e}")
+
+
+@app.post("/api/youtube/download")
+def youtube_download(payload: YTDownload):
+    _require_protected_egress()
+    try:
+        job = youtube.download(payload.url, DOWNLOADS_DIR, title=payload.title or "", proxies=get_proxies())
+        return {"ok": True, "job_id": job}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Download YouTube fallito: {e}")
+
+
+@app.get("/api/youtube/status")
+def youtube_status():
+    return youtube.job_status()
 
 
 @app.get("/api/clone/episodes")

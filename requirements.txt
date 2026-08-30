@@ -14,3 +14,4 @@ uvicorn>=0.28.0,<1
 qrcode>=7.4,<9          # QR per l'accesso da telefono/tablet
 cloudscraper>=1.2.71,<2   # bypass Cloudflare del player (Vixcloud/vixsrc)
 playwright>=1.40,<2       # browser headless per superare Cloudflare del player
+yt-dlp>=2024.1.0

@@ -722,6 +722,7 @@ async function openBulkFolderPicker(items) {
 
 function openSearchResult(item) {
     _rememberReturnScroll();
+    if (item && (item.is_youtube || _isYouTube(item.url))) { openYouTube(item); return; }
     if (!item || !item.id_and_slug) {
         showToast("Risultato non apribile");
         return;
@@ -791,6 +792,7 @@ async function resolveDirectUrl(urlArg, titleName) {
     if (!url) return;
     lastTitleContext = (typeof titleName === "string") ? titleName : "";
 
+    if (_isYouTube(url)) { openYouTube({ url, name: lastTitleContext }); return; }
     showToast("Analisi URL in corso...");
     try {
         const resp = await fetch("/api/resolve-url", {
@@ -4931,7 +4933,31 @@ function _attachSeasonUI(label, it, selSeasons, updCount) {
         }));
     });
 }
+function _ytId(url) { const m = /(?:v=|youtu\.be\/|shorts\/)([\w-]{6,})/.exec(url || ""); return m ? m[1] : ""; }
+function _isYouTube(url) { return /(?:youtube\.com\/watch|youtu\.be\/|youtube\.com\/shorts)/.test(url || ""); }
+async function downloadYouTube(url, title) {
+    try {
+        const r = await fetch("/api/youtube/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, title: title || "" }) });
+        if (r.ok) showToast("Download YouTube avviato — comparirà in Titoli scaricati", 5000);
+        else { const d = await r.json().catch(() => ({})); showToast(d.detail || "Download non avviato"); }
+    } catch (e) { showToast("Errore download YouTube"); }
+}
+function openYouTube(item) {
+    const url = (item && item.url) || ""; const id = _ytId(url);
+    if (!id) { showToast("Video YouTube non valido"); return; }
+    _rememberReturnScroll();
+    try { closePlayer(); } catch (e) {}
+    if (el.videoPlayer) el.videoPlayer.classList.add("hidden");
+    if (el.iframePlayer) { el.iframePlayer.src = "https://www.youtube.com/embed/" + id + "?autoplay=1&rel=0"; el.iframePlayer.classList.remove("hidden"); }
+    el.playerSection.classList.remove("hidden");
+    let fab = document.getElementById("yt-dl-fab"); if (fab) fab.remove();
+    fab = document.createElement("button"); fab.id = "yt-dl-fab"; fab.className = "yt-dl-fab"; fab.textContent = "\u2913 Scarica";
+    fab.addEventListener("click", () => downloadYouTube(url, (item && item.name) || ""));
+    el.playerSection.appendChild(fab);
+    el.playerSection.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 function openFromLibrary(item) {
+    if (item && (item.is_youtube || _isYouTube(item.url))) { openYouTube(item); return; }
     _rememberReturnScroll();
     showToast(`Apertura: ${item.name || "titolo"}…`);
     _pendingSeason = (item && item.season) ? String(item.season) : "";
@@ -5170,7 +5196,8 @@ function _srcToggle() {
     w.className = "src-toggle";
     w.innerHTML = '<span class="src-lab">Cerca su</span>' +
         '<button type="button" class="src-opt active" data-src="sc">StreamingCommunity</button>' +
-        '<button type="button" class="src-opt" data-src="aw">AnimeWorld</button>';
+        '<button type="button" class="src-opt" data-src="aw">AnimeWorld</button>' +
+        '<button type="button" class="src-opt" data-src="yt">YouTube</button>';
     let cur = "sc";
     w._get = () => cur;
     w._onchange = null;

@@ -4305,21 +4305,9 @@ function renderLibrary(data) {
         const group = buildCategoryGroup(cd.label, cd.key, byKind(cd.key), cd.icon, cd.options);
         const gbody = group.querySelector(".cat-body");
         while (gbody && gbody.firstChild) grid.appendChild(gbody.firstChild);
-        // Mosaico: alcune tile piu' grandi (alternanza), per un effetto reale.
-        let _bn = 0;
-        Array.from(grid.children).forEach(t => {
-            if (!(t.classList.contains("folder-card") || t.classList.contains("library-item")) || t.classList.contains("add-tile")) return;
-            _bn++; if (_bn % 5 === 3) t.classList.add("mosaic-big");
-        });
         ov.appendChild(bar); ov.appendChild(grid);
         document.body.appendChild(ov);
-        const relayout = () => _layoutMosaic(grid);
-        requestAnimationFrame(relayout);
-        setTimeout(relayout, 250);
-        const mo = new MutationObserver(() => requestAnimationFrame(relayout));
-        mo.observe(grid, { childList: true });
-        window.addEventListener("resize", relayout);
-        const close = () => { try { mo.disconnect(); } catch (e) {} window.removeEventListener("resize", relayout); document.removeEventListener("keydown", esc); ov.remove(); };
+        const close = () => { document.removeEventListener("keydown", esc); ov.remove(); };
         const esc = (e) => { if (e.key === "Escape") close(); };
         back.addEventListener("click", close);
         document.addEventListener("keydown", esc);

@@ -2571,10 +2571,9 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 .cat-mosaic-sort { max-width: 160px; }
 
 /* Masonry: griglia densa che riempie lo schermo, con tile piu' grandi e piu' piccole */
-.cat-mosaic-ov .disney-row.cat-mosaic-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-    grid-auto-rows: 8px; column-gap: 14px; row-gap: 0; overflow: visible !important; padding: 0; align-items: start; }
-.cat-mosaic-ov .cat-mosaic-grid > * { width: auto !important; max-width: none !important; min-width: 0 !important; margin: 0 !important; flex: none !important; }
-.cat-mosaic-ov .cat-mosaic-grid > .mosaic-big { grid-column: span 2; }
+.cat-mosaic-ov .disney-row.cat-mosaic-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    column-gap: 14px; row-gap: 18px; overflow: visible !important; padding: 0; align-items: start; }
+.cat-mosaic-ov .cat-mosaic-grid > * { width: auto !important; max-width: none !important; min-width: 0 !important; margin: 0 !important; flex: none !important; box-sizing: border-box; }
 
 /* Tile stile "riga": locandina in alto, nome sotto, funzioni sopra (in hover) */
 .cat-mosaic-ov .folder-card, .cat-mosaic-ov .library-item { position: relative; display: flex; flex-direction: column;

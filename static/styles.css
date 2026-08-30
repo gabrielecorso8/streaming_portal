@@ -2638,3 +2638,15 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 .yt-dl-fab { position: fixed; right: 20px; bottom: 20px; z-index: 3500; padding: 10px 16px; border-radius: 10px; border: none;
     background: #ff2d55; color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
 .yt-dl-fab:hover { filter: brightness(1.08); }
+
+/* Toolbar in alto SEMPRE visibile (sticky) + adattata */
+.app-header { position: sticky !important; top: 0; z-index: 1200; background: rgba(6,12,28,.92);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-color); }
+/* Scheda video SOPRA tutto (anche sopra la ruota/overlay categoria) */
+#player-section:not(.hidden) { position: fixed !important; inset: 0; z-index: 5000; margin: 0 !important;
+    background: #05070e; overflow-y: auto; padding: 14px 16px 24px; border-radius: 0; }
+/* Preferiti e Titoli scaricati NON piu' come righe (solo nella ruota) */
+#downloads-section { display: none !important; }
+/* Bordi nodi ruota: Preferiti oro, Titoli scaricati azzurro */
+.wheel-node.wheel-node-fav .wheel-node-covers { border-color: #ffc400; box-shadow: 0 10px 30px rgba(255,196,0,.35); }
+.wheel-node.wheel-node-dl .wheel-node-covers { border-color: var(--accent); box-shadow: 0 10px 30px rgba(34,166,255,.45); }

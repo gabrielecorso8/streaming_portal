@@ -4131,10 +4131,10 @@ function renderLibrary(data) {
     }
 
 
-    // Favourites shortcut (always shown, persists across sessions)
+    // Preferiti: NON piu' come riga (sono nella ruota delle categorie)
     const favs = libraryCache.filter(it => it && it.favorite);
     const favFolders = folders.filter(f => f && f.favorite);
-    if (favs.length || favFolders.length) {
+    if (false) {
         const favBlock = document.createElement("div");
         favBlock.className = "fav-block";
         const favTitle = document.createElement("div");
@@ -4345,12 +4345,16 @@ function renderLibrary(data) {
         }
         [foldersGrid, titlesGrid].forEach(g => g.querySelectorAll(".folder-card, .library-item").forEach(t => t.classList.add("reveal-tile")));
         ov.appendChild(bar);
-        if (foldersGrid.children.length) { const fl = document.createElement("div"); fl.className = "cat-section-label"; fl.textContent = "Cartelle"; ov.appendChild(fl); ov.appendChild(foldersGrid); }
+        let foldersLabel = null;
+        if (foldersGrid.children.length) { foldersLabel = document.createElement("div"); foldersLabel.className = "cat-section-label"; foldersLabel.textContent = "Cartelle"; ov.appendChild(foldersLabel); ov.appendChild(foldersGrid); }
         ov.appendChild(titlesGrid);
         document.body.appendChild(ov);
         const rev = _attachReveal(ov);
         const foldersObs = new MutationObserver(() => {
-            if (foldersGrid.dataset.drilled != null) foldersGrid.classList.add("nonames"); else foldersGrid.classList.remove("nonames");
+            const drilled = foldersGrid.dataset.drilled != null;
+            foldersGrid.classList.toggle("nonames", drilled);
+            titlesGrid.style.display = drilled ? "none" : "";
+            if (foldersLabel) foldersLabel.style.display = drilled ? "none" : "";
             foldersGrid.querySelectorAll(".folder-card, .library-item").forEach(t => t.classList.add("reveal-tile"));
             rev.scan();
         });
@@ -4380,13 +4384,13 @@ function renderLibrary(data) {
         document.addEventListener("keydown", esc);
     };
     // Aggiungo Preferiti e Titoli scaricati come categorie della ruota
-    if ((libraryCache || []).some(t => t.favorite) || (allFolders || []).some(fo => fo.favorite)) cats.unshift({ label: "Preferiti", key: "__fav__", special: "fav", icon: "★", options: {} });
-    if ((localDownloads || []).some(d => d.cover)) cats.unshift({ label: "Titoli scaricati", key: "__dl__", special: "dl", icon: "⤓", options: {} });
+    cats.unshift({ label: "Titoli scaricati", key: "__dl__", special: "dl", icon: "⤓", options: {} });
+    cats.unshift({ label: "Preferiti", key: "__fav__", special: "fav", icon: "★", options: {} });
     const wheelWrap = document.createElement("div"); wheelWrap.className = "cat-wheel-wrap";
     const wheelHint = document.createElement("div"); wheelHint.className = "cat-wheel-hint"; wheelHint.textContent = "Categorie · trascina per ruotare, clicca per aprire";
     const wheelEl = document.createElement("div"); wheelEl.className = "cat-wheel";
     cats.forEach(cd => {
-        const node = document.createElement("button"); node.type = "button"; node.className = "wheel-node" + (cd.special ? " wheel-node-special" : "");
+        const node = document.createElement("button"); node.type = "button"; node.className = "wheel-node" + (cd.special ? " wheel-node-special wheel-node-" + cd.special : "");
         node.innerHTML = '<div class="wheel-node-covers"></div><div class="wheel-node-title">' + escapeHtml(cd.label) + '</div>';
         const covers = gatherCovers(cd.key);
         for (let _i = covers.length - 1; _i > 0; _i--) { const _j = Math.floor(Math.random() * (_i + 1)); const _t = covers[_i]; covers[_i] = covers[_j]; covers[_j] = _t; }
@@ -5315,11 +5319,11 @@ function openFolderAddModal(folder, afterAdd) {
     const close = () => ov.remove();
     ov.querySelector(".cm-close").addEventListener("click", close);
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
-    ov.querySelector(".cc-titles").addEventListener("click", () => { close(); openAddTitlesToFolder(folder); });
+    ov.querySelector(".cc-titles").addEventListener("click", () => { close(); openAddTitlesToFolder(folder, afterAdd); });
     ov.querySelector(".cc-folder").addEventListener("click", () => { close(); openCreateFolderModal(null, { parentId: folder.id, afterDone: afterAdd }); });
 }
 
-async function openAddTitlesToFolder(folder) {
+async function openAddTitlesToFolder(folder, onDone) {
     const ov = document.createElement("div"); ov.className = "welcome-ov create-ov";
     ov.innerHTML =
         '<div class="welcome-card create-card">' +
@@ -5385,10 +5389,11 @@ async function openAddTitlesToFolder(folder) {
         for (const s of (typeof selSeasons !== "undefined" ? selSeasons.values() : [])) { try { const sk = await saveSeasonEntry(s); if (sk) keys.push(sk); } catch (e) {} }
         if (!keys.length) { showToast("Nessun titolo selezionato"); return; }
         try {
-            await fetch("/api/folders/add-items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: folder.id, keys }) });
+            const r = await fetch("/api/folders/add-items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: folder.id, keys }) });
+            if (r.ok) { const pl = await r.json(); if (lastLibraryData && pl && pl.folders) { lastLibraryData.folders = pl.folders; const nf = pl.folders.find(x => x.id === folder.id); if (nf) folder.items = nf.items; } }
             showToast("Aggiunti " + keys.length + " titoli a " + folder.name);
             close();
-            await fetchLibrary();
+            if (typeof onDone === "function") onDone(); else await fetchLibrary();
         } catch (e) { showToast("Errore"); }
     });
 }

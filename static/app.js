@@ -4296,21 +4296,34 @@ function renderLibrary(data) {
         const ov = document.createElement("div"); ov.className = "cat-mosaic-ov";
         const bar = document.createElement("div"); bar.className = "cat-mosaic-bar";
         const back = document.createElement("button"); back.className = "secondary-btn small-btn"; back.textContent = "\u2039 Indietro";
-        back.addEventListener("click", () => ov.remove());
         const ttl = document.createElement("div"); ttl.className = "cat-mosaic-title"; ttl.textContent = cd.label;
         const sortSel = document.createElement("select"); sortSel.className = "cat-sort custom-select cat-mosaic-sort";
         sortSel.innerHTML = '<option value="custom">Personalizzato</option><option value="score">Rilevanza</option><option value="recent">Più recente</option><option value="oldest">Meno recente</option>';
         sortSel.value = _getCatSort(cd.key);
-        sortSel.addEventListener("change", () => { _setCatSort(cd.key, sortSel.value); openCategoryMosaic(cd); });
         bar.appendChild(back); bar.appendChild(ttl); bar.appendChild(sortSel);
         const grid = document.createElement("div"); grid.className = "disney-row cat-mosaic-grid";
         const group = buildCategoryGroup(cd.label, cd.key, byKind(cd.key), cd.icon, cd.options);
         const gbody = group.querySelector(".cat-body");
         while (gbody && gbody.firstChild) grid.appendChild(gbody.firstChild);
+        // Mosaico: alcune tile piu' grandi (alternanza), per un effetto reale.
+        let _bn = 0;
+        Array.from(grid.children).forEach(t => {
+            if (!(t.classList.contains("folder-card") || t.classList.contains("library-item")) || t.classList.contains("add-tile")) return;
+            _bn++; if (_bn % 5 === 3) t.classList.add("mosaic-big");
+        });
         ov.appendChild(bar); ov.appendChild(grid);
         document.body.appendChild(ov);
-        const esc = (e) => { if (e.key === "Escape") { ov.remove(); document.removeEventListener("keydown", esc); } };
+        const relayout = () => _layoutMosaic(grid);
+        requestAnimationFrame(relayout);
+        setTimeout(relayout, 250);
+        const mo = new MutationObserver(() => requestAnimationFrame(relayout));
+        mo.observe(grid, { childList: true });
+        window.addEventListener("resize", relayout);
+        const close = () => { try { mo.disconnect(); } catch (e) {} window.removeEventListener("resize", relayout); document.removeEventListener("keydown", esc); ov.remove(); };
+        const esc = (e) => { if (e.key === "Escape") close(); };
+        back.addEventListener("click", close);
         document.addEventListener("keydown", esc);
+        sortSel.addEventListener("change", () => { _setCatSort(cd.key, sortSel.value); close(); openCategoryMosaic(cd); });
     };
     const wheelWrap = document.createElement("div"); wheelWrap.className = "cat-wheel-wrap";
     const wheelHint = document.createElement("div"); wheelHint.className = "cat-wheel-hint"; wheelHint.textContent = "Categorie \u00b7 trascina per ruotare, clicca per aprire";
@@ -5889,6 +5902,18 @@ function setupVpnAutoRefresh() {
 }
 
 let _wheelStop = null;
+function _layoutMosaic(grid) {
+    if (!grid) return;
+    const cs = getComputedStyle(grid);
+    const rowUnit = 8;
+    const gap = parseFloat(cs.rowGap || cs.gap) || 12;
+    Array.from(grid.children).forEach(tile => {
+        tile.style.gridRowEnd = "auto";
+        const h = tile.getBoundingClientRect().height;
+        if (!h) return;
+        tile.style.gridRowEnd = "span " + Math.max(1, Math.round((h + gap) / (rowUnit + gap)));
+    });
+}
 function setupWheel(wheelEl, nodes) {
     if (_wheelStop) { try { _wheelStop(); } catch (e) {} _wheelStop = null; }
     const N = nodes.length; if (!N || !wheelEl) return;

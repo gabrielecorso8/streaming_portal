@@ -130,7 +130,7 @@ def _sanitize(name):
     return (name or "youtube")[:120]
 
 
-def download(url, dest_dir, title="", proxies=None):
+def download(url, dest_dir, title="", proxies=None, cover="", ffmpeg_location=""):
     """Avvia in background il download del video (mp4) in dest_dir. Ritorna il
     job_id da interrogare con job_status()."""
     if not HAVE_YTDLP:
@@ -140,7 +140,7 @@ def download(url, dest_dir, title="", proxies=None):
     job_id = "yt:" + vid
     with _LOCK:
         YT_JOBS[job_id] = {"id": job_id, "title": title or "YouTube", "status": "downloading",
-                           "progress": 0.0, "file": "", "error": ""}
+                           "progress": 0.0, "file": "", "error": "", "cover": cover or ("https://i.ytimg.com/vi/" + vid + "/hqdefault.jpg")}
 
     def _hook(d):
         st = d.get("status")
@@ -166,6 +166,8 @@ def download(url, dest_dir, title="", proxies=None):
         "concurrent_fragment_downloads": 4,
         "retries": 5,
     })
+    if ffmpeg_location:
+        opts["ffmpeg_location"] = ffmpeg_location
 
     def _run():
         try:

@@ -291,6 +291,7 @@ else:
 SETTINGS_FILE = os.path.join(PROJECT_DIR, "settings.json")
 SETTINGS_TEMPLATE_FILE = os.path.join(PROJECT_DIR, "settings.template.json")
 DOWNLOADS_DIR = os.path.join(PROJECT_DIR, "downloads")
+BIN_DIR = os.path.join(PROJECT_DIR, "bin")
 LIBRARY_FILE = os.path.join(PROJECT_DIR, "library.json")
 COVERS_DIR = os.path.join(PROJECT_DIR, "covers")
 os.makedirs(COVERS_DIR, exist_ok=True)
@@ -2728,6 +2729,7 @@ def animeworld_download(payload: AWEpisode):
 class YTDownload(BaseModel):
     url: str
     title: Optional[str] = ""
+    cover: Optional[str] = ""
 
 
 @app.get("/api/youtube/resolve")
@@ -2743,7 +2745,7 @@ def youtube_resolve(url: str):
 def youtube_download(payload: YTDownload):
     _require_protected_egress()
     try:
-        job = youtube.download(payload.url, DOWNLOADS_DIR, title=payload.title or "", proxies=get_proxies())
+        job = youtube.download(payload.url, DOWNLOADS_DIR, title=payload.title or "", proxies=get_proxies(), cover=payload.cover or "", ffmpeg_location=BIN_DIR)
         return {"ok": True, "job_id": job}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Download YouTube fallito: {e}")
@@ -3575,6 +3577,21 @@ def get_download_status():
             DOWNLOAD_KEYS.pop(did, None)
         except Exception:
             pass
+    # Integra i download YouTube (yt-dlp) nello stesso stato, cosi' compaiono nel UI
+    try:
+        for j in youtube.job_status():
+            stt = j.get("status")
+            if stt not in ("downloading", "error"):
+                continue
+            out.append({
+                "id": j.get("id"), "title": j.get("title") or "YouTube",
+                "status": "failed" if stt == "error" else "downloading",
+                "progress": round((j.get("progress") or 0) * 100, 1),
+                "cover": cover_out(j.get("cover") or ""), "key": j.get("id"),
+                "source": "youtube", "eta": None,
+            })
+    except Exception:
+        pass
     return out
 
 

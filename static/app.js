@@ -1937,8 +1937,8 @@ function _decorateDownloadTiles() {
         tile.classList.add("dl-active");
         _dlUpdateOverlay(tile, d);
     });
-    const pn = document.querySelector(".wheel-node-prog");
-    if (pn) { const covers = [...new Set(_activeDownloads().map(d => d.cover).filter(Boolean))].slice(0, 12); const cc = pn.querySelector(".wheel-node-covers"); if (cc && covers.length) { pn._covers = covers; cc.classList.remove("placeholder"); if (!pn._ci) { pn._ci = 0; cc.style.backgroundImage = "url('" + covers[0] + "')"; } } }
+    const pn = document.querySelector(".wheel-node-dl");
+    if (pn) { const covers = [...new Set(_activeDownloads().map(d => d.cover).concat((localDownloads || []).map(d => d.cover)).filter(Boolean))].slice(0, 12); const cc = pn.querySelector(".wheel-node-covers"); if (cc && covers.length) { pn._covers = covers; cc.classList.remove("placeholder"); } }
     if (typeof _progRerender === "function") _progRerender();
 }
 let _progRerender = null;
@@ -3777,6 +3777,7 @@ async function handleFolderAdd(folderId, data) {
         if (r.ok) {
             let payload = await r.json();
             let moved = false;
+            keys.forEach(k => _removeCatTitleAll(k));
             if (data.fromFolder && data.fromFolder !== folderId && keys.length) {
                 try {
                     const rr = await fetch("/api/folders/remove-item", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: data.fromFolder, key: keys[0] }) });
@@ -4344,9 +4345,8 @@ function renderLibrary(data) {
             (libraryCache || []).forEach(t => { if (t.favorite && t.cover) out.push(t.cover); });
             (allFolders || []).forEach(fo => { if (fo.favorite && fo.cover) out.push(fo.cover); });
         } else if (kindKey === "__dl__") {
-            (localDownloads || []).forEach(d => { if (d.cover) out.push(d.cover); });
-        } else if (kindKey === "__prog__") {
             _activeDownloads().forEach(d => { if (d.cover) out.push(d.cover); });
+            (localDownloads || []).forEach(d => { if (d.cover) out.push(d.cover); });
         } else {
             byKind(kindKey).forEach(fo => { if (fo.cover) out.push(fo.cover); (fo.items || []).forEach(it => { if (it && it.cover) out.push(it.cover); }); });
             (_catTitles()[kindKey] || []).forEach(k => { const it = (libraryCache || []).find(x => x && x.key === k); if (it && it.cover) out.push(it.cover); });
@@ -4357,37 +4357,37 @@ function renderLibrary(data) {
         if (cd.special === "fav") {
             (allFolders || []).filter(fo => fo.favorite).forEach(fo => { try { foldersGrid.appendChild(buildFolderCard(fo, true)); } catch (e) {} });
             (libraryCache || []).filter(t => t.favorite).forEach(t => { try { titlesGrid.appendChild(titleRow(t, { noReorder: true })); } catch (e) {} });
-        } else if (cd.special === "prog") {
+        } else if (cd.special === "dl") {
+            // UNICA categoria: download in corso/in pausa (gestibili) + completati (raggruppati).
             const build = () => {
                 titlesGrid.innerHTML = "";
-                const act = _activeDownloads();
-                if (!act.length) { const none = document.createElement("div"); none.className = "no-downloads"; none.textContent = "Nessun download in corso o in pausa."; titlesGrid.appendChild(none); return; }
-                act.forEach(d => {
+                // 1) In corso / in pausa (con barra + menù coda)
+                _activeDownloads().forEach(d => {
                     const tile = document.createElement("div"); tile.className = "library-item dl-active"; if (d.key) tile.dataset.key = d.key;
                     tile.innerHTML = (d.cover ? '<img class="library-cover" src="' + escapeHtml(d.cover) + '" alt="">' : '<div class="library-cover placeholder"></div>') + '<div class="library-meta"><span class="library-name">' + escapeHtml(d.title || "") + '</span></div>';
                     titlesGrid.appendChild(tile);
                     _dlUpdateOverlay(tile, d);
                 });
+                // 2) Completati raggruppati per serie/sottocartella
+                const groups = new Map();
+                (localDownloads || []).forEach(d => {
+                    if (!d.cover) return;
+                    const ep = (typeof parseEpisode === "function") ? parseEpisode(d.title || "") : null;
+                    const gname = (ep && ep.series) ? normName(ep.series) : normName(d.title || d.id || "");
+                    if (!groups.has(gname)) groups.set(gname, { name: (ep && ep.series) ? ep.series : (d.title || ""), cover: d.cover, first: d, count: 0 });
+                    groups.get(gname).count++;
+                });
+                groups.forEach(g => {
+                    const tile = document.createElement("div"); tile.className = "library-item";
+                    const label = g.name + (g.count > 1 ? " (" + g.count + ")" : "");
+                    tile.innerHTML = '<img class="library-cover" src="' + escapeHtml(g.cover) + '" alt="" loading="lazy"><div class="library-meta"><span class="library-name">' + escapeHtml(label) + '</span></div>';
+                    tile.addEventListener("click", () => playDownloaded(g.first.id, g.first.title, g.first.key));
+                    titlesGrid.appendChild(tile);
+                });
+                if (!titlesGrid.children.length) { const none = document.createElement("div"); none.className = "no-downloads"; none.textContent = "Nessun download."; titlesGrid.appendChild(none); }
             };
             build();
             _progRerender = build;
-        } else if (cd.special === "dl") {
-            // Raggruppa gli episodi della stessa serie/sottocartella in UNA locandina.
-            const groups = new Map();
-            (localDownloads || []).forEach(d => {
-                if (!d.cover) return;
-                const ep = (typeof parseEpisode === "function") ? parseEpisode(d.title || "") : null;
-                const gname = (ep && ep.series) ? normName(ep.series) : normName(d.title || d.id || "");
-                if (!groups.has(gname)) groups.set(gname, { name: (ep && ep.series) ? ep.series : (d.title || ""), cover: d.cover, first: d, count: 0 });
-                groups.get(gname).count++;
-            });
-            groups.forEach(g => {
-                const tile = document.createElement("div"); tile.className = "library-item";
-                const label = g.name + (g.count > 1 ? " (" + g.count + ")" : "");
-                tile.innerHTML = '<img class="library-cover" src="' + escapeHtml(g.cover) + '" alt="" loading="lazy"><div class="library-meta"><span class="library-name">' + escapeHtml(label) + '</span></div>';
-                tile.addEventListener("click", () => playDownloaded(g.first.id, g.first.title, g.first.key));
-                titlesGrid.appendChild(tile);
-            });
         }
     };
     const openCategoryMosaic = (cd) => {
@@ -4397,6 +4397,13 @@ function renderLibrary(data) {
         const back = document.createElement("button"); back.className = "secondary-btn small-btn"; back.textContent = "‹ Indietro";
         const ttl = document.createElement("div"); ttl.className = "cat-mosaic-title"; ttl.textContent = cd.label;
         bar.appendChild(back); bar.appendChild(ttl);
+        if (cd.special === "dl") {
+            const rb = document.createElement("button"); rb.className = "icon-btn"; rb.title = "Aggiorna libreria download"; rb.textContent = "🔄";
+            rb.addEventListener("click", async () => { try { await refreshDownloads(); } catch (e) {} if (_reopenMosaic) _reopenMosaic(); });
+            const ob = document.createElement("button"); ob.className = "icon-btn"; ob.title = "Apri la cartella dei download"; ob.textContent = "📂";
+            ob.addEventListener("click", async () => { try { await fetch("/api/downloads/open-folder", { method: "POST" }); } catch (e) {} });
+            bar.appendChild(rb); bar.appendChild(ob);
+        }
         let sortSel = null, editBtn = null;
         if (!cd.special) {
             editBtn = document.createElement("button"); editBtn.className = "icon-btn cat-mosaic-edit"; editBtn.title = "Rinomina categoria"; editBtn.textContent = "✎";
@@ -4462,7 +4469,6 @@ function renderLibrary(data) {
     // Aggiungo Preferiti e Titoli scaricati come categorie della ruota
     cats.unshift({ label: "Titoli scaricati", key: "__dl__", special: "dl", icon: "⤓", options: {} });
     cats.unshift({ label: "Preferiti", key: "__fav__", special: "fav", icon: "★", options: {} });
-    cats.unshift({ label: "Download", key: "__prog__", special: "prog", icon: "⭳", options: {} });
     const wheelWrap = document.createElement("div"); wheelWrap.className = "cat-wheel-wrap";
     const wheelHint = document.createElement("div"); wheelHint.className = "cat-wheel-hint"; wheelHint.textContent = "Categorie · trascina per ruotare, clicca per aprire";
     const wheelEl = document.createElement("div"); wheelEl.className = "cat-wheel";
@@ -5011,9 +5017,9 @@ function _attachSeasonUI(label, it, selSeasons, updCount) {
 }
 function _ytId(url) { const m = /(?:v=|youtu\.be\/|shorts\/)([\w-]{6,})/.exec(url || ""); return m ? m[1] : ""; }
 function _isYouTube(url) { return /(?:youtube\.com\/watch|youtu\.be\/|youtube\.com\/shorts)/.test(url || ""); }
-async function downloadYouTube(url, title) {
+async function downloadYouTube(url, title, cover) {
     try {
-        const r = await fetch("/api/youtube/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, title: title || "" }) });
+        const r = await fetch("/api/youtube/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, title: title || "", cover: cover || "" }) });
         if (r.ok) showToast("Download YouTube avviato — comparirà in Titoli scaricati", 5000);
         else { const d = await r.json().catch(() => ({})); showToast(d.detail || "Download non avviato"); }
     } catch (e) { showToast("Errore download YouTube"); }
@@ -5043,7 +5049,7 @@ function openYouTube(item) {
     const close = () => ov.remove();
     ov.querySelector(".cm-close").addEventListener("click", close);
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
-    ov.querySelector(".yt-dl").addEventListener("click", () => { downloadYouTube(url, title); showToast("Download avviato — lo trovi in «Download» e poi in «Titoli scaricati».", 5000); close(); });
+    ov.querySelector(".yt-dl").addEventListener("click", () => { downloadYouTube(url, title, cover); showToast("Download avviato — lo trovi in «Titoli scaricati».", 5000); close(); });
     ov.querySelector(".yt-stream").addEventListener("click", () => { close(); _tryYouTubeStream({ url, name: title }); });
 }
 async function _tryYouTubeStream(item) {
@@ -5055,7 +5061,7 @@ async function _tryYouTubeStream(item) {
     if (el.playingTitle) el.playingTitle.textContent = "Riproduzione: " + ((item && item.name) || "YouTube");
     let fab = document.getElementById("yt-dl-fab"); if (fab) fab.remove();
     fab = document.createElement("button"); fab.id = "yt-dl-fab"; fab.className = "yt-dl-fab"; fab.textContent = "\u2913 Scarica";
-    fab.addEventListener("click", () => downloadYouTube(url, (item && item.name) || ""));
+    fab.addEventListener("click", () => downloadYouTube(url, (item && item.name) || "", (item && item.cover) || ""));
     el.playerSection.appendChild(fab);
     el.playerSection.scrollIntoView({ behavior: "smooth", block: "start" });
     showToast("Risoluzione video YouTube…");
@@ -5158,6 +5164,11 @@ function _getFolderSort(id) { const m = _folderSorts(); return (id && m[id]) || 
 function _setFolderSort(id, mode) { if (!id) return; const m = _folderSorts(); if (mode && mode !== "score") m[id] = mode; else delete m[id]; try { localStorage.setItem("scp_foldersort", JSON.stringify(m)); } catch (e) {} }
 function _catTitles() { try { return JSON.parse(localStorage.getItem("scp_cattitles") || "{}"); } catch (e) { return {}; } }
 function _addCatTitles(kind, keys) { const m = _catTitles(); const cur = new Set(m[kind] || []); (keys || []).forEach(k => k && cur.add(k)); m[kind] = [...cur]; try { localStorage.setItem("scp_cattitles", JSON.stringify(m)); } catch (e) {} }
+function _removeCatTitleAll(key) {
+    const m = _catTitles(); let ch = false;
+    Object.keys(m).forEach(k => { if ((m[k] || []).includes(key)) { m[k] = m[k].filter(x => x !== key); if (!m[k].length) delete m[k]; ch = true; } });
+    if (ch) { try { localStorage.setItem("scp_cattitles", JSON.stringify(m)); } catch (e) {} }
+}
 function _removeCatTitle(kind, key) { const m = _catTitles(); m[kind] = (m[kind] || []).filter(k => k !== key); if (!m[kind].length) delete m[kind]; try { localStorage.setItem("scp_cattitles", JSON.stringify(m)); } catch (e) {} }
 function _catLabels() { try { return JSON.parse(localStorage.getItem("scp_catlabels") || "{}"); } catch (e) { return {}; } }
 function _catLabel(kind, def) { const m = _catLabels(); return (m[kind] != null && m[kind] !== "") ? m[kind] : def; }

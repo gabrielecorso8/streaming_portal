@@ -4424,6 +4424,7 @@ function renderLibrary(data) {
         if (foldersGrid.children.length) { foldersLabel = document.createElement("div"); foldersLabel.className = "cat-section-label"; foldersLabel.textContent = "Cartelle"; ov.appendChild(foldersLabel); ov.appendChild(foldersGrid); }
         ov.appendChild(titlesGrid);
         document.body.appendChild(ov);
+        _reopenMosaic = () => openCategoryMosaic(cd);
         const rev = _attachReveal(ov);
         const foldersObs = new MutationObserver(() => {
             const drilled = foldersGrid.dataset.drilled != null;
@@ -4434,7 +4435,7 @@ function renderLibrary(data) {
             rev.scan();
         });
         foldersObs.observe(foldersGrid, { attributes: true, attributeFilter: ["data-drilled"], childList: true });
-        const close = () => { _progRerender = null; try { foldersObs.disconnect(); } catch (e) {} try { rev.io && rev.io.disconnect(); } catch (e) {} document.removeEventListener("keydown", esc); ov.remove(); };
+        const close = () => { _progRerender = null; _reopenMosaic = null; try { foldersObs.disconnect(); } catch (e) {} try { rev.io && rev.io.disconnect(); } catch (e) {} document.removeEventListener("keydown", esc); ov.remove(); };
         const esc = (e) => { if (e.key === "Escape") close(); };
         back.addEventListener("click", close);
         if (editBtn) editBtn.addEventListener("click", () => { editCategoryTitle(cd.key, !!(cd.options && cd.options.custom), cd.label); close(); });
@@ -5308,6 +5309,22 @@ async function removeFolder(id, name) {
     } catch (e) { showToast("Errore eliminazione cartella"); }
 }
 
+async function _batchListSelect(query, sources, selExt, cmExt, cap) {
+    const terms = (query || "").split(",").map(s => s.trim()).filter(Boolean).slice(0, cap || 50);
+    let added = 0;
+    for (const term of terms) {
+        try {
+            const r = await fetch("/api/search?q=" + encodeURIComponent(term) + "&sources=" + (sources || "sc"));
+            const ext = r.ok ? await r.json() : [];
+            const first = (ext || []).find(x => x && x.id_and_slug);
+            if (first) {
+                if (!cmExt.find(x => x.id_and_slug === first.id_and_slug)) cmExt.push(first);
+                selExt.set(first.id_and_slug, first); added++;
+            }
+        } catch (e) {}
+    }
+    return { terms: terms.length, added };
+}
 function _srcToggle() {
     const w = document.createElement("div");
     w.className = "src-toggle";
@@ -5363,7 +5380,7 @@ function openCategoryAddModal(kind, label) {
     { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
     ov.querySelector(".cc-titles").addEventListener("click", () => { close(); openAddTitlesToCategory(kind, label); });
     ov.querySelector(".cc-folder").addEventListener("click", () => { close(); openCreateFolderModal(kind); });
-    ov.querySelector(".cc-move").addEventListener("click", () => { close(); openMoveFolderPicker(async (id) => { await setFolderKind(id, kind); const m = document.querySelector(".cat-mosaic-ov"); if (m) m.remove(); }, null); });
+    ov.querySelector(".cc-move").addEventListener("click", () => { close(); openMoveFolderPicker(async (id) => { await setFolderKind(id, kind); if (_reopenMosaic) _reopenMosaic(); }, null); });
 }
 
 async function openAddTitlesToCategory(kind, label) {
@@ -5426,6 +5443,20 @@ async function openAddTitlesToCategory(kind, label) {
     ov.querySelector(".cm-search").addEventListener("input", doSearch);
     srcTog._onchange = doSearch;
     doSearch();
+    {
+        const bb = document.createElement("button"); bb.type = "button"; bb.className = "secondary-btn cm-batch";
+        bb.textContent = "Seleziona dalla lista (titoli separati da ,)";
+        const si = ov.querySelector(".cm-search"); if (si) si.insertAdjacentElement("afterend", bb);
+        bb.addEventListener("click", async () => {
+            const q = ov.querySelector(".cm-search").value;
+            if (q.indexOf(",") < 0) { showToast("Separa i titoli con una virgola per selezionarli in blocco"); return; }
+            bb.disabled = true; const old = bb.textContent; bb.textContent = "Cerco…";
+            const res = await _batchListSelect(q, srcTog._get(), selExt, cmExt, 50);
+            bb.disabled = false; bb.textContent = old;
+            renderRes([], cmExt); updCount();
+            showToast(res.added + "/" + res.terms + " titoli selezionati");
+        });
+    }
     ov.querySelector(".cm-add").addEventListener("click", async () => {
         const keys = [...selLib.keys()];
         let needRefresh = false;
@@ -5436,6 +5467,7 @@ async function openAddTitlesToCategory(kind, label) {
         showToast("Aggiunti " + keys.length + " titoli");
         close();
         if (needRefresh) await fetchLibrary(); else if (lastLibraryData) renderLibrary(lastLibraryData);
+        if (_reopenMosaic) _reopenMosaic();
     });
 }
 
@@ -5518,6 +5550,20 @@ async function openAddTitlesToFolder(folder, onDone) {
     ov.querySelector(".cm-search").addEventListener("input", doSearch);
     srcTog._onchange = doSearch;
     doSearch();
+    {
+        const bb = document.createElement("button"); bb.type = "button"; bb.className = "secondary-btn cm-batch";
+        bb.textContent = "Seleziona dalla lista (titoli separati da ,)";
+        const si = ov.querySelector(".cm-search"); if (si) si.insertAdjacentElement("afterend", bb);
+        bb.addEventListener("click", async () => {
+            const q = ov.querySelector(".cm-search").value;
+            if (q.indexOf(",") < 0) { showToast("Separa i titoli con una virgola per selezionarli in blocco"); return; }
+            bb.disabled = true; const old = bb.textContent; bb.textContent = "Cerco…";
+            const res = await _batchListSelect(q, srcTog._get(), selExt, cmExt, 50);
+            bb.disabled = false; bb.textContent = old;
+            renderRes([], cmExt); updCount();
+            showToast(res.added + "/" + res.terms + " titoli selezionati");
+        });
+    }
     ov.querySelector(".cm-add").addEventListener("click", async () => {
         const keys = [...selLib.keys()];
         for (const it of selExt.values()) { try { if (await saveSearchItem(it) && it.id_and_slug) keys.push(it.id_and_slug); } catch (e) {} }
@@ -5607,6 +5653,20 @@ function openCreateFolderModal(kind, opts) {
     ov.querySelector(".cm-search").addEventListener("input", doSearch);
     srcTog._onchange = doSearch;
     doSearch();
+    {
+        const bb = document.createElement("button"); bb.type = "button"; bb.className = "secondary-btn cm-batch";
+        bb.textContent = "Seleziona dalla lista (titoli separati da ,)";
+        const si = ov.querySelector(".cm-search"); if (si) si.insertAdjacentElement("afterend", bb);
+        bb.addEventListener("click", async () => {
+            const q = ov.querySelector(".cm-search").value;
+            if (q.indexOf(",") < 0) { showToast("Separa i titoli con una virgola per selezionarli in blocco"); return; }
+            bb.disabled = true; const old = bb.textContent; bb.textContent = "Cerco…";
+            const res = await _batchListSelect(q, srcTog._get(), selExt, cmExt, 50);
+            bb.disabled = false; bb.textContent = old;
+            renderRes([], cmExt); updCount();
+            showToast(res.added + "/" + res.terms + " titoli selezionati");
+        });
+    }
 
     ov.querySelector(".cm-create").addEventListener("click", async () => {
         const name = ov.querySelector(".cm-name").value.trim();
@@ -5634,6 +5694,7 @@ function openCreateFolderModal(kind, opts) {
             showToast((opts.parentId ? "Sottocartella creata: " : "Cartella creata: ") + name + (keys.length ? ` (+${keys.length} titoli)` : ""));
             close();
             if (typeof opts.afterDone === "function") opts.afterDone();
+            else if (_reopenMosaic) { await fetchLibrary(); _reopenMosaic(); }
             else await fetchLibrary();
             return;
         } catch (e) { showToast("Errore"); }
@@ -6138,6 +6199,7 @@ function setupVpnAutoRefresh() {
 let _wheelStop = null;
 let _dragTileEl = null;                        // tile trascinata (per spostamento locale istantaneo)
 function _overlayOpen() { return !!document.querySelector(".cat-mosaic-ov"); }
+let _reopenMosaic = null;
 function _applyFoldersResult(pl) {
     // Aggiorna lo stato locale e, se c'e' una tile trascinata, la sposta SUL POSTO
     // (istantaneo, niente ricarica della pagina). Ritorna true se gestito localmente.

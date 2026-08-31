@@ -2689,3 +2689,6 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 .yt-card-meta { color: var(--text-secondary); font-size: .85rem; margin-bottom: 14px; }
 .yt-card-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .yt-card-note { margin-top: 14px; color: var(--text-secondary); font-size: .8rem; line-height: 1.35; }
+
+/* Pulsante "seleziona dalla lista" nei modali di aggiunta */
+.cm-batch { margin: 8px 0 4px; font-size: .82rem; padding: 6px 10px; }

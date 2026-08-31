@@ -1873,6 +1873,7 @@ function startDownloadsPolling() {
             if (resp.ok) {
                 const list = await resp.json();
                 renderDownloads(list);
+                _decorateDownloadTiles();
                 carouselizeDownloads();
                 renderContinueWatching();
                 renderMobileTitles();
@@ -1901,6 +1902,46 @@ function formatBytes(bytes) {
     return `${v.toFixed(v < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
+function _activeDownloads() { return (_downloadsSnapshot || []).filter(d => ["pending", "queued", "downloading", "merging", "paused", "held"].includes(d.status)); }
+function _dlByKey() { const m = {}; _activeDownloads().forEach(d => { if (d.key) m[d.key] = d; }); return m; }
+function _fillDlMenu(menu, id, status) {
+    const items = (status === "paused" || status === "held") ? [["Riprendi", "resume"]] : [["Pausa", "pause"]];
+    items.push(["Annulla", "cancel"]);
+    menu.innerHTML = items.map(([lbl, act]) => '<button data-act="' + act + '">' + lbl + '</button>').join("");
+    menu.querySelectorAll("button").forEach(b => b.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        try { await fetch("/api/download/" + b.dataset.act, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }); } catch (er) {}
+        menu.classList.add("hidden");
+        setTimeout(() => { try { refreshDownloads(); } catch (e2) {} }, 300);
+    }));
+}
+function _dlOverlayHtml() { return '<div class="dl-overlay"><div class="dl-bar"><i></i></div><div class="dl-info"></div><button class="dl-menu-btn" title="Gestisci">▾</button><div class="dl-menu hidden"></div></div>'; }
+function _dlUpdateOverlay(tile, d) {
+    let ov = tile.querySelector(".dl-overlay");
+    if (!ov) {
+        tile.insertAdjacentHTML("beforeend", _dlOverlayHtml());
+        ov = tile.querySelector(".dl-overlay");
+        ov.querySelector(".dl-menu-btn").addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); const m = ov.querySelector(".dl-menu"); const cur = (_dlByKey()[tile.dataset.key]) || {}; _fillDlMenu(m, d.id, cur.status || d.status); m.classList.toggle("hidden"); });
+    }
+    const pct = Math.max(0, Math.min(100, d.progress || 0));
+    ov.querySelector(".dl-bar i").style.width = pct + "%";
+    const eta = d.eta ? (" · " + formatDuration(d.eta) + " rimasti") : "";
+    const stTxt = (d.status === "paused" || d.status === "held") ? "In pausa" : ((d.status === "queued" || d.status === "pending") ? "In coda" : (d.status === "merging" ? "Unione…" : "Download"));
+    ov.querySelector(".dl-info").textContent = stTxt + " " + pct.toFixed(0) + "%" + eta;
+}
+function _decorateDownloadTiles() {
+    const byKey = _dlByKey();
+    document.querySelectorAll(".library-item[data-key]").forEach(tile => {
+        const d = byKey[tile.dataset.key];
+        if (!d) { tile.classList.remove("dl-active"); const ex = tile.querySelector(".dl-overlay"); if (ex) ex.remove(); return; }
+        tile.classList.add("dl-active");
+        _dlUpdateOverlay(tile, d);
+    });
+    const pn = document.querySelector(".wheel-node-prog");
+    if (pn) { const covers = [...new Set(_activeDownloads().map(d => d.cover).filter(Boolean))].slice(0, 12); const cc = pn.querySelector(".wheel-node-covers"); if (cc && covers.length) { pn._covers = covers; cc.classList.remove("placeholder"); if (!pn._ci) { pn._ci = 0; cc.style.backgroundImage = "url('" + covers[0] + "')"; } } }
+    if (typeof _progRerender === "function") _progRerender();
+}
+let _progRerender = null;
 function renderDownloads(downloads) {
     if (Array.isArray(downloads)) _downloadsSnapshot = downloads;
     downloadedKeys = new Set();
@@ -3353,6 +3394,7 @@ async function addToLibrary(url, data) {
 function titleRow(item, ctx) {
     const row = document.createElement("div");
     row.className = "library-item" + (item.favorite ? " is-fav" : "") + (librarySel.has(item.key) ? " selected" : "") + (_isYouTube(item.url) ? " yt-tile" : "");
+    if (item.key) row.dataset.key = item.key;
     const typeBadge = item.type === "tv" ? "Serie" : (item.type === "movie" ? "Film" : "");
     const cover = item.cover
         ? `<img class="library-cover" src="${item.cover}" alt="" loading="lazy">`
@@ -4276,7 +4318,7 @@ function renderLibrary(data) {
         // Tile "+" in fondo alla categoria: scegli se aggiungere titoli o una cartella.
         const addTile = document.createElement("div");
         addTile.className = "folder-card add-tile";
-        addTile.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Aggiungi</span></div></div>';
+        addTile.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Aggiungi a «' + escapeHtml(dispLabel) + '»</span></div></div>';
         addTile.addEventListener("click", () => openCategoryAddModal(kindKey, dispLabel));
         body.appendChild(addTile);
         wrap.appendChild(head);
@@ -4303,6 +4345,8 @@ function renderLibrary(data) {
             (allFolders || []).forEach(fo => { if (fo.favorite && fo.cover) out.push(fo.cover); });
         } else if (kindKey === "__dl__") {
             (localDownloads || []).forEach(d => { if (d.cover) out.push(d.cover); });
+        } else if (kindKey === "__prog__") {
+            _activeDownloads().forEach(d => { if (d.cover) out.push(d.cover); });
         } else {
             byKind(kindKey).forEach(fo => { if (fo.cover) out.push(fo.cover); (fo.items || []).forEach(it => { if (it && it.cover) out.push(it.cover); }); });
             (_catTitles()[kindKey] || []).forEach(k => { const it = (libraryCache || []).find(x => x && x.key === k); if (it && it.cover) out.push(it.cover); });
@@ -4313,6 +4357,20 @@ function renderLibrary(data) {
         if (cd.special === "fav") {
             (allFolders || []).filter(fo => fo.favorite).forEach(fo => { try { foldersGrid.appendChild(buildFolderCard(fo, true)); } catch (e) {} });
             (libraryCache || []).filter(t => t.favorite).forEach(t => { try { titlesGrid.appendChild(titleRow(t, { noReorder: true })); } catch (e) {} });
+        } else if (cd.special === "prog") {
+            const build = () => {
+                titlesGrid.innerHTML = "";
+                const act = _activeDownloads();
+                if (!act.length) { const none = document.createElement("div"); none.className = "no-downloads"; none.textContent = "Nessun download in corso o in pausa."; titlesGrid.appendChild(none); return; }
+                act.forEach(d => {
+                    const tile = document.createElement("div"); tile.className = "library-item dl-active"; if (d.key) tile.dataset.key = d.key;
+                    tile.innerHTML = (d.cover ? '<img class="library-cover" src="' + escapeHtml(d.cover) + '" alt="">' : '<div class="library-cover placeholder"></div>') + '<div class="library-meta"><span class="library-name">' + escapeHtml(d.title || "") + '</span></div>';
+                    titlesGrid.appendChild(tile);
+                    _dlUpdateOverlay(tile, d);
+                });
+            };
+            build();
+            _progRerender = build;
         } else if (cd.special === "dl") {
             // Raggruppa gli episodi della stessa serie/sottocartella in UNA locandina.
             const groups = new Map();
@@ -4376,7 +4434,7 @@ function renderLibrary(data) {
             rev.scan();
         });
         foldersObs.observe(foldersGrid, { attributes: true, attributeFilter: ["data-drilled"], childList: true });
-        const close = () => { try { foldersObs.disconnect(); } catch (e) {} try { rev.io && rev.io.disconnect(); } catch (e) {} document.removeEventListener("keydown", esc); ov.remove(); };
+        const close = () => { _progRerender = null; try { foldersObs.disconnect(); } catch (e) {} try { rev.io && rev.io.disconnect(); } catch (e) {} document.removeEventListener("keydown", esc); ov.remove(); };
         const esc = (e) => { if (e.key === "Escape") close(); };
         back.addEventListener("click", close);
         if (editBtn) editBtn.addEventListener("click", () => { editCategoryTitle(cd.key, !!(cd.options && cd.options.custom), cd.label); close(); });
@@ -4403,6 +4461,7 @@ function renderLibrary(data) {
     // Aggiungo Preferiti e Titoli scaricati come categorie della ruota
     cats.unshift({ label: "Titoli scaricati", key: "__dl__", special: "dl", icon: "⤓", options: {} });
     cats.unshift({ label: "Preferiti", key: "__fav__", special: "fav", icon: "★", options: {} });
+    cats.unshift({ label: "Download", key: "__prog__", special: "prog", icon: "⭳", options: {} });
     const wheelWrap = document.createElement("div"); wheelWrap.className = "cat-wheel-wrap";
     const wheelHint = document.createElement("div"); wheelHint.className = "cat-wheel-hint"; wheelHint.textContent = "Categorie · trascina per ruotare, clicca per aprire";
     const wheelEl = document.createElement("div"); wheelEl.className = "cat-wheel";
@@ -4847,7 +4906,7 @@ function openFolderInline(anchorEl, folder) {
         });
         const addT = document.createElement("div");
         addT.className = "folder-card add-tile";
-        addT.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Aggiungi</span></div></div>';
+        addT.innerHTML = '<div class="folder-head"><div class="folder-cover placeholder add-plus">+</div><div class="folder-meta"><span class="folder-name">Aggiungi a «' + escapeHtml(current.name || "") + '»</span></div></div>';
         addT.addEventListener("click", (e) => { e.stopPropagation(); openFolderAddModal(current, () => renderContent(curMode, false)); });
         row.appendChild(addT);
     };
@@ -4984,9 +5043,11 @@ async function openYouTube(item) {
             return;
         }
     } catch (e) {}
-    // 2) fallback: embed YouTube
-    if (el.videoPlayer) { el.videoPlayer.pause(); el.videoPlayer.src = ""; el.videoPlayer.classList.add("hidden"); }
-    if (el.iframePlayer) { el.iframePlayer.src = "https://www.youtube.com/embed/" + id + "?autoplay=1&rel=0"; el.iframePlayer.classList.remove("hidden"); }
+    // 2) niente embed (dava errore 153): invita a scaricare
+    if (el.videoPlayer) { el.videoPlayer.pause(); el.videoPlayer.src = ""; }
+    if (el.iframePlayer) { el.iframePlayer.src = ""; el.iframePlayer.classList.add("hidden"); }
+    if (el.playingTitle) el.playingTitle.textContent = "Non riproducibile in streaming — premi ⤓ Scarica per salvarlo e guardarlo offline.";
+    showToast("Video non riproducibile in streaming: usa Scarica.", 5000);
 }
 function openFromLibrary(item) {
     if (item && (item.is_youtube || _isYouTube(item.url))) { openYouTube(item); return; }
@@ -5242,6 +5303,24 @@ function _srcToggle() {
     return w;
 }
 
+function openMoveFolderPicker(onPick, excludeId) {
+    const folders = (lastLibraryData && lastLibraryData.folders) || [];
+    const excl = new Set();
+    if (excludeId) { const collect = (id) => { excl.add(id); folders.filter(f => (f.parent || "") === id).forEach(ch => collect(ch.id)); }; collect(excludeId); }
+    const byId = {}; folders.forEach(f => byId[f.id] = f);
+    const pathOf = (f) => { let p = f.name || ""; let cur = f, g = 0; while (cur.parent && byId[cur.parent] && g++ < 12) { cur = byId[cur.parent]; p = (cur.name || "") + " › " + p; } return p; };
+    const list = folders.filter(f => !excl.has(f.id));
+    const ov = document.createElement("div"); ov.className = "welcome-ov create-ov";
+    ov.innerHTML = '<div class="welcome-card create-card"><div class="create-head"><h2>Sposta qui una cartella</h2><button class="cm-close" title="Chiudi">✕</button></div><div class="cm-results move-list">' +
+        (list.length ? list.map(f => '<button class="move-item" data-id="' + f.id + '">📁 ' + escapeHtml(pathOf(f)) + '</button>').join("") : '<div class="cm-empty">Nessuna cartella spostabile.</div>') +
+        '</div></div>';
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.querySelector(".cm-close").addEventListener("click", close);
+    ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    ov.querySelectorAll(".move-item").forEach(b => b.addEventListener("click", () => { close(); onPick(b.dataset.id); }));
+}
+
 function openCategoryAddModal(kind, label) {
     const ov = document.createElement("div"); ov.className = "welcome-ov create-ov";
     ov.innerHTML =
@@ -5250,6 +5329,7 @@ function openCategoryAddModal(kind, label) {
         '<div class="cat-choose-body">' +
         '<button class="choose-opt cc-titles"><span class="choose-ic">➕</span><span class="choose-tx"><b>Aggiungi titoli</b><small>Uno o più titoli, direttamente nella categoria</small></span></button>' +
         '<button class="choose-opt cc-folder"><span class="choose-ic">📁</span><span class="choose-tx"><b>Crea una cartella</b><small>Una sola cartella per volta</small></span></button>' +
+        '<button class="choose-opt cc-move"><span class="choose-ic">↔️</span><span class="choose-tx"><b>Sposta qui una cartella</b><small>Da un\'altra categoria/cartella</small></span></button>' +
         '</div></div>';
     document.body.appendChild(ov);
     const close = () => ov.remove();
@@ -5259,6 +5339,7 @@ function openCategoryAddModal(kind, label) {
     { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
     ov.querySelector(".cc-titles").addEventListener("click", () => { close(); openAddTitlesToCategory(kind, label); });
     ov.querySelector(".cc-folder").addEventListener("click", () => { close(); openCreateFolderModal(kind); });
+    ov.querySelector(".cc-move").addEventListener("click", () => { close(); openMoveFolderPicker(async (id) => { await setFolderKind(id, kind); const m = document.querySelector(".cat-mosaic-ov"); if (m) m.remove(); }, null); });
 }
 
 async function openAddTitlesToCategory(kind, label) {
@@ -5342,6 +5423,7 @@ function openFolderAddModal(folder, afterAdd) {
         '<div class="cat-choose-body">' +
         '<button class="choose-opt cc-titles"><span class="choose-ic">➕</span><span class="choose-tx"><b>Aggiungi titoli</b><small>Uno o più titoli in questa cartella</small></span></button>' +
         '<button class="choose-opt cc-folder"><span class="choose-ic">📁</span><span class="choose-tx"><b>Crea una sottocartella</b><small>Una cartella dentro questa</small></span></button>' +
+        '<button class="choose-opt cc-move"><span class="choose-ic">↔️</span><span class="choose-tx"><b>Sposta qui una cartella</b><small>Sposta una cartella esistente qui dentro</small></span></button>' +
         '</div></div>';
     document.body.appendChild(ov);
     const close = () => ov.remove();
@@ -5349,6 +5431,7 @@ function openFolderAddModal(folder, afterAdd) {
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
     ov.querySelector(".cc-titles").addEventListener("click", () => { close(); openAddTitlesToFolder(folder, afterAdd); });
     ov.querySelector(".cc-folder").addEventListener("click", () => { close(); openCreateFolderModal(null, { parentId: folder.id, afterDone: afterAdd }); });
+    ov.querySelector(".cc-move").addEventListener("click", () => { close(); openMoveFolderPicker(async (id) => { await nestFolder(id, folder.id); if (typeof afterAdd === "function") afterAdd(); }, folder.id); });
 }
 
 async function openAddTitlesToFolder(folder, onDone) {

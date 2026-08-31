@@ -99,7 +99,7 @@ def resolve_stream(url, proxies=None):
         raise RuntimeError("yt-dlp non disponibile")
     opts = _base_opts(proxies)
     opts.update({"skip_download": True,
-                 "format": "best[ext=mp4][acodec!=none][vcodec!=none]/best[acodec!=none][vcodec!=none]/best"})
+                 "format": "18/best[ext=mp4][protocol^=http][acodec!=none][vcodec!=none]/best[acodec!=none][vcodec!=none]"})
     with YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=False)
     stream = info.get("url")

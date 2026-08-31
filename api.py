@@ -945,9 +945,9 @@ def startup_event():
     # Configure the download queue concurrency, then restore any queued/
     # interrupted/finished downloads from the previous session.
     try:
-        set_max_concurrent(int(SETTINGS.get("max_concurrent", 2)))
+        set_max_concurrent(int(SETTINGS.get("max_concurrent", 1)))
     except (TypeError, ValueError):
-        set_max_concurrent(2)
+        set_max_concurrent(1)
     # The download list is NOT remembered across sessions: each session starts
     # empty. Only the library/favourites persist (library.json).
     clear_downloads()

@@ -4358,7 +4358,16 @@ function renderLibrary(data) {
             _activeDownloads().forEach(d => { if (d.cover) out.push(d.cover); });
             (localDownloads || []).forEach(d => { if (d.cover) out.push(d.cover); });
         } else {
-            byKind(kindKey).forEach(fo => { if (fo.cover) out.push(fo.cover); (fo.items || []).forEach(it => { if (it && it.cover) out.push(it.cover); }); });
+            // Solo le locandine dei SINGOLI TITOLI, ricorsivamente in cartelle e sottocartelle
+            // (niente locandine di cartelle/sottocartelle).
+            const seen = new Set();
+            const collectTitles = (fo) => {
+                if (!fo || seen.has(fo.id)) return;
+                seen.add(fo.id);
+                (fo.items || []).forEach(it => { const cov = it && it.cover; if (cov) out.push(cov); });
+                (allFolders || []).filter(ch => (ch.parent || "") === fo.id).forEach(collectTitles);
+            };
+            byKind(kindKey).forEach(collectTitles);
             (_catTitles()[kindKey] || []).forEach(k => { const it = (libraryCache || []).find(x => x && x.key === k); if (it && it.cover) out.push(it.cover); });
         }
         return [...new Set(out)].slice(0, 12);

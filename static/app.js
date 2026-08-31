@@ -3417,6 +3417,7 @@ function titleRow(item, ctx) {
             <button class="icon-btn movedown-btn" title="Sposta a destra"${ctx.index >= _clen - 1 ? " disabled" : ""}>›</button>` : "";
     row.innerHTML = `
         ${cover}
+        <span class="fav-badge${item.favorite ? "" : " hidden"}" aria-hidden="true">★</span>
         <div class="library-meta">
             <span class="library-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
         </div>
@@ -5341,7 +5342,7 @@ async function removeFolder(id, name) {
 }
 
 async function _batchListSelect(query, sources, selExt, cmExt, cap) {
-    const terms = (query || "").split(",").map(s => s.trim()).filter(Boolean).slice(0, cap || 50);
+    const terms = (query || "").split("*").map(s => s.trim()).filter(Boolean).slice(0, cap || 50);
     let added = 0;
     for (const term of terms) {
         try {
@@ -5383,7 +5384,9 @@ function openMoveFolderPicker(onPick, excludeId) {
     const pathOf = (f) => { let p = f.name || ""; let cur = f, g = 0; while (cur.parent && byId[cur.parent] && g++ < 12) { cur = byId[cur.parent]; p = (cur.name || "") + " › " + p; } return p; };
     const list = folders.filter(f => !excl.has(f.id));
     const ov = document.createElement("div"); ov.className = "welcome-ov create-ov";
-    ov.innerHTML = '<div class="welcome-card create-card"><div class="create-head"><h2>Sposta qui una cartella</h2><button class="cm-close" title="Chiudi">✕</button></div><div class="cm-results move-list">' +
+    ov.innerHTML = '<div class="welcome-card create-card"><div class="create-head"><h2>Sposta qui una cartella</h2><button class="cm-close" title="Chiudi">✕</button></div>' +
+        '<input type="search" class="cm-search move-search" placeholder="Cerca cartella…" autocomplete="off">' +
+        '<div class="cm-results move-list">' +
         (list.length ? list.map(f => '<button class="move-item" data-id="' + f.id + '">📁 ' + escapeHtml(pathOf(f)) + '</button>').join("") : '<div class="cm-empty">Nessuna cartella spostabile.</div>') +
         '</div></div>';
     document.body.appendChild(ov);
@@ -5391,6 +5394,7 @@ function openMoveFolderPicker(onPick, excludeId) {
     ov.querySelector(".cm-close").addEventListener("click", close);
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
     ov.querySelectorAll(".move-item").forEach(b => b.addEventListener("click", () => { close(); onPick(b.dataset.id); }));
+    { const ms = ov.querySelector(".move-search"); if (ms) ms.addEventListener("input", () => { const q = ms.value.trim().toLowerCase(); ov.querySelectorAll(".move-item").forEach(b => { b.style.display = b.textContent.toLowerCase().includes(q) ? "" : "none"; }); }); }
 }
 
 function openCategoryAddModal(kind, label) {
@@ -5476,11 +5480,11 @@ async function openAddTitlesToCategory(kind, label) {
     doSearch();
     {
         const bb = document.createElement("button"); bb.type = "button"; bb.className = "secondary-btn cm-batch";
-        bb.textContent = "Seleziona dalla lista (titoli separati da ,)";
+        bb.textContent = "Seleziona dalla lista (titoli separati da *)";
         const si = ov.querySelector(".cm-search"); if (si) si.insertAdjacentElement("afterend", bb);
         bb.addEventListener("click", async () => {
             const q = ov.querySelector(".cm-search").value;
-            if (q.indexOf(",") < 0) { showToast("Separa i titoli con una virgola per selezionarli in blocco"); return; }
+            if (q.indexOf("*") < 0) { showToast("Separa i titoli con un asterisco * (es. Titolo1 * Titolo2)"); return; }
             bb.disabled = true; const old = bb.textContent; bb.textContent = "Cerco…";
             const res = await _batchListSelect(q, srcTog._get(), selExt, cmExt, 50);
             bb.disabled = false; bb.textContent = old;
@@ -5583,11 +5587,11 @@ async function openAddTitlesToFolder(folder, onDone) {
     doSearch();
     {
         const bb = document.createElement("button"); bb.type = "button"; bb.className = "secondary-btn cm-batch";
-        bb.textContent = "Seleziona dalla lista (titoli separati da ,)";
+        bb.textContent = "Seleziona dalla lista (titoli separati da *)";
         const si = ov.querySelector(".cm-search"); if (si) si.insertAdjacentElement("afterend", bb);
         bb.addEventListener("click", async () => {
             const q = ov.querySelector(".cm-search").value;
-            if (q.indexOf(",") < 0) { showToast("Separa i titoli con una virgola per selezionarli in blocco"); return; }
+            if (q.indexOf("*") < 0) { showToast("Separa i titoli con un asterisco * (es. Titolo1 * Titolo2)"); return; }
             bb.disabled = true; const old = bb.textContent; bb.textContent = "Cerco…";
             const res = await _batchListSelect(q, srcTog._get(), selExt, cmExt, 50);
             bb.disabled = false; bb.textContent = old;
@@ -5686,11 +5690,11 @@ function openCreateFolderModal(kind, opts) {
     doSearch();
     {
         const bb = document.createElement("button"); bb.type = "button"; bb.className = "secondary-btn cm-batch";
-        bb.textContent = "Seleziona dalla lista (titoli separati da ,)";
+        bb.textContent = "Seleziona dalla lista (titoli separati da *)";
         const si = ov.querySelector(".cm-search"); if (si) si.insertAdjacentElement("afterend", bb);
         bb.addEventListener("click", async () => {
             const q = ov.querySelector(".cm-search").value;
-            if (q.indexOf(",") < 0) { showToast("Separa i titoli con una virgola per selezionarli in blocco"); return; }
+            if (q.indexOf("*") < 0) { showToast("Separa i titoli con un asterisco * (es. Titolo1 * Titolo2)"); return; }
             bb.disabled = true; const old = bb.textContent; bb.textContent = "Cerco…";
             const res = await _batchListSelect(q, srcTog._get(), selExt, cmExt, 50);
             bb.disabled = false; bb.textContent = old;

@@ -2664,7 +2664,9 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 /* Nascondere elemento durante il drill (vince sul display:grid !important) */
 .cat-mosaic-ov .cat-drill-hide, .cat-drill-hide { display: none !important; }
 /* Locandine YouTube orizzontali (16:9) */
-.library-item.yt-tile .library-cover, .cat-mosaic-ov .yt-tile .library-cover { aspect-ratio: 2 / 3 !important; object-fit: contain !important; background: #0a0f1a; }
+.library-item.yt-tile .library-cover, .cat-mosaic-ov .yt-tile .library-cover { aspect-ratio: 16 / 9 !important; object-fit: cover !important; background: #0a0f1a; }
+.cat-mosaic-ov .cat-titles-grid > .yt-tile, .cat-mosaic-ov .cat-folders-grid > .yt-tile { grid-column: span 2 !important; }
+#library-list .disney-row .library-item.yt-tile { width: 300px !important; }
 
 /* Schede AnimeWorld (picker) sopra la ruota/overlay categoria */
 .picker-overlay { z-index: 4500 !important; }
@@ -2713,3 +2715,9 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
   .cat-mosaic-title { font-size: 1.05rem; }
   .cat-wheel-hint { font-size: .74rem; }
 }
+
+/* Stella preferito sempre visibile quando impostata */
+.fav-badge { position: absolute; top: 6px; right: 6px; z-index: 6; color: #ffc400; font-size: 1rem;
+    text-shadow: 0 1px 5px rgba(0,0,0,.95); pointer-events: none; }
+.fav-badge.hidden { display: none; }
+.library-item:hover .fav-badge { display: none; }

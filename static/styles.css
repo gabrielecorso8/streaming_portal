@@ -2658,7 +2658,7 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 /* Nascondere elemento durante il drill (vince sul display:grid !important) */
 .cat-mosaic-ov .cat-drill-hide, .cat-drill-hide { display: none !important; }
 /* Locandine YouTube orizzontali (16:9) */
-.library-item.yt-tile .library-cover, .cat-mosaic-ov .yt-tile .library-cover { aspect-ratio: 2 / 3 !important; object-fit: cover !important; background: #0a0f1a; }
+.library-item.yt-tile .library-cover, .cat-mosaic-ov .yt-tile .library-cover { aspect-ratio: 2 / 3 !important; object-fit: contain !important; background: #0a0f1a; }
 
 /* Schede AnimeWorld (picker) sopra la ruota/overlay categoria */
 .picker-overlay { z-index: 4500 !important; }
@@ -2681,3 +2681,11 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 .move-item:hover { border-color: var(--accent); background: rgba(34,166,255,.12); }
 /* nodo ruota Download (arancio) */
 .wheel-node.wheel-node-prog .wheel-node-covers { border-color: #ff9f0a; box-shadow: 0 10px 30px rgba(255,159,10,.4); }
+
+/* Scheda YouTube (download-first) */
+.yt-card-ov { z-index: 6000; }
+.yt-card { max-width: 520px; width: 92vw; }
+.yt-card-cover { width: 100%; aspect-ratio: 16 / 9; background-size: cover; background-position: center; border-radius: 12px; margin: 10px 0; box-shadow: 0 10px 26px rgba(0,0,0,.5); }
+.yt-card-meta { color: var(--text-secondary); font-size: .85rem; margin-bottom: 14px; }
+.yt-card-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.yt-card-note { margin-top: 14px; color: var(--text-secondary); font-size: .8rem; line-height: 1.35; }

@@ -5017,9 +5017,36 @@ async function downloadYouTube(url, title) {
         else { const d = await r.json().catch(() => ({})); showToast(d.detail || "Download non avviato"); }
     } catch (e) { showToast("Errore download YouTube"); }
 }
-async function openYouTube(item) {
+function openYouTube(item) {
     const url = (item && item.url) || ""; const id = _ytId(url);
     if (!id) { showToast("Video YouTube non valido"); return; }
+    const cover = (item && item.cover) || ("https://i.ytimg.com/vi/" + id + "/hqdefault.jpg");
+    const title = (item && item.name) || "YouTube";
+    const meta = [];
+    if (item && item.uploader) meta.push(escapeHtml(item.uploader));
+    if (item && item.duration) meta.push(formatDuration(item.duration));
+    meta.push("YouTube");
+    const ov = document.createElement("div"); ov.className = "welcome-ov yt-card-ov";
+    ov.innerHTML =
+        '<div class="welcome-card yt-card">' +
+        '<div class="create-head"><h2>' + escapeHtml(title) + '</h2><button class="cm-close" title="Chiudi">✕</button></div>' +
+        '<div class="yt-card-cover" style="background-image:url(\'' + cover.replace(/\'/g, "%27") + '\')"></div>' +
+        '<div class="yt-card-meta">' + meta.join(" · ") + '</div>' +
+        '<div class="yt-card-actions">' +
+        '<button class="primary-btn yt-dl">⤓ Scarica</button>' +
+        '<button class="secondary-btn yt-stream">▶ Prova streaming</button>' +
+        '</div>' +
+        '<div class="yt-card-note">Lo streaming diretto da YouTube non è sempre possibile: se non parte, scarica il video (comparirà in «Titoli scaricati»).</div>' +
+        '</div>';
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.querySelector(".cm-close").addEventListener("click", close);
+    ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    ov.querySelector(".yt-dl").addEventListener("click", () => { downloadYouTube(url, title); showToast("Download avviato — lo trovi in «Download» e poi in «Titoli scaricati».", 5000); close(); });
+    ov.querySelector(".yt-stream").addEventListener("click", () => { close(); _tryYouTubeStream({ url, name: title }); });
+}
+async function _tryYouTubeStream(item) {
+    const url = (item && item.url) || "";
     _rememberReturnScroll();
     try { closePlayer(); } catch (e) {}
     el.playerSection.classList.remove("hidden");
@@ -5030,7 +5057,6 @@ async function openYouTube(item) {
     fab.addEventListener("click", () => downloadYouTube(url, (item && item.name) || ""));
     el.playerSection.appendChild(fab);
     el.playerSection.scrollIntoView({ behavior: "smooth", block: "start" });
-    // 1) prova lo stream diretto (yt-dlp) nel player <video>: evita gli errori di embed (150/153)
     showToast("Risoluzione video YouTube…");
     try {
         const r = await fetch(withLanToken("/api/youtube/resolve?url=" + encodeURIComponent(url)));
@@ -5043,9 +5069,7 @@ async function openYouTube(item) {
             return;
         }
     } catch (e) {}
-    // 2) niente embed (dava errore 153): invita a scaricare
     if (el.videoPlayer) { el.videoPlayer.pause(); el.videoPlayer.src = ""; }
-    if (el.iframePlayer) { el.iframePlayer.src = ""; el.iframePlayer.classList.add("hidden"); }
     if (el.playingTitle) el.playingTitle.textContent = "Non riproducibile in streaming — premi ⤓ Scarica per salvarlo e guardarlo offline.";
     showToast("Video non riproducibile in streaming: usa Scarica.", 5000);
 }

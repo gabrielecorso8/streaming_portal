@@ -40,5 +40,5 @@ exe = EXE(
     upx=True,
     console=False,
     disable_windowed_traceback=False,
-    icon="static/favicon.ico",
+    icon="static/app-icon.ico",
 )

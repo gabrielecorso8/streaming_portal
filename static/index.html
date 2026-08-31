@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SC Portal">
     <link rel="manifest" id="mf-link" href="/api/pwa/manifest?kind=mobile">
-    <link rel="stylesheet" href="styles.css?v=141">
+    <link rel="stylesheet" href="styles.css?v=142">
 </head>
 <body>
     <header class="app-header">
@@ -26,12 +26,11 @@
                 <defs>
                     <linearGradient id="sc-logo-g" x1="0" y1="0" x2="1" y2="1">
                         <stop offset="0" stop-color="#6fd0ff"/>
-                        <stop offset="1" stop-color="#1e6fff"/>
+                        <stop offset="1" stop-color="#2b7bff"/>
                     </linearGradient>
                 </defs>
-                <rect x="4" y="4" width="40" height="40" rx="13" fill="url(#sc-logo-g)"/>
-                <rect x="4" y="4" width="40" height="40" rx="13" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.2"/>
-                <path d="M19 15.5 L34 24 L19 32.5 Z" fill="#fff"/>
+                <circle cx="24" cy="24" r="20" fill="none" stroke="url(#sc-logo-g)" stroke-width="3"/>
+                <path d="M20 15 L34 24 L20 33 Z" fill="url(#sc-logo-g)"/>
             </svg>
             <h1 class="app-title">SC<span>Portal</span></h1>
         </div>
@@ -302,6 +301,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=156"></script>
+    <script src="app.js?v=157"></script>
 </body>
 </html>

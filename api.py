@@ -1023,34 +1023,35 @@ def _mask_ip(ip):
     return (parts[0] + "." + parts[1] + ".x.x") if len(parts) == 4 else ip
 
 def _require_protected_egress():
-    """Kill-switch FAIL-CLOSED: con kill-switch attivo, un'operazione online e'
-    permessa SOLO se possiamo verificare che l'IP pubblico corrente NON e' quello
-    di casa (cioe' la VPN e' su). In ogni caso dubbio si blocca, per non esporre
-    mai l'IP reale."""
-    if not SETTINGS.get("kill_switch"):
-        return
+    """Protezione anti-esposizione IP. Regola forte SEMPRE attiva: se e' registrato
+    l'IP di casa e l'IP pubblico corrente coincide con esso, sei ESPOSTO (VPN spenta)
+    -> blocca l'operazione online a prescindere dal toggle kill-switch. Il kill-switch
+    aggiunge il fail-closed (blocca anche quando non si puo' verificare)."""
     home = (SETTINGS.get("home_ip") or "").strip()
-    if not home:
-        # kill-switch attivo ma nessun IP di casa registrato: non possiamo
-        # verificare lo stato VPN -> blocco (fail-closed) e chiedo di registrarlo.
-        raise HTTPException(
-            status_code=428,
-            detail="Kill-switch attivo ma IP di casa non registrato: non posso "
-                   "verificare la VPN. Registra il tuo IP di casa (VPN spenta) una "
-                   "volta, oppure disattiva il kill-switch.")
+    ks = bool(SETTINGS.get("kill_switch"))
+    # Nessun riferimento e kill-switch spento: setup non fatto, non possiamo decidere.
+    if not home and not ks:
+        return
     cur = _current_public_ip()
-    if cur is None:
-        # impossibile determinare l'IP pubblico -> fail-closed
+    # BLOCCO SEMPRE se sei sull'IP di casa (esposto), anche con kill-switch spento.
+    if home and cur and cur == home:
         raise HTTPException(
             status_code=423,
-            detail="Kill-switch attivo: impossibile verificare l'IP pubblico "
-                   "(rete/servizi non raggiungibili). Operazione bloccata per "
-                   "sicurezza.")
-    if cur == home:
-        raise HTTPException(
-            status_code=423,
-            detail="Kill-switch attivo: la VPN sembra spenta (rilevato il tuo IP "
-                   "di casa). Attiva la VPN oppure disattiva il kill-switch.")
+            detail="IP di casa ESPOSTO (VPN spenta): operazione online bloccata per "
+                   "sicurezza. Attiva la VPN. Per disattivare la protezione rimuovi "
+                   "l'IP di casa registrato dal pannello privacy.")
+    # Fail-closed aggiuntivo solo con kill-switch attivo.
+    if ks:
+        if not home:
+            raise HTTPException(
+                status_code=428,
+                detail="Kill-switch attivo ma IP di casa non registrato: registra il "
+                       "tuo IP di casa (VPN spenta) una volta, oppure disattiva il kill-switch.")
+        if cur is None:
+            raise HTTPException(
+                status_code=423,
+                detail="Kill-switch attivo: impossibile verificare l'IP pubblico. "
+                       "Operazione bloccata per sicurezza.")
 
 def apply_proxies():
     """Push the current proxy config into the vidxgo resolver module."""
@@ -1798,10 +1799,10 @@ def privacy_ip_status():
         "protected": bool(cur and home and cur != home),
         "detected": bool(cur),
         "incognito": bool(INCOGNITO),
-        # esposto = kill-switch SPENTO e ti vedono con l'IP di casa
-        "exposed": (not ks) and bool(cur and home and cur == home),
-        # bloccato = kill-switch attivo ma non possiamo garantire la VPN
-        "blocked": ks and (not home or cur is None or bool(home and cur == home)),
+        # esposto = ti vedono con l'IP di casa (ora bloccato SEMPRE, anche senza kill-switch)
+        "exposed": bool(cur and home and cur == home),
+        # bloccato = esposto, oppure kill-switch attivo e non verificabile
+        "blocked": bool(cur and home and cur == home) or (ks and (not home or cur is None)),
         "tls_verify": _verify(),
     }
 

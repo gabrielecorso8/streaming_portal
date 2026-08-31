@@ -1910,6 +1910,7 @@ function _fillDlMenu(menu, id, status) {
     menu.innerHTML = items.map(([lbl, act]) => '<button data-act="' + act + '">' + lbl + '</button>').join("");
     menu.querySelectorAll("button").forEach(b => b.addEventListener("click", async (e) => {
         e.stopPropagation();
+        if (b.dataset.act === "pause") _pausingIds.add(id);
         try { await fetch("/api/download/" + b.dataset.act, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }); } catch (er) {}
         menu.classList.add("hidden");
         setTimeout(() => { try { refreshDownloads(); } catch (e2) {} }, 300);
@@ -1923,10 +1924,13 @@ function _dlUpdateOverlay(tile, d) {
         ov = tile.querySelector(".dl-overlay");
         ov.querySelector(".dl-menu-btn").addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); const m = ov.querySelector(".dl-menu"); const cur = (_dlByKey()[tile.dataset.key]) || {}; _fillDlMenu(m, d.id, cur.status || d.status); m.classList.toggle("hidden"); });
     }
+    const paused = (d.status === "paused" || d.status === "held");
+    if (_pausingIds.has(d.id)) { if (paused) _pausingIds.delete(d.id); }
     const pct = Math.max(0, Math.min(100, d.progress || 0));
     ov.querySelector(".dl-bar i").style.width = pct + "%";
     const eta = d.eta ? (" · " + formatDuration(d.eta) + " rimasti") : "";
-    const stTxt = (d.status === "paused" || d.status === "held") ? "In pausa" : ((d.status === "queued" || d.status === "pending") ? "In coda" : (d.status === "merging" ? "Unione…" : "Download"));
+    let stTxt = paused ? "In pausa" : ((d.status === "queued" || d.status === "pending") ? "In coda" : (d.status === "merging" ? "Unione…" : "Download"));
+    if (_pausingIds.has(d.id) && !paused) stTxt = "Messa in pausa…";
     ov.querySelector(".dl-info").textContent = stTxt + " " + pct.toFixed(0) + "%" + eta;
 }
 function _decorateDownloadTiles() {
@@ -1939,9 +1943,13 @@ function _decorateDownloadTiles() {
     });
     const pn = document.querySelector(".wheel-node-dl");
     if (pn) { const covers = [...new Set(_activeDownloads().map(d => d.cover).concat((localDownloads || []).map(d => d.cover)).filter(Boolean))].slice(0, 12); const cc = pn.querySelector(".wheel-node-covers"); if (cc && covers.length) { pn._covers = covers; cc.classList.remove("placeholder"); } }
-    if (typeof _progRerender === "function") _progRerender();
+    // Ricostruisci la griglia download SOLO se cambia l'insieme (non a ogni poll): niente reset continuo.
+    const sig = _activeDownloads().map(d => d.id + ":" + d.status).join("|") + "#" + ((localDownloads || []).length);
+    if (typeof _progRerender === "function" && sig !== _dlMembSig) { _dlMembSig = sig; _progRerender(); }
 }
 let _progRerender = null;
+let _dlMembSig = "";
+const _pausingIds = new Set();
 function renderDownloads(downloads) {
     if (Array.isArray(downloads)) _downloadsSnapshot = downloads;
     downloadedKeys = new Set();
@@ -4431,7 +4439,7 @@ function renderLibrary(data) {
         if (foldersGrid.children.length) { foldersLabel = document.createElement("div"); foldersLabel.className = "cat-section-label"; foldersLabel.textContent = "Cartelle"; ov.appendChild(foldersLabel); ov.appendChild(foldersGrid); }
         ov.appendChild(titlesGrid);
         document.body.appendChild(ov);
-        _reopenMosaic = () => openCategoryMosaic(cd);
+        _openMosaicCd = cd;
         const rev = _attachReveal(ov);
         const foldersObs = new MutationObserver(() => {
             const drilled = foldersGrid.dataset.drilled != null;
@@ -4442,7 +4450,7 @@ function renderLibrary(data) {
             rev.scan();
         });
         foldersObs.observe(foldersGrid, { attributes: true, attributeFilter: ["data-drilled"], childList: true });
-        const close = () => { _progRerender = null; _reopenMosaic = null; try { foldersObs.disconnect(); } catch (e) {} try { rev.io && rev.io.disconnect(); } catch (e) {} document.removeEventListener("keydown", esc); ov.remove(); };
+        const close = () => { _progRerender = null; _openMosaicCd = null; try { foldersObs.disconnect(); } catch (e) {} try { rev.io && rev.io.disconnect(); } catch (e) {} document.removeEventListener("keydown", esc); ov.remove(); };
         const esc = (e) => { if (e.key === "Escape") close(); };
         back.addEventListener("click", close);
         if (editBtn) editBtn.addEventListener("click", () => { editCategoryTitle(cd.key, !!(cd.options && cd.options.custom), cd.label); close(); });
@@ -4498,6 +4506,7 @@ function renderLibrary(data) {
     wheelWrap.appendChild(wheelHint); wheelWrap.appendChild(wheelEl);
     el.libraryList.appendChild(wheelWrap);
     requestAnimationFrame(() => setupWheel(wheelEl, Array.from(wheelEl.querySelectorAll(".wheel-node"))));
+    _reopenMosaic = () => { if (_openMosaicCd) openCategoryMosaic(_openMosaicCd); };
     const newCat = document.createElement("div");
     newCat.className = "cat-newcategory";
     newCat.textContent = "\uFF0B Nuova Categoria";
@@ -6211,6 +6220,7 @@ let _wheelStop = null;
 let _dragTileEl = null;                        // tile trascinata (per spostamento locale istantaneo)
 function _overlayOpen() { return !!document.querySelector(".cat-mosaic-ov"); }
 let _reopenMosaic = null;
+let _openMosaicCd = null;
 function _applyFoldersResult(pl) {
     // Aggiorna lo stato locale e, se c'e' una tile trascinata, la sposta SUL POSTO
     // (istantaneo, niente ricarica della pagina). Ritorna true se gestito localmente.

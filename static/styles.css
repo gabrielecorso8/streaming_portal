@@ -2548,19 +2548,19 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 /* ===== Ruota delle categorie ===== */
 .cat-wheel-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 12px 0 26px; }
 .cat-wheel-hint { color: var(--text-secondary); font-size: .82rem; }
-.cat-wheel { position: relative; width: min(96vw, 640px); height: min(96vw, 640px); margin: 0 auto; touch-action: none; user-select: none; }
+.cat-wheel { position: relative; width: min(90vw, 540px); height: min(90vw, 540px); margin: 0 auto; touch-action: none; user-select: none; }
 .cat-wheel::after { content: ""; position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; transform: translate(-50%,-50%);
     border-radius: 50%; background: radial-gradient(circle at 50% 40%, rgba(85,189,255,.5), rgba(34,166,255,.15) 60%, rgba(6,12,28,0) 72%);
     border: 1px solid rgba(120,175,255,.45); box-shadow: 0 0 30px rgba(34,166,255,.5), inset 0 0 14px rgba(85,189,255,.35); pointer-events: none; }
-.wheel-node { position: absolute; top: 0; left: 0; width: 156px; height: 214px; padding: 0; border: none; background: transparent;
+.wheel-node { position: absolute; top: 0; left: 0; width: 128px; height: 224px; padding: 0; border: none; background: transparent;
     display: flex; flex-direction: column; align-items: center; cursor: grab; will-change: transform, opacity; }
 .wheel-node:active { cursor: grabbing; }
-.wheel-node-covers { width: 156px; height: 156px; border-radius: 18px; background-size: cover; background-position: center;
+.wheel-node-covers { width: 128px; height: 186px; border-radius: 12px; background-size: cover; background-position: center;
     border: 2px solid rgba(120,175,255,.30); box-shadow: 0 10px 30px rgba(0,0,0,.55); transition: background-image .7s ease, border-color .2s, box-shadow .2s; }
 .wheel-node-covers.placeholder { background: linear-gradient(135deg, rgba(34,166,255,.30), rgba(10,20,40,.7)); }
 .wheel-node:hover .wheel-node-covers { border-color: var(--accent); box-shadow: 0 12px 36px rgba(34,166,255,.45); }
-.wheel-node-title { margin-top: 8px; text-align: center; font-size: .9rem; font-weight: 700; color: #fff; line-height: 1.15;
-    text-shadow: 0 2px 8px rgba(0,0,0,.95); width: 156px; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wheel-node-title { margin-top: 7px; text-align: center; font-size: .85rem; font-weight: 700; color: #fff; line-height: 1.12;
+    text-shadow: 0 2px 8px rgba(0,0,0,.95); width: 128px; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 /* ===== Overlay mosaico categoria ===== */
 .cat-mosaic-ov { position: fixed; inset: 0; z-index: 3000; background: rgba(4,9,20,.97); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
     overflow-y: auto; padding: 12px 18px 48px; animation: mosaic-in .22s ease both; }
@@ -2640,8 +2640,7 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 .yt-dl-fab:hover { filter: brightness(1.08); }
 
 /* Toolbar in alto SEMPRE visibile (sticky) + adattata */
-.app-header { position: sticky !important; top: 0; z-index: 1200; background: rgba(6,12,28,.92);
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-color); }
+.app-header { position: static !important; }
 /* Scheda video SOPRA tutto (anche sopra la ruota/overlay categoria) */
 #player-section:not(.hidden) { position: fixed !important; inset: 0; z-index: 5000; margin: 0 !important;
     background: #05070e; overflow-y: auto; padding: 14px 16px 24px; border-radius: 0; }
@@ -2653,3 +2652,13 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 
 /* Modale dettagli titolo sopra la ruota/overlay categoria (sotto il player) */
 #details-modal { z-index: 4000 !important; }
+
+/* Avvisi/toast SEMPRE sopra tutto */
+.toast { z-index: 100000 !important; }
+/* Nascondere elemento durante il drill (vince sul display:grid !important) */
+.cat-drill-hide { display: none !important; }
+/* Locandine YouTube orizzontali (16:9) */
+.library-item.yt-tile .library-cover, .cat-mosaic-ov .yt-tile .library-cover { aspect-ratio: 16 / 9 !important; }
+
+/* Schede AnimeWorld (picker) sopra la ruota/overlay categoria */
+.picker-overlay { z-index: 4500 !important; }

@@ -2933,6 +2933,14 @@ async function refreshLocalDownloads() {
         // automaticamente all'avvio, con la locandina)
         localDownloads = localFiles.map(f => ({ id: f.id, title: f.name, key: f.key || "", cover: f.cover || "", status: "completed", progress: 100, local: true }));
         if (typeof renderHeroBillboard === "function") renderHeroBillboard();
+        // aggiorna il carosello del nodo "Titoli scaricati" nella ruota (senza ricostruirla)
+        try {
+            const dlNode = document.querySelector(".wheel-node-dl");
+            if (dlNode) {
+                const covers = [...new Set((localDownloads || []).map(d => d.cover).filter(Boolean))].slice(0, 12);
+                if (covers.length) { dlNode._covers = covers; dlNode._ci = 0; const cc = dlNode.querySelector(".wheel-node-covers"); if (cc) { cc.classList.remove("placeholder"); cc.style.backgroundImage = "url('" + covers[0] + "')"; } }
+            }
+        } catch (e) {}
     } catch (e) {}
 }
 
@@ -3344,7 +3352,7 @@ async function addToLibrary(url, data) {
 
 function titleRow(item, ctx) {
     const row = document.createElement("div");
-    row.className = "library-item" + (item.favorite ? " is-fav" : "") + (librarySel.has(item.key) ? " selected" : "");
+    row.className = "library-item" + (item.favorite ? " is-fav" : "") + (librarySel.has(item.key) ? " selected" : "") + (_isYouTube(item.url) ? " yt-tile" : "");
     const typeBadge = item.type === "tv" ? "Serie" : (item.type === "movie" ? "Film" : "");
     const cover = item.cover
         ? `<img class="library-cover" src="${item.cover}" alt="" loading="lazy">`
@@ -4279,11 +4287,11 @@ function renderLibrary(data) {
     const byKind = (k) => rootFolders.filter(f => (f.kind || "") === k);
     const cats = [];
     [["Saghe", "saga", "🎬"], ["Registi", "regista", "🎥"], ["Generi", "genere", "🏷️"]]
-        .forEach(([label, key, icon]) => cats.push({ label, key, icon, options: {} }));
+        .forEach(([label, key, icon]) => cats.push({ label: _catLabel(key, label), key, icon, options: {} }));
     [...new Set([...(customFilters || []), ...rootFolders.map(f => f.kind || "")]
         .filter(k => k && !["saga", "regista", "genere"].includes(k)))]
         .sort()
-        .forEach(k => cats.push({ label: k.charAt(0).toUpperCase() + k.slice(1), key: k, icon: "▣", options: { custom: true, cover: filterCovers[k] || "" } }));
+        .forEach(k => cats.push({ label: _catLabel(k, k.charAt(0).toUpperCase() + k.slice(1)), key: k, icon: "▣", options: { custom: true, cover: filterCovers[k] || "" } }));
     // Ordine scelto dall'utente (drag sull'intestazione); le categorie non elencate restano in coda.
     const _ord = _catOrder();
     cats.sort((a, b) => { let ia = _ord.indexOf(a.key), ib = _ord.indexOf(b.key); if (ia < 0) ia = 1e9; if (ib < 0) ib = 1e9; return ia - ib; });
@@ -4306,11 +4314,20 @@ function renderLibrary(data) {
             (allFolders || []).filter(fo => fo.favorite).forEach(fo => { try { foldersGrid.appendChild(buildFolderCard(fo, true)); } catch (e) {} });
             (libraryCache || []).filter(t => t.favorite).forEach(t => { try { titlesGrid.appendChild(titleRow(t, { noReorder: true })); } catch (e) {} });
         } else if (cd.special === "dl") {
+            // Raggruppa gli episodi della stessa serie/sottocartella in UNA locandina.
+            const groups = new Map();
             (localDownloads || []).forEach(d => {
                 if (!d.cover) return;
+                const ep = (typeof parseEpisode === "function") ? parseEpisode(d.title || "") : null;
+                const gname = (ep && ep.series) ? normName(ep.series) : normName(d.title || d.id || "");
+                if (!groups.has(gname)) groups.set(gname, { name: (ep && ep.series) ? ep.series : (d.title || ""), cover: d.cover, first: d, count: 0 });
+                groups.get(gname).count++;
+            });
+            groups.forEach(g => {
                 const tile = document.createElement("div"); tile.className = "library-item";
-                tile.innerHTML = '<img class="library-cover" src="' + escapeHtml(d.cover) + '" alt="" loading="lazy"><div class="library-meta"><span class="library-name">' + escapeHtml(d.title || "") + '</span></div>';
-                tile.addEventListener("click", () => playDownloaded(d.id, d.title, d.key));
+                const label = g.name + (g.count > 1 ? " (" + g.count + ")" : "");
+                tile.innerHTML = '<img class="library-cover" src="' + escapeHtml(g.cover) + '" alt="" loading="lazy"><div class="library-meta"><span class="library-name">' + escapeHtml(label) + '</span></div>';
+                tile.addEventListener("click", () => playDownloaded(g.first.id, g.first.title, g.first.key));
                 titlesGrid.appendChild(tile);
             });
         }
@@ -4353,8 +4370,8 @@ function renderLibrary(data) {
         const foldersObs = new MutationObserver(() => {
             const drilled = foldersGrid.dataset.drilled != null;
             foldersGrid.classList.toggle("nonames", drilled);
-            titlesGrid.style.display = drilled ? "none" : "";
-            if (foldersLabel) foldersLabel.style.display = drilled ? "none" : "";
+            titlesGrid.classList.toggle("cat-drill-hide", drilled);
+            if (foldersLabel) foldersLabel.classList.toggle("cat-drill-hide", drilled);
             foldersGrid.querySelectorAll(".folder-card, .library-item").forEach(t => t.classList.add("reveal-tile"));
             rev.scan();
         });
@@ -4570,12 +4587,8 @@ function _hbBuildList() {
     const favs = [], liked = [], affine = [];
     // 1) Preferiti (stellina)
     (libraryCache || []).forEach(t => { if (t && t.favorite && t.cover) { const e = mk(t); if (e) favs.push(e); } });
-    // 2) "Mi piace" (cuore) — anche se non preferiti; solo quelli presenti in libreria
-    Object.keys(likesMap).forEach(key => {
-        const t = (libraryCache || []).find(x => x.key === key);
-        if (t && t.cover) { const e = mk(t); if (e) liked.push(e); }
-    });
-    // 3) Titoli AFFINI per genere ai "mi piace"
+    // 2) Titoli AFFINI per genere ai "mi piace" — NON i titoli a cui hai messo mi piace,
+    //    ma quelli correlati per genere.
     const taste = _tasteGenres();
     if (Object.keys(taste).length) {
         const cache = _genreCache();
@@ -4586,12 +4599,11 @@ function _hbBuildList() {
             .sort((a, b) => b.s - a.s)
             .forEach(o => { const e = mk(o.t); if (e) affine.push(e); });
     }
-    // Mescolo a rotazione: un preferito, un mi piace, un affine, e via.
+    // Solo Preferiti + Affini, in ordine CASUALE
     out.length = 0;
-    const pools = [favs, liked, affine].filter(p => p.length);
-    while (pools.some(p => p.length) && out.length < 16) {
-        for (const p of pools) { if (p.length) out.push(p.shift()); if (out.length >= 16) break; }
-    }
+    const combined = favs.concat(affine);
+    for (let i = combined.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const tmp = combined[i]; combined[i] = combined[j]; combined[j] = tmp; }
+    combined.slice(0, 16).forEach(e => out.push(e));
     // Fallback: niente preferiti/mi piace/affini -> qualche locandina della libreria
     if (out.length < 2) (libraryCache || []).forEach(t => { if (out.length < 8 && t && t.cover) { const e = push(t.name, t.cover, t.type, t.release_date, () => openFromLibrary(t)); if (e) {} } });
     return out.slice(0, 16);
@@ -4946,19 +4958,35 @@ async function downloadYouTube(url, title) {
         else { const d = await r.json().catch(() => ({})); showToast(d.detail || "Download non avviato"); }
     } catch (e) { showToast("Errore download YouTube"); }
 }
-function openYouTube(item) {
+async function openYouTube(item) {
     const url = (item && item.url) || ""; const id = _ytId(url);
     if (!id) { showToast("Video YouTube non valido"); return; }
     _rememberReturnScroll();
     try { closePlayer(); } catch (e) {}
-    if (el.videoPlayer) el.videoPlayer.classList.add("hidden");
-    if (el.iframePlayer) { el.iframePlayer.src = "https://www.youtube.com/embed/" + id + "?autoplay=1&rel=0"; el.iframePlayer.classList.remove("hidden"); }
     el.playerSection.classList.remove("hidden");
+    if (el.qualityBar) el.qualityBar.classList.add("hidden");
+    if (el.playingTitle) el.playingTitle.textContent = "Riproduzione: " + ((item && item.name) || "YouTube");
     let fab = document.getElementById("yt-dl-fab"); if (fab) fab.remove();
     fab = document.createElement("button"); fab.id = "yt-dl-fab"; fab.className = "yt-dl-fab"; fab.textContent = "\u2913 Scarica";
     fab.addEventListener("click", () => downloadYouTube(url, (item && item.name) || ""));
     el.playerSection.appendChild(fab);
     el.playerSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    // 1) prova lo stream diretto (yt-dlp) nel player <video>: evita gli errori di embed (150/153)
+    showToast("Risoluzione video YouTube…");
+    try {
+        const r = await fetch(withLanToken("/api/youtube/resolve?url=" + encodeURIComponent(url)));
+        const d = r.ok ? await r.json() : null;
+        if (d && d.url) {
+            if (el.iframePlayer) { el.iframePlayer.src = ""; el.iframePlayer.classList.add("hidden"); }
+            el.videoPlayer.classList.remove("hidden");
+            el.videoPlayer.src = d.url;
+            el.videoPlayer.play().catch(() => {});
+            return;
+        }
+    } catch (e) {}
+    // 2) fallback: embed YouTube
+    if (el.videoPlayer) { el.videoPlayer.pause(); el.videoPlayer.src = ""; el.videoPlayer.classList.add("hidden"); }
+    if (el.iframePlayer) { el.iframePlayer.src = "https://www.youtube.com/embed/" + id + "?autoplay=1&rel=0"; el.iframePlayer.classList.remove("hidden"); }
 }
 function openFromLibrary(item) {
     if (item && (item.is_youtube || _isYouTube(item.url))) { openYouTube(item); return; }

@@ -2656,9 +2656,9 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 /* Avvisi/toast SEMPRE sopra tutto */
 .toast { z-index: 100000 !important; }
 /* Nascondere elemento durante il drill (vince sul display:grid !important) */
-.cat-drill-hide { display: none !important; }
+.cat-mosaic-ov .cat-drill-hide, .cat-drill-hide { display: none !important; }
 /* Locandine YouTube orizzontali (16:9) */
-.library-item.yt-tile .library-cover, .cat-mosaic-ov .yt-tile .library-cover { aspect-ratio: 16 / 9 !important; }
+.library-item.yt-tile .library-cover, .cat-mosaic-ov .yt-tile .library-cover { aspect-ratio: 2 / 3 !important; object-fit: cover !important; background: #0a0f1a; }
 
 /* Schede AnimeWorld (picker) sopra la ruota/overlay categoria */
 .picker-overlay { z-index: 4500 !important; }

@@ -2864,6 +2864,7 @@ function showQrOverlay(url, heading, hint) {
         <div class="phonecast-qr"><img alt="QR" src="/api/cast/qr?data=${encodeURIComponent(url)}"></div>
         <input type="text" class="phonecast-link" readonly value="${escapeHtml(url)}">
         <div class="picker-actions">
+          <button class="primary-btn phonecast-open">Apri qui</button>
           <button class="secondary-btn phonecast-copy">Copia link</button>
           <button class="secondary-btn picker-cancel">Chiudi</button>
         </div>
@@ -2872,6 +2873,7 @@ function showQrOverlay(url, heading, hint) {
     const close = () => overlay.remove();
     overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
     overlay.querySelector(".picker-cancel").addEventListener("click", close);
+    { const ob = overlay.querySelector(".phonecast-open"); if (ob) ob.addEventListener("click", () => { try { window.open(url, "_blank"); } catch (e) { window.location.href = url; } }); }
     const inp = overlay.querySelector(".phonecast-link");
     overlay.querySelector(".phonecast-copy").addEventListener("click", () => {
         try { inp.select(); } catch (e) {}

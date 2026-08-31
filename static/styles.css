@@ -2698,3 +2698,18 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
 
 /* Pulsante "seleziona dalla lista" nei modali di aggiunta */
 .cm-batch { margin: 8px 0 4px; font-size: .82rem; padding: 6px 10px; }
+
+/* ===== Mobile: ruota, mosaico e toolbar utilizzabili su schermi piccoli ===== */
+@media (max-width: 620px) {
+  .app-header { flex-wrap: wrap; row-gap: 6px; }
+  .cat-wheel { width: min(96vw, 400px); height: min(96vw, 400px); }
+  .wheel-node { width: 92px; height: 158px; }
+  .wheel-node-covers { width: 92px; height: 132px; }
+  .wheel-node-title { width: 92px; font-size: .76rem; }
+  .cat-wheel::before { width: 62px; height: 62px; }
+  .cat-wheel::after { width: 44px; height: 44px; }
+  .cat-mosaic-ov .cat-folders-grid, .cat-mosaic-ov .cat-titles-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)) !important; }
+  .cat-mosaic-ov { padding: 10px 10px 40px; }
+  .cat-mosaic-title { font-size: 1.05rem; }
+  .cat-wheel-hint { font-size: .74rem; }
+}

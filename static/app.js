@@ -4806,6 +4806,7 @@ function openFolderInline(anchorEl, folder) {
     const saveDrillOrder = async () => {
         const tokens = [...row.querySelectorAll(".drill-tile")].map(t => t.dataset.token).filter(Boolean);
         current.order = tokens;
+        _setFolderOrder(current.id, tokens);
         curMode = "custom"; sortSel.value = "custom"; _setFolderSort(current.id, "custom");
         try {
             const r = await fetch("/api/folders/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: current.id, order: tokens }) });
@@ -4911,7 +4912,7 @@ function openFolderInline(anchorEl, folder) {
         else if (mode === "recent") entries.sort((a, b) => b.d.localeCompare(a.d) || (b.e - a.e) || byName(a, b));
         else if (mode === "oldest") entries.sort((a, b) => a.d.localeCompare(b.d) || (a.e - b.e) || byName(a, b));
         else if (mode === "custom") {
-            const ord = current.order || [];
+            const ord = _getFolderOrder(current.id) || current.order || [];
             const tok = (en) => en.kind === "folder" ? ("f:" + en.sf.id) : en.o.key;
             const idxOf = (en) => { const i = ord.indexOf(tok(en)); return i === -1 ? 1e9 : i; };
             entries.sort((a, b) => idxOf(a) - idxOf(b));
@@ -5190,6 +5191,9 @@ function _setCatSort(k, v) { const m = _catSorts(); if (v && v !== "custom") m[k
 function _catOrder() { try { return JSON.parse(localStorage.getItem("scp_catorder") || "[]"); } catch (e) { return []; } }
 function _setCatOrder(list) { try { localStorage.setItem("scp_catorder", JSON.stringify(list || [])); } catch (e) {} }
 function _folderSorts() { try { return JSON.parse(localStorage.getItem("scp_foldersort") || "{}"); } catch (e) { return {}; } }
+function _folderOrders() { try { return JSON.parse(localStorage.getItem("scp_folderorder") || "{}"); } catch (e) { return {}; } }
+function _getFolderOrder(id) { const m = _folderOrders(); return (id && Array.isArray(m[id])) ? m[id] : null; }
+function _setFolderOrder(id, tokens) { if (!id) return; const m = _folderOrders(); m[id] = tokens || []; try { localStorage.setItem("scp_folderorder", JSON.stringify(m)); } catch (e) {} }
 function _getFolderSort(id) { const m = _folderSorts(); return (id && m[id]) || "score"; }
 function _setFolderSort(id, mode) { if (!id) return; const m = _folderSorts(); if (mode && mode !== "score") m[id] = mode; else delete m[id]; try { localStorage.setItem("scp_foldersort", JSON.stringify(m)); } catch (e) {} }
 function _catTitles() { try { return JSON.parse(localStorage.getItem("scp_cattitles") || "{}"); } catch (e) { return {}; } }

@@ -4870,19 +4870,28 @@ function openFolderInline(anchorEl, folder) {
         t.addEventListener("dragstart", (e) => { draggedEl = t; t.classList.add("dragging"); try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", t.dataset.token || ""); } catch (_) {} });
         t.addEventListener("dragend", async () => { t.classList.remove("dragging"); if (_nestHandled) { _nestHandled = false; draggedEl = null; return; } if (draggedEl) { draggedEl = null; await saveDrillOrder(); } });
     };
-    const _dragAfter = (x) => {
+    const _dragTarget = (x, y) => {
+        // Riordino 2D: funziona sia in riga orizzontale sia in griglia che va a capo.
         const tiles = [...row.querySelectorAll(".drill-tile:not(.dragging)")];
-        let best = null, bestOff = -Infinity;
-        tiles.forEach(ch => { const b = ch.getBoundingClientRect(); const off = x - b.left - b.width / 2; if (off < 0 && off > bestOff) { bestOff = off; best = ch; } });
-        return best;
+        if (!tiles.length) return null;
+        let closest = null, cd = Infinity, before = true;
+        tiles.forEach(ch => {
+            const b = ch.getBoundingClientRect();
+            const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+            const d = (cx - x) * (cx - x) + (cy - y) * (cy - y);
+            if (d < cd) { cd = d; closest = ch; before = (y < cy - 2) || (Math.abs(y - cy) <= b.height / 2 && x < cx); }
+        });
+        return { el: closest, before };
     };
     row.addEventListener("dragover", (e) => {
         if (!draggedEl) return;
         e.preventDefault();
-        const after = _dragAfter(e.clientX);
         const addTile = row.querySelector(".add-tile");
-        if (after == null) { if (addTile) row.insertBefore(draggedEl, addTile); else row.appendChild(draggedEl); }
-        else row.insertBefore(draggedEl, after);
+        const t = _dragTarget(e.clientX, e.clientY);
+        if (!t || !t.el) { if (addTile) row.insertBefore(draggedEl, addTile); else row.appendChild(draggedEl); }
+        else if (t.before) row.insertBefore(draggedEl, t.el);
+        else { const nx = t.el.nextSibling; if (nx) row.insertBefore(draggedEl, nx); else row.appendChild(draggedEl); }
+        if (addTile && row.lastElementChild !== addTile) row.appendChild(addTile);   // "+" sempre in fondo
     });
     const renderContent = (mode, animate) => {
         curMode = mode;

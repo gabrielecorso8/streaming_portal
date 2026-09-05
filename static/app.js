@@ -6239,33 +6239,45 @@ function _renderVpnBanner(d) {
         bar.id = "vpn-guard-banner";
         document.body.appendChild(bar);
     }
-    let msg, cls, actions = "";
+    let short, msg, cls, actions = "";
     if (d.blocked) {
         cls = "vgb-block";
         let why = d.exposed ? "VPN spenta (IP di casa rilevato)"
             : (!d.have_home ? "IP di casa non registrato"
-                : (!d.detected ? "IP non verificabile (rete non raggiungibile)"
-                    : "VPN spenta (IP di casa rilevato)"));
-        msg = "🔒 Kill-switch attivo — operazioni online BLOCCATE: " + why + ".";
+                : (!d.detected ? "IP non verificabile" : "VPN spenta"));
+        short = "🔒 Online bloccato";
+        msg = "🔒 Protezione attiva — operazioni online BLOCCATE: " + why + ".";
         if (!d.have_home) actions = '<button class="vgb-btn" data-a="home">Registra IP di casa (VPN spenta)</button>';
-        actions += '<button class="vgb-btn vgb-ghost" data-a="ks-off">Disattiva kill-switch</button>';
+        actions += '<button class="vgb-btn vgb-ghost" data-a="privacy">Privacy</button>';
+        actions += '<button class="vgb-btn vgb-ghost" data-a="prot-off">Disattiva protezione</button>';
     } else {
         cls = "vgb-warn";
-        msg = "⚠️ VPN spenta e kill-switch OFF: il tuo IP di casa è visibile ai siti. Attiva la VPN, oppure attiva il kill-switch per bloccare tutto quando la VPN cade.";
-        actions = '<button class="vgb-btn" data-a="ks-on">Attiva kill-switch</button>';
+        short = "⚠️ IP esposto";
+        msg = "⚠️ Protezione disattivata e VPN spenta: il tuo IP di casa è visibile. Attiva la VPN o riattiva la protezione.";
+        actions = '<button class="vgb-btn" data-a="prot-on">Attiva protezione</button>';
+        actions += '<button class="vgb-btn vgb-ghost" data-a="privacy">Privacy</button>';
     }
-    bar.className = cls;
-    bar.innerHTML = '<span class="vgb-msg">' + msg + '</span><span class="vgb-actions">' + actions + '</span>';
+    bar.className = cls + (_vgbCollapsed ? " vgb-collapsed" : "");
+    if (_vgbCollapsed) {
+        bar.innerHTML = '<button class="vgb-pill" title="Mostra dettagli sicurezza">' + short + '</button>';
+        bar.querySelector(".vgb-pill").addEventListener("click", () => { _vgbCollapsed = false; _vpnCheckNow(); });
+        return;
+    }
+    bar.innerHTML = '<span class="vgb-msg">' + msg + '</span><span class="vgb-actions">' + actions +
+        '<button class="vgb-btn vgb-min" data-a="min" title="Riduci">–</button></span>';
     bar.querySelectorAll(".vgb-btn").forEach(b => b.addEventListener("click", async () => {
         const a = b.dataset.a;
+        if (a === "min") { _vgbCollapsed = true; _vpnCheckNow(); return; }
+        if (a === "privacy") { if (typeof openPrivacyPanel === "function") openPrivacyPanel(); return; }
         try {
             if (a === "home") { const r = await fetch(withLanToken("/api/privacy/set-home-ip"), { method: "POST" }); showToast(r.ok ? "IP di casa registrato" : "Rilevamento IP fallito", 4000); }
-            else if (a === "ks-off") { await fetch(withLanToken("/api/privacy/kill-switch"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: false }) }); showToast("Kill-switch disattivato", 3000); }
-            else if (a === "ks-on") { await fetch(withLanToken("/api/privacy/kill-switch"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: true }) }); showToast("Kill-switch attivato", 3000); }
+            else if (a === "prot-off") { if (!confirm("Disattivare la protezione? Senza, l'online non viene bloccato con la VPN spenta.")) return; await fetch(withLanToken("/api/privacy/protection"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: false }) }); showToast("Protezione disattivata", 3000); }
+            else if (a === "prot-on") { await fetch(withLanToken("/api/privacy/protection"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: true }) }); showToast("Protezione attivata", 3000); }
         } catch (e) {}
         _vpnCheckNow();
     }));
 }
+let _vgbCollapsed = false;
 let _vpnCheckNow = () => {};
 function setupVpnAutoRefresh() {
     const check = async () => {

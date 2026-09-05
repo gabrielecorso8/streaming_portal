@@ -2526,15 +2526,26 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
     background: rgba(34,166,255,.22); color: var(--accent); }
 
 /* Banner di sicurezza VPN/kill-switch (bloccato/esposto) */
-#vpn-guard-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; padding: 10px 16px;
-    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-    font-size: .9rem; box-shadow: 0 2px 14px rgba(0,0,0,.45); }
-#vpn-guard-banner.vgb-block { background: #7a1420; color: #fff; border-bottom: 1px solid #d24b4b; }
-#vpn-guard-banner.vgb-warn { background: #7a5210; color: #fff; border-bottom: 1px solid #e0a400; }
-#vpn-guard-banner .vgb-msg { flex: 1 1 auto; min-width: 200px; }
-#vpn-guard-banner .vgb-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+/* Banner sicurezza: ANCORATO IN BASSO (non copre più l'header/i tasti in alto),
+   compatto e collassabile in una pillola. */
+#vpn-guard-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+    padding: 8px 14px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;
+    font-size: .86rem; box-shadow: 0 -2px 14px rgba(0,0,0,.45); }
+#vpn-guard-banner.vgb-block { background: #7a1420; color: #fff; border-top: 1px solid #d24b4b; }
+#vpn-guard-banner.vgb-warn { background: #7a5210; color: #fff; border-top: 1px solid #e0a400; }
+#vpn-guard-banner .vgb-msg { flex: 1 1 auto; min-width: 180px; max-width: 720px; }
+#vpn-guard-banner .vgb-actions { display: flex; gap: 8px; flex: 0 0 auto; align-items: center; }
 #vpn-guard-banner .vgb-btn { padding: 5px 12px; border-radius: 8px; border: none; background: #fff; color: #111; font-weight: 700; cursor: pointer; font-size: .82rem; }
 #vpn-guard-banner .vgb-btn.vgb-ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.6); }
+#vpn-guard-banner .vgb-btn.vgb-min { background: rgba(255,255,255,.16); color: #fff; padding: 4px 11px; font-size: 1rem; line-height: 1; }
+/* Collassato: solo una piccola pillola in basso a destra, non ingombrante */
+#vpn-guard-banner.vgb-collapsed { left: auto; right: 12px; bottom: 12px; padding: 0; background: transparent !important;
+    box-shadow: none; border: none; justify-content: flex-end; }
+#vpn-guard-banner.vgb-collapsed .vgb-pill { border: none; cursor: pointer; color: #fff; font-weight: 800; font-size: .8rem;
+    padding: 8px 14px; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+#vpn-guard-banner.vgb-block.vgb-collapsed .vgb-pill { background: #a11d2c; }
+#vpn-guard-banner.vgb-warn.vgb-collapsed .vgb-pill { background: #a5720f; }
 
 /* Trascina una cartella su una categoria per spostarcela */
 .cat-head.cat-drop-over { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 10px; background: rgba(34,166,255,.14); }

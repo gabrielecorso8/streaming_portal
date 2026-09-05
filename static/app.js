@@ -2574,7 +2574,8 @@ function openMobilePlayChoice(dl) {
         '<div class="m-sheet">' +
         '<div class="m-sheet-title">' + name + '</div>' +
         '<button class="primary-btn m-sheet-btn" data-x="play">▶ Riproduci qui in SC Portal</button>' +
-        '<button class="secondary-btn m-sheet-btn" data-x="save">⬇ Salva sul telefono</button>' +
+        '<button class="secondary-btn m-sheet-btn" data-x="save">📱 Salva per l’app offline (1 tap)</button>' +
+        '<button class="secondary-btn m-sheet-btn" data-x="save2">⬇ Altro salvataggio (file / Foto)…</button>' +
         '<button class="secondary-btn m-sheet-btn" data-x="watch">' + (watched ? "◻ Segna come non visto" : "✓ Segna come visto") + '</button>' +
         '<button class="secondary-btn m-sheet-btn m-sheet-danger" data-x="del">🗑 Elimina dal telefono</button>' +
         '<button class="secondary-btn m-sheet-btn m-sheet-cancel" data-x="close">Annulla</button>' +
@@ -2585,7 +2586,8 @@ function openMobilePlayChoice(dl) {
     const srcTog = _srcToggle();
     { const _s = ov.querySelector(".cm-search"); if (_s) _s.insertAdjacentElement("beforebegin", srcTog); }
     ov.querySelector('[data-x="play"]').addEventListener("click", () => { close(); playDownloaded(dl.id, dl.title, dl.key); });
-    ov.querySelector('[data-x="save"]').addEventListener("click", () => { close(); saveDownloadToDevice(dl.id, dl.file || dl.title, dl.cover || ""); });
+    ov.querySelector('[data-x="save"]').addEventListener("click", () => { close(); quickSaveToDevice(dl.id, dl.file || dl.title, dl.cover || ""); });
+    ov.querySelector('[data-x="save2"]').addEventListener("click", () => { close(); saveDownloadToDevice(dl.id, dl.file || dl.title, dl.cover || ""); });
     ov.querySelector('[data-x="watch"]').addEventListener("click", () => { close(); _toggleWatched(dl.id); showToast(_isWatched(dl.id) ? "Segnato come visto" : "Segnato come non visto"); renderContinueWatching(); applyDownloadFilter(); });
     ov.querySelector('[data-x="del"]').addEventListener("click", () => { close(); deleteDownload(dl.id, dl.title); });
     ov.querySelector('[data-x="close"]').addEventListener("click", close);
@@ -2686,6 +2688,15 @@ function _nativeFileDownload(id, name) {
     a.download = name; a.rel = "noopener";
     document.body.appendChild(a); a.click(); a.remove();
     showToast("Download avviato. iPhone: tocca l'icona ⬇ in alto in Safari → lo trovi nell'app File. Non serve la barra qui.", 8000);
+}
+
+// Salvataggio in UN TAP verso l'app offline: copia il file dal PC dentro
+// «Titoli offline» (IndexedDB), da cui SC Offline lo riproduce a PC spento.
+function quickSaveToDevice(id, filename, cover) {
+    let name = (filename || "video").replace(/[\\/:*?"<>|]+/g, "_");
+    if (!/\.(mp4|mkv|webm|m4v)$/i.test(name)) name += ".mp4";
+    showToast("Copio «" + name + "» sul dispositivo… resta su questa schermata.", 5000);
+    _fetchBlobThen(id, name, (blob) => addMobileTitle(name, cover || "", blob));
 }
 
 function saveDownloadToDevice(id, filename, cover) {

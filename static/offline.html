@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SC Offline</title>
+<meta name="theme-color" content="#0a0a10">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SC Offline">
+<link rel="apple-touch-icon" href="/icon-app-180.png">
+<link rel="icon" sizes="192x192" href="/icon-app-192.png">
+<link rel="manifest" href="/api/pwa/manifest?kind=offline">
+<style>
+  :root{ --bg:#0a0a10; --card:#15151f; --border:rgba(255,255,255,.09); --txt:#f2f2f7; --dim:#8b8ba3; --acc:#2b7bff; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; background:var(--bg); color:var(--txt); font-family:system-ui,-apple-system,sans-serif; }
+  header{ position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:10px;
+    padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px; background:rgba(10,10,16,.9); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+  header .logo{ width:30px; height:30px; }
+  header h1{ font-size:1.05rem; margin:0; font-weight:800; }
+  header h1 span{ color:var(--acc); }
+  header .sub{ color:var(--dim); font-size:.72rem; margin-top:1px; }
+  .imp{ margin-left:auto; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(180deg,#3a8bff,#2b7bff);
+    color:#fff; border:none; border-radius:12px; padding:9px 13px; font-weight:700; font-size:.85rem; cursor:pointer; }
+  main{ padding:14px 14px calc(24px + env(safe-area-inset-bottom,0px)); max-width:900px; margin:0 auto; }
+  .empty{ color:var(--dim); text-align:center; padding:16vh 20px; line-height:1.6; }
+  .grp-title{ font-weight:800; margin:18px 4px 8px; font-size:1rem; }
+  .season{ color:var(--dim); font-weight:700; font-size:.82rem; margin:10px 4px 6px; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; }
+  .card{ position:relative; background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; cursor:pointer; }
+  .card .thumb{ aspect-ratio:2/3; background-size:cover; background-position:center; background-color:#1d1d29;
+    display:flex; align-items:center; justify-content:center; font-size:1.8rem; }
+  .card .nm{ padding:7px 8px 3px; font-size:.82rem; font-weight:600; line-height:1.2; }
+  .card .meta{ padding:0 8px 8px; font-size:.72rem; color:var(--dim); }
+  .card .del{ position:absolute; top:6px; right:6px; width:26px; height:26px; border-radius:50%; border:none;
+    background:rgba(0,0,0,.6); color:#fff; font-size:.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .card .resume{ position:absolute; left:0; right:0; bottom:34px; height:3px; background:rgba(255,255,255,.2); }
+  .card .resume i{ display:block; height:100%; background:var(--acc); }
+  /* Player */
+  #pl{ position:fixed; inset:0; z-index:50; background:#000; display:none; }
+  #pl.on{ display:block; }
+  #pl video{ width:100%; height:100%; object-fit:contain; background:#000; }
+  #pl .back{ position:absolute; top:calc(10px + env(safe-area-inset-top,0px)); left:12px; z-index:2; background:rgba(0,0,0,.55);
+    color:#fff; border:none; border-radius:999px; padding:9px 14px; font-size:.9rem; cursor:pointer; }
+  .toast{ position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:#222; color:#fff; padding:10px 16px;
+    border-radius:12px; font-size:.85rem; z-index:60; opacity:0; transition:opacity .2s; }
+  .toast.on{ opacity:1; }
+</style>
+</head>
+<body>
+<header>
+  <svg class="logo" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-label="SC Offline">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6fd0ff"/><stop offset="1" stop-color="#2b7bff"/></linearGradient></defs>
+    <circle cx="24" cy="24" r="20" fill="none" stroke="url(#g)" stroke-width="3"/>
+    <path d="M20 15 L34 24 L20 33 Z" fill="url(#g)"/>
+  </svg>
+  <div>
+    <h1>SC<span>Offline</span></h1>
+    <div class="sub">Titoli sul dispositivo — nessuna connessione</div>
+  </div>
+  <label class="imp">💾 Salva<input type="file" accept="video/*" id="file" hidden></label>
+</header>
+<main><div id="list"><div class="empty">Controllo dei titoli salvati…</div></div></main>
+
+<div id="pl"><button class="back" id="back">‹ Indietro</button><video id="v" controls autoplay playsinline webkit-playsinline></video></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+// Stessi archivi dell'app principale: localStorage scp_mobile (metadati) +
+// IndexedDB scp_media/blobs (video). Cosi' un titolo salvato in una qualsiasi
+// delle due app compare in entrambe. Zero richieste di rete.
+function store(){ try{ return JSON.parse(localStorage.getItem("scp_mobile")||"[]"); }catch(e){ return []; } }
+function save(l){ try{ localStorage.setItem("scp_mobile", JSON.stringify(l)); }catch(e){} }
+function prog(){ try{ return JSON.parse(localStorage.getItem("scp_progress")||"{}"); }catch(e){ return {}; } }
+function saveProg(p){ try{ localStorage.setItem("scp_progress", JSON.stringify(p)); }catch(e){} }
+function idb(){ return new Promise(function(res,rej){ var r=indexedDB.open("scp_media",1);
+  r.onupgradeneeded=function(){ if(!r.result.objectStoreNames.contains("blobs")) r.result.createObjectStore("blobs"); };
+  r.onsuccess=function(){ res(r.result); }; r.onerror=function(){ rej(r.error); }; }); }
+function idbPut(id,blob){ return idb().then(function(db){ return new Promise(function(res,rej){ var tx=db.transaction("blobs","readwrite"); tx.objectStore("blobs").put(blob,id); tx.oncomplete=function(){res();}; tx.onerror=function(){rej(tx.error);}; }); }); }
+function idbGet(id){ return idb().then(function(db){ return new Promise(function(res,rej){ var tx=db.transaction("blobs","readonly"); var q=tx.objectStore("blobs").get(id); q.onsuccess=function(){res(q.result||null);}; q.onerror=function(){rej(q.error);}; }); }); }
+function idbDel(id){ return idb().then(function(db){ return new Promise(function(res,rej){ var tx=db.transaction("blobs","readwrite"); tx.objectStore("blobs").delete(id); tx.oncomplete=function(){res();}; tx.onerror=function(){rej(tx.error);}; }); }); }
+
+function toast(t){ var e=document.getElementById("toast"); e.textContent=t; e.classList.add("on"); clearTimeout(e._t); e._t=setTimeout(function(){ e.classList.remove("on"); },2600); }
+function bytes(n){ if(!n) return ""; var u=["B","KB","MB","GB"],i=0; while(n>=1024&&i<u.length-1){ n/=1024; i++; } return n.toFixed(n<10&&i>0?1:0)+" "+u[i]; }
+function clean(nm){ return (nm||"Video").replace(/\.(mp4|mkv|webm|m4v|mov)$/i,""); }
+// Riconosce "Serie ... SxxExx" per raggruppare gli episodi
+function parseEp(nm){ var m=(nm||"").match(/^(.*?)[\s._-]+S0*(\d+)[\s._-]*E0*(\d+)/i); if(m) return {series:m[1].replace(/[._]/g," ").trim(),season:+m[2],ep:+m[3]}; return null; }
+
+var el={ list:document.getElementById("list"), pl:document.getElementById("pl"), v:document.getElementById("v") };
+var curId=null, curUrl=null;
+
+function render(){
+  var list=store();
+  if(!list.length){ el.list.innerHTML='<div class="empty">📱 Nessun titolo salvato sul dispositivo.<br><br>Con SC Portal (PC acceso) scarica un titolo e salvalo sul telefono, oppure usa «💾 Salva» qui sopra per importare un video.</div>'; return; }
+  var pr=prog();
+  var movies=[], series={};
+  list.forEach(function(m){ var ep=parseEp(m.name); if(ep&&ep.series){ var k=ep.series.toLowerCase(); (series[k]||(series[k]={name:ep.series,seasons:{}})); (series[k].seasons[ep.season]||(series[k].seasons[ep.season]=[])).push({m:m,ep:ep.ep}); } else movies.push(m); });
+  function card(m,label){
+    var r=pr["mob:"+m.id]; var pct=(r&&r.t&&r.d)?Math.min(100,Math.round(r.t/r.d*100)):0;
+    var thumb=m.cover?('style="background-image:url(\''+m.cover.replace(/'/g,"%27")+'\')"'):'';
+    return '<div class="card" data-id="'+m.id+'" data-nm="'+(label||clean(m.name)).replace(/"/g,"&quot;")+'">'+
+      '<button class="del" title="Elimina">✕</button>'+
+      '<div class="thumb" '+thumb+'>'+(m.cover?'':'📱')+'</div>'+
+      (pct>2?'<div class="resume"><i style="width:'+pct+'%"></i></div>':'')+
+      '<div class="nm">'+(label||clean(m.name))+'</div>'+
+      '<div class="meta">'+(m.size?bytes(m.size):"sul dispositivo")+'</div></div>';
+  }
+  var html="";
+  if(movies.length){ html+='<div class="grid">'+movies.map(function(m){return card(m,clean(m.name));}).join("")+'</div>'; }
+  Object.keys(series).sort(function(a,b){return series[a].name.localeCompare(series[b].name,"it");}).forEach(function(k){
+    var s=series[k]; html+='<div class="grp-title">'+s.name+'</div>';
+    Object.keys(s.seasons).map(Number).sort(function(a,b){return a-b;}).forEach(function(sn){
+      var eps=s.seasons[sn].slice().sort(function(a,b){return a.ep-b.ep;});
+      html+='<div class="season">Stagione '+sn+'</div><div class="grid">'+eps.map(function(e){return card(e.m,"Ep "+e.ep);}).join("")+'</div>';
+    });
+  });
+  el.list.innerHTML=html;
+  el.list.querySelectorAll(".card").forEach(function(c){
+    var id=c.getAttribute("data-id"), nm=c.getAttribute("data-nm");
+    c.querySelector(".del").addEventListener("click",function(e){ e.stopPropagation(); del(id,nm); });
+    c.addEventListener("click",function(){ play(id,nm); });
+  });
+}
+
+function play(id,nm){
+  idbGet(id).then(function(blob){
+    if(!blob){ toast("File non più disponibile in memoria."); return; }
+    if(curUrl){ try{ URL.revokeObjectURL(curUrl); }catch(e){} }
+    curUrl=URL.createObjectURL(blob); curId=id;
+    el.v.src=curUrl; el.pl.classList.add("on");
+    var pr=prog(); var r=pr["mob:"+id];
+    if(r&&r.t>15){ try{ el.v.currentTime=r.t; }catch(e){} }
+    el.v.play().catch(function(){});
+  });
+}
+function closePlayer(){ el.pl.classList.remove("on"); try{ el.v.pause(); }catch(e){} render(); }
+document.getElementById("back").addEventListener("click",closePlayer);
+el.v.addEventListener("timeupdate",function(){ if(!curId||!el.v.duration) return; var p=prog(); p["mob:"+curId]={t:el.v.currentTime,d:el.v.duration,at:Date.now()}; saveProg(p); });
+el.v.addEventListener("ended",function(){ if(curId){ var p=prog(); delete p["mob:"+curId]; saveProg(p); } closePlayer(); });
+
+function del(id,nm){
+  if(!confirm("Eliminare «"+(nm||"questo titolo")+"» dal dispositivo?")) return;
+  idbDel(id).catch(function(){}).then(function(){
+    save(store().filter(function(m){return m.id!==id;}));
+    var p=prog(); delete p["mob:"+id]; saveProg(p);
+    toast("Eliminato"); render();
+  });
+}
+
+document.getElementById("file").addEventListener("change",function(e){
+  var f=e.target.files&&e.target.files[0]; e.target.value="";
+  if(!f) return;
+  var id="mob:"+Date.now()+":"+Math.random().toString(36).slice(2,7);
+  toast("Salvo sul dispositivo…");
+  idbPut(id,f).then(function(){
+    var l=store(); l.unshift({id:id,name:clean(f.name),cover:"",size:f.size,date:Date.now()}); save(l);
+    toast("Salvato"); render();
+  }).catch(function(){ toast("Spazio insufficiente sul dispositivo."); });
+});
+
+// Service worker: rende la app apribile anche con PC spento e senza rete.
+if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("/sw.js"); }catch(e){} }
+render();
+</script>
+</body>
+</html>

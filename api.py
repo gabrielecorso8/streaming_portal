@@ -1419,14 +1419,27 @@ def pwa_manifest(kind: str = "mobile", t: str = ""):
                 {"src": "/icon-remote-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
             ],
         }
-    else:
+    elif kind == "offline":
+        # Seconda webapp: solo visualizzazione dei titoli salvati sul dispositivo,
+        # funziona anche a PC spento e senza rete. Icona = app (l'altra icona).
         m = {
-            "name": "SC Portal", "short_name": "SC Portal",
-            "description": "I tuoi download SC Portal, pronti alla riproduzione sul telefono.",
-            "start_url": "/?view=downloads&pwa=1" + tq,
+            "name": "SC Offline", "short_name": "SC Offline",
+            "description": "Guarda i titoli salvati sul dispositivo, senza PC e senza connessione.",
+            "start_url": "/offline.html?pwa=1",
             "icons": [
                 {"src": "/icon-app-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
                 {"src": "/icon-app-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+            ],
+        }
+    else:
+        # App principale (online: sfoglia + scarica + telecomando). Icona = telecomando.
+        m = {
+            "name": "SC Portal", "short_name": "SC Portal",
+            "description": "Sfoglia, scarica e comanda il player: SC Portal completo sul telefono (PC acceso).",
+            "start_url": "/?pwa=1" + tq,
+            "icons": [
+                {"src": "/icon-remote-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+                {"src": "/icon-remote-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
             ],
         }
     m.update({"scope": "/", "display": "standalone", "orientation": "portrait",

@@ -283,6 +283,17 @@ async function init() {
             if (_phone) {
                 document.body.classList.add("mobile-full");
                 setTimeout(function () { renderMobileTitles(true); renderContinueWatching(true); }, 600);
+                // Telecomando integrato: un'unica app. Sul telefono i tasti
+                // "telecomando" aprono direttamente il controller del player PC/TV
+                // (niente QR da inquadrare, è già lo stesso dispositivo).
+                ["header-remote-btn", "remote-btn"].forEach(function (id) {
+                    var b = document.getElementById(id);
+                    if (!b) return;
+                    var nb = b.cloneNode(true);
+                    b.parentNode.replaceChild(nb, b);
+                    nb.title = "Telecomando: comanda il player del PC/TV";
+                    nb.addEventListener("click", function () { location.href = withLanToken("/remote.html"); });
+                });
             }
         }
         _wireOfflineImport();
@@ -3700,6 +3711,8 @@ async function openPrivacyPanel() {
     p.innerHTML =
         '<div class="pp-head">Privacy &amp; kill-switch <button class="pp-close" title="Chiudi">✕</button></div>' +
         '<div class="pp-body"><div class="pp-status">Controllo stato…</div>' +
+        '<label class="pp-row"><span><b>Protezione anti-esposizione</b> (blocca le operazioni online se la VPN non è confermata attiva)</span>' +
+        '<input type="checkbox" id="pp-prot"></label>' +
         '<label class="pp-row"><span>Kill-switch (blocca se la VPN è spenta)</span>' +
         '<input type="checkbox" id="pp-ks"></label>' +
         '<label class="pp-row"><span>Incognito su disco (non salvare libreria/cronologia/locandine)</span>' +
@@ -3714,16 +3727,29 @@ async function openPrivacyPanel() {
             if (!r.ok) { p.querySelector(".pp-status").textContent = (r.status === 404) ? "Riavvia SC Portal per attivare questa funzione." : "Stato non disponibile."; return; }
             const d = await r.json();
             const ks = p.querySelector("#pp-ks"); ks.checked = !!d.kill_switch;
+            const prot = p.querySelector("#pp-prot"); if (prot) prot.checked = !!d.protection_on;
             const inc = p.querySelector("#pp-inc"); if (inc) inc.checked = !!d.incognito;
-            let txt;
-            if (!d.detected) txt = "IP pubblico non rilevabile ora.";
-            else if (!d.have_home) txt = "IP attuale: " + d.current_ip_masked + " · nessun IP di casa registrato.";
-            else if (d.protected) txt = "✅ Protetto — IP attuale " + d.current_ip_masked + " ≠ casa " + d.home_ip_masked + " (VPN attiva).";
-            else txt = "⚠️ IP di casa rilevato (" + d.current_ip_masked + "): la VPN sembra SPENTA.";
+            let txt, cls;
+            if (d.protection_off) { txt = "🔓 Protezione DISATTIVATA: le operazioni online non sono bloccate. Riattivala per stare al sicuro."; cls = " warn"; }
+            else if (!d.detected) txt = "🔒 Protezione attiva · IP pubblico non rilevabile ora: online bloccato per sicurezza.", cls = " warn";
+            else if (!d.have_home) { txt = "🔒 Protezione attiva · IP attuale " + d.current_ip_masked + ", nessun IP di casa registrato: online bloccato. Con la VPN SPENTA premi «Registra IP di casa»."; cls = " warn"; }
+            else if (d.protected) { txt = "✅ Protetto — IP attuale " + d.current_ip_masked + " ≠ casa " + d.home_ip_masked + " (VPN attiva). Online consentito."; cls = " ok"; }
+            else { txt = "⛔ IP di casa ESPOSTO (" + d.current_ip_masked + "): VPN spenta, online bloccato. Attiva la VPN."; cls = " warn"; }
             p.querySelector(".pp-status").textContent = txt;
-            p.querySelector(".pp-status").className = "pp-status" + (d.have_home ? (d.protected ? " ok" : " warn") : "");
+            p.querySelector(".pp-status").className = "pp-status" + cls;
         } catch (e) { p.querySelector(".pp-status").textContent = "Errore di stato."; }
     };
+    p.querySelector("#pp-prot").addEventListener("change", async (e) => {
+        if (!e.target.checked && !confirm("Disattivare la protezione anti-esposizione?\n\nSenza protezione, ricerca/stream/download NON vengono bloccati anche con la VPN spenta: il tuo IP di casa può risultare esposto. Consigliato: lasciala ATTIVA.")) { e.target.checked = true; return; }
+        try {
+            await fetch(withLanToken("/api/privacy/protection"), {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ enabled: e.target.checked })
+            });
+            showToast(e.target.checked ? "Protezione attivata" : "Protezione disattivata", 4000);
+        } catch (err) { showToast("Errore protezione"); }
+        refresh();
+    });
     p.querySelector("#pp-ks").addEventListener("change", async (e) => {
         try {
             await fetch(withLanToken("/api/privacy/kill-switch"), {

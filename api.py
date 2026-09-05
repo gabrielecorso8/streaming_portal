@@ -1027,31 +1027,31 @@ def _require_protected_egress():
     l'IP di casa e l'IP pubblico corrente coincide con esso, sei ESPOSTO (VPN spenta)
     -> blocca l'operazione online a prescindere dal toggle kill-switch. Il kill-switch
     aggiunge il fail-closed (blocca anche quando non si puo' verificare)."""
-    home = (SETTINGS.get("home_ip") or "").strip()
-    ks = bool(SETTINGS.get("kill_switch"))
-    # Nessun riferimento e kill-switch spento: setup non fatto, non possiamo decidere.
-    if not home and not ks:
+    # FAIL-CLOSED: la protezione e' SEMPRE attiva salvo che l'utente l'abbia
+    # esplicitamente disattivata (protection_off). Cosi', senza fare nulla, si e'
+    # protetti: se non riusciamo a confermare che la VPN e' attiva, si blocca.
+    if bool(SETTINGS.get("protection_off")):
         return
+    home = (SETTINGS.get("home_ip") or "").strip()
     cur = _current_public_ip()
-    # BLOCCO SEMPRE se sei sull'IP di casa (esposto), anche con kill-switch spento.
-    if home and cur and cur == home:
+    if not home:
+        raise HTTPException(
+            status_code=428,
+            detail="Protezione attiva ma IP di casa non registrato: con la VPN SPENTA "
+                   "premi una volta «Registra IP di casa» nel pannello privacy per "
+                   "abilitare il rilevamento della VPN, oppure disattiva la protezione.")
+    if cur is None:
+        raise HTTPException(
+            status_code=423,
+            detail="Impossibile verificare l'IP pubblico: operazione online bloccata "
+                   "per sicurezza. Controlla la connessione/VPN.")
+    if cur == home:
         raise HTTPException(
             status_code=423,
             detail="IP di casa ESPOSTO (VPN spenta): operazione online bloccata per "
-                   "sicurezza. Attiva la VPN. Per disattivare la protezione rimuovi "
-                   "l'IP di casa registrato dal pannello privacy.")
-    # Fail-closed aggiuntivo solo con kill-switch attivo.
-    if ks:
-        if not home:
-            raise HTTPException(
-                status_code=428,
-                detail="Kill-switch attivo ma IP di casa non registrato: registra il "
-                       "tuo IP di casa (VPN spenta) una volta, oppure disattiva il kill-switch.")
-        if cur is None:
-            raise HTTPException(
-                status_code=423,
-                detail="Kill-switch attivo: impossibile verificare l'IP pubblico. "
-                       "Operazione bloccata per sicurezza.")
+                   "sicurezza. Attiva la VPN. Per disattivare la protezione usa il "
+                   "pannello privacy.")
+    # cur != home => IP pubblico diverso da casa => VPN attiva => consentito.
 
 def apply_proxies():
     """Push the current proxy config into the vidxgo resolver module."""
@@ -1791,18 +1791,23 @@ def privacy_ip_status():
     cur = _current_public_ip()
     home = (SETTINGS.get("home_ip") or "").strip()
     ks = bool(SETTINGS.get("kill_switch"))
+    off = bool(SETTINGS.get("protection_off"))
+    vpn_ok = bool(cur and home and cur != home)
     return {
         "kill_switch": ks,
+        "protection_off": off,
+        "protection_on": (not off),
         "have_home": bool(home),
         "current_ip_masked": _mask_ip(cur),
         "home_ip_masked": _mask_ip(home),
-        "protected": bool(cur and home and cur != home),
+        # protetto = protezione disattivata (a rischio dell'utente) OPPURE VPN confermata attiva
+        "protected": off or vpn_ok,
         "detected": bool(cur),
         "incognito": bool(INCOGNITO),
-        # esposto = ti vedono con l'IP di casa (ora bloccato SEMPRE, anche senza kill-switch)
+        # esposto = ti vedono con l'IP di casa
         "exposed": bool(cur and home and cur == home),
-        # bloccato = esposto, oppure kill-switch attivo e non verificabile
-        "blocked": bool(cur and home and cur == home) or (ks and (not home or cur is None)),
+        # bloccato = protezione attiva e VPN non confermata (fail-closed)
+        "blocked": (not off) and (not vpn_ok),
         "tls_verify": _verify(),
     }
 
@@ -1830,6 +1835,19 @@ def privacy_kill_switch(payload: KillSwitchToggle):
     SETTINGS["kill_switch"] = bool(payload.enabled)
     save_settings(SETTINGS)
     return {"ok": True, "kill_switch": SETTINGS["kill_switch"]}
+
+
+class ProtectionToggle(BaseModel):
+    enabled: bool   # True = protezione ATTIVA (fail-closed); False = disattivata
+
+
+@app.post("/api/privacy/protection")
+def privacy_protection(payload: ProtectionToggle):
+    """Attiva/disattiva la protezione anti-esposizione. Attiva (default) = blocca
+    le operazioni online se non e' confermato che la VPN e' attiva."""
+    SETTINGS["protection_off"] = (not bool(payload.enabled))
+    save_settings(SETTINGS)
+    return {"ok": True, "protection_off": SETTINGS["protection_off"], "protection_on": (not SETTINGS["protection_off"])}
 
 
 class IncognitoToggle(BaseModel):

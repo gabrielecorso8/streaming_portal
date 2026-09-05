@@ -2728,3 +2728,37 @@ select.custom-select option, .folder-inline-sort option, #search-type option,
     text-shadow: 0 1px 5px rgba(0,0,0,.95); pointer-events: none; }
 .fav-badge.hidden { display: none; }
 .library-item:hover .fav-badge { display: none; }
+
+/* ==========================================================================
+   ADATTAMENTO MOBILE — pass unico per telefono/tablet
+   ========================================================================== */
+@media (max-width: 900px) {
+  /* Niente scroll orizzontale della pagina: tutto entra nella larghezza schermo */
+  html, body { max-width: 100%; overflow-x: hidden; }
+  .main-container { width: 100%; max-width: 100%; padding-left: 12px; padding-right: 12px; box-sizing: border-box; }
+
+  /* Header: i tasti vanno a capo invece di uscire a destra */
+  .app-header { flex-wrap: wrap; row-gap: 6px; padding: 8px 10px; }
+  .app-header .settings-box { order: 10; flex: 1 1 100%; }
+
+  /* HERO "in evidenza": su mobile il poster laterale usciva a destra e non si
+     vedeva. Lo nascondiamo e mostriamo l'artwork come sfondo (meno sfocato),
+     col testo leggibile in basso a piena larghezza. */
+  .hb-poster { display: none !important; }
+  .hb-content { position: absolute; left: 0; right: 0; bottom: 0; max-width: 100%;
+    padding: 0 16px 18px; box-sizing: border-box; }
+  .hb-bg { filter: blur(2px) brightness(.62); transform: scale(1.05); background-position: center 22%; }
+  .hb-shade { background:
+      linear-gradient(180deg, rgba(6,12,28,.15) 0%, rgba(6,12,28,.35) 45%, var(--bg-color) 100%); }
+  .hb-title { font-size: clamp(1.5rem, 6vw, 2.2rem); }
+  .hb-actions .primary-btn, .hb-actions .secondary-btn { font-size: .95rem; padding: 10px 18px; }
+
+  /* Le righe di locandine scorrono dentro lo schermo, non lo allargano */
+  .cw-row, #search-results.results-grid { max-width: 100%; }
+}
+
+/* Su telefono/tablet mostra bene i controlli dell'app piena (ruota, categorie) */
+body.mobile-full .settings-box { display: none; }        /* dominio/proxy: gestiti dal PC */
+body.mobile-full #domains-section { display: none; }
+
+body.mobile-full .shutdown-btn { display: none; }  /* spegnimento solo dal PC */

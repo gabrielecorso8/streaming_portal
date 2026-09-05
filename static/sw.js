@@ -1,7 +1,7 @@
 /* SC Portal — service worker minimale.
    Serve solo a rendere installabili le app in home (telecomando + download).
    NON tocca /api/ né i media: quelli devono sempre passare dal server live. */
-const SHELL = "scp-shell-v5";
+const SHELL = "scp-shell-v6";
 const ASSETS = [
   "/index.html", "/app.js", "/styles.css", "/hls.min.js",
   "/offline.html",
@@ -31,6 +31,8 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   // Shell statico: network-first, fallback alla cache se offline.
+  // IMPORTANTE: il match ignora la query (?pwa=1, ?t=...) altrimenti offline
+  // /offline.html?pwa=1 non veniva trovato e ripiegava sull'app piena.
   e.respondWith(
     fetch(req).then((res) => {
       if (res && res.ok && (res.type === "basic" || res.type === "default")) {
@@ -38,6 +40,8 @@ self.addEventListener("fetch", (e) => {
         caches.open(SHELL).then((c) => c.put(req, copy)).catch(() => {});
       }
       return res;
-    }).catch(() => caches.match(req).then((m) => m || caches.match("/index.html")))
+    }).catch(() => caches.match(req, { ignoreSearch: true }).then((m) =>
+      m || caches.match(url.pathname.indexOf("/offline") === 0 ? "/offline.html" : "/index.html")
+    ))
   );
 });

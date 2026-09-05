@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SC Portal">
     <link rel="manifest" id="mf-link" href="/api/pwa/manifest?kind=mobile">
-    <link rel="stylesheet" href="styles.css?v=144">
+    <link rel="stylesheet" href="styles.css?v=145">
 </head>
 <body>
     <header class="app-header">
@@ -222,6 +222,11 @@
         <section class="downloads-section card glass" id="offline-section">
             <div class="downloads-header">
                 <h2>Titoli offline</h2>
+                <div class="header-actions">
+                    <label class="device-open-btn" title="Salva un video nella memoria dell'app, riproducibile anche offline">
+                        <input type="file" accept="video/*" id="offline-file" hidden>💾 Salva sul dispositivo
+                    </label>
+                </div>
             </div>
             <div id="offline-list" class="downloads-list">
                 <div class="no-downloads">Nessun titolo offline. Salva un download o usa «Salva titoli scaricati».</div>
@@ -301,6 +306,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=162"></script>
+    <script src="app.js?v=163"></script>
 </body>
 </html>

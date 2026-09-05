@@ -1649,6 +1649,13 @@ body.cinema-on #next-banner { display: none !important; }
 /* Titoli offline: sezione separata, visibile solo nella vista mobile */
 #offline-section { display: none; }
 body.downloads-only #offline-section { display: block; margin-top: 1rem; }
+/* App piena su telefono: mostra anche i titoli offline salvati sul dispositivo */
+body.mobile-full #offline-section { display: block; }
+body.mobile-full #continue-section.has-items { display: block; }
+/* Modalita' offline (fuori casa, server non raggiungibile): niente sezioni che
+   richiederebbero il PC/rete, solo cio' che e' sul dispositivo */
+body.offline-mode #downloads-section,
+body.offline-mode #domains-section { display: none !important; }
 #offline-list .cw-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
 
 /* Continua a guardare come sezione separata (sopra Titoli su PC) */

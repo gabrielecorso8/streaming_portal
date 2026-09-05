@@ -278,7 +278,14 @@ async function init() {
             if (typeof refreshDownloads === "function") refreshDownloads();
             setupMobileDownloadsUX();
             setTimeout(renderContinueWatching, 800);
+        } else {
+            const _phone = isRemoteDevice() || (window.matchMedia && window.matchMedia("(max-width: 820px)").matches);
+            if (_phone) {
+                document.body.classList.add("mobile-full");
+                setTimeout(function () { renderMobileTitles(true); renderContinueWatching(true); }, 600);
+            }
         }
+        _wireOfflineImport();
     } catch (e) {}
     if (el.searchClear) el.searchClear.addEventListener("click", clearSearch);
     if (el.urlInput) el.urlInput.addEventListener("input", toggleClearBtn);
@@ -959,9 +966,20 @@ function _showServerOffline(retry) {
     o.innerHTML = '<img src="/sc-192.png" width="76" height="76" style="border-radius:18px;opacity:.9" alt="">' +
         '<div style="font-size:1.15rem;font-weight:700">SC Portal non raggiungibile</div>' +
         '<div style="color:#8b8ba3;max-width:320px;line-height:1.5">Apri SC Portal sul computer e assicurati che telefono e PC siano sulla stessa rete Wi-Fi.</div>' +
-        '<button id="sc-offline-retry" style="margin-top:6px;background:linear-gradient(180deg,#9d7bff,#7c5cff);color:#fff;border:none;border-radius:14px;padding:14px 26px;font-size:1rem;font-weight:600;cursor:pointer">Riprova</button>';
+        '<button id="sc-offline-retry" style="margin-top:6px;background:linear-gradient(180deg,#9d7bff,#7c5cff);color:#fff;border:none;border-radius:14px;padding:14px 26px;font-size:1rem;font-weight:600;cursor:pointer">Riprova</button>' +
+        (_mobStore().length ? '<button id="sc-offline-view" style="margin-top:2px;background:transparent;color:#6fd0ff;border:1px solid rgba(111,208,255,.5);border-radius:14px;padding:12px 22px;font-size:.95rem;font-weight:600;cursor:pointer">▶ Apri i titoli offline</button>' : '') +
+        '<div style="color:#6b6b80;font-size:.8rem;max-width:320px">I titoli salvati sul dispositivo si riproducono senza rete e senza alcuna connessione esterna.</div>';
     document.body.appendChild(o);
     o.querySelector("#sc-offline-retry").addEventListener("click", function () { o.remove(); retry(); });
+    var _ov = o.querySelector("#sc-offline-view");
+    if (_ov) _ov.addEventListener("click", function () {
+        o.remove();
+        document.body.classList.remove("mobile-full");
+        document.body.classList.add("downloads-only", "offline-mode");
+        _wireOfflineImport();
+        renderMobileTitles(true);
+        renderContinueWatching(true);
+    });
 }
 function _ensureServerUp() {
     if (!isRemoteDevice()) return;   // sul PC il server c'e' sempre
@@ -2203,6 +2221,14 @@ function _renderDownloadPosters(rows, buildDownloadItem) {
 // --- "Titoli offline": video salvati DENTRO l'app (IndexedDB), riproducibili
 // anche nelle sessioni successive. I metadati stanno in localStorage (lista
 // veloce), il blob del video in IndexedDB (caricato solo quando serve). --------
+function _wireOfflineImport() {
+    var inp = document.getElementById("offline-file");
+    if (!inp || inp._wired) return; inp._wired = true;
+    inp.addEventListener("change", async function (e) {
+        var fl = e.target.files && e.target.files[0]; e.target.value = "";
+        if (fl) { showToast("Salvo in Titoli offline…", 3000); await addMobileTitle(fl.name, "", fl); }
+    });
+}
 function _mobStore() { try { return JSON.parse(localStorage.getItem("scp_mobile") || "[]"); } catch (e) { return []; } }
 function _mobSave(list) { try { localStorage.setItem("scp_mobile", JSON.stringify(list)); } catch (e) {} }
 
@@ -2827,8 +2853,9 @@ async function openPhoneCast() {
     }
     const base = "http://" + info.lan_ip + ":" + info.port;
     const tok = encodeURIComponent(info.token || "");
-    // QR UNICO: apre sul telefono/tablet SOLO "I tuoi download".
-    const url = base + "/?t=" + tok + "&view=downloads";
+    // QR: apre sul telefono/tablet l’app completa (ruota, categorie, download,
+    // titoli offline), autenticata col token LAN.
+    const url = base + "/?t=" + tok;
     showPhoneCastOverlay(url);
 }
 
